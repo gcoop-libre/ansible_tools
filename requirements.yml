@@ -1,0 +1,4 @@
+- src: https://github.com/gcoop-libre/ansible-role-ssh
+  scm: git
+  version: v0.1.0
+  name: gcoop-libre.ssh
