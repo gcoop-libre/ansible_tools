@@ -35,8 +35,22 @@ Show tags of git repository.
 ```bash
 
   git-ls-remote-tags https://github.com/gcoop-libre/ansible_tools.git
-  v0.1.0
+  v0.1.3
+  v0.1.2
   v0.1.1
+  v0.1.0
+
+```
+
+### ``git-ls-remote-heads``
+
+Show heads of git repository.
+
+```bash
+
+  git-ls-remote-heads https://github.com/gcoop-libre/ansible_tools.git
+  master
+  develop
 
 ```
 
