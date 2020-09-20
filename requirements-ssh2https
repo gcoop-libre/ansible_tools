@@ -29,8 +29,12 @@ log()
   echo "$BIN [INFO] $1"
 }
 
+REQ='roles/requirements.yml'
+
 [[ -e '.git/config' ]] || die "NOT FOUND GIT REPOSITORY IN $PWD"
-[[ -e 'roles/requirements.yml' ]] || die "NOT FOUND ROLES IN $PWD"
+[[ -e "$REQ" ]] && ROLES_SRC="$REQ"
+[[ -e "tests/$REQ" ]] && ROLES_SRC="tests/$REQ"
+[[ -z "$ROLES_SRC" ]] && die "NOT FOUND ROLES IN $PWD"
 
 GITLAB_GIT_URL=$(git config --get remote.origin.url)
 GITLAB_HTTPS=$(echo "$GITLAB_GIT_URL" | grep -ow 'https')
@@ -38,7 +42,6 @@ GITLAB_HTTPS=$(echo "$GITLAB_GIT_URL" | grep -ow 'https')
 [[ "$GITLAB_HTTPS" = 'https' ]] || die "NOT FOUND HTTPS ORIGIN"
 
 GITLAB_TOKEN=$(echo "$GITLAB_GIT_URL" | cut -d@ -f1 | cut -d/ -f3)
-ROLES_SRC='roles/requirements.yml'
 
 sed -i "s/src: git@/src: https:\/\/$GITLAB_TOKEN@/g" "$ROLES_SRC" \
   && log "$PWD/$ROLES_SRC UPDATED"
