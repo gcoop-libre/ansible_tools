@@ -1,0 +1,44 @@
+#!/bin/bash
+
+# This script comes with ABSOLUTELY NO WARRANTY, use at own risk
+# Copyright (C) 2020 Osiris Alejandro Gomez <osiris@gcoop.coop>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+
+BIN="$(basename "$0")"
+
+die()
+{
+  echo "$BIN [ERRR] $1"
+  exit 1
+}
+
+log()
+{
+  echo "$BIN [INFO] $1"
+}
+
+[[ -e '.git/config' ]] || die "NOT FOUND GIT REPOSITORY IN $PWD"
+[[ -e 'roles/requirements.yml' ]] || die "NOT FOUND ROLES IN $PWD"
+
+GITLAB_GIT_URL=$(git config --get remote.origin.url)
+GITLAB_HTTPS=$(echo "$GITLAB_GIT_URL" | grep -ow 'https')
+
+[[ "$GITLAB_HTTPS" = 'https' ]] || die "NOT FOUND HTTPS ORIGIN"
+
+GITLAB_TOKEN=$(echo "$GITLAB_GIT_URL" | cut -d@ -f1 | cut -d/ -f3)
+ROLES_SRC='roles/requirements.yml'
+
+sed -i "s/src: git@/src: https:\/\/$GITLAB_TOKEN@/g" "$ROLES_SRC" \
+  && log "$PWD/$ROLES_SRC UPDATED"
