@@ -22,20 +22,9 @@ DIR_BIN=$(dirname "$0") && source "$DIR_BIN/awx-common"
 
 TEAM="$DEFAULT_TEAM"
 
-[[ ! -z "$1" ]] && TEAM="$1"
+[[ -z "$1" ]] && die 'EMPTY WORKFLOW NAME'
+NAME="$1"
 
-get_file_list '*.json' | while read -r FILE
-do
-  jq -r '.[] | "\(.project)"' "$FILE"
-done | sort -u | grep -v null | while read -r PROJECT
-do
-  grant_project "$PROJECT" "$TEAM"
-done
+[[ ! -z "$2" ]] && TEAM="$2"
 
-get_file_list '*.json' | while read -r FILE
-do
-  ASSET_TYPE="$(jq -r '.[] | "\(.asset_type)"' "$FILE")"
-  NAME="$(jq -r '.[] | "\(.name)"' "$FILE")"
-  GRANT="grant_${ASSET_TYPE}"
-  $GRANT "$NAME" "$TEAM"
-done
+grant_workflow "$NAME" "$TEAM"
