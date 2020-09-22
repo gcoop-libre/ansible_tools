@@ -24,12 +24,17 @@ AWX_CONFIG="$HOME/.awx-config"
 
 die ()
 {
-  printf "%s" "${RED}[ERROR] $1 $NORMAL" && exit 1
+  printf "%s\n" "${RED}[ERROR] $1 $NORMAL" && exit 1
+}
+
+log ()
+{
+  printf "%s\n" "${NORMAL}[INFO] $1 $NORMAL"
 }
 
 success ()
 {
-  printf "%s" "${GREEN}[OK] $1 $NORMAL" && exit 1
+  printf "%s\n" "${GREEN}[OK] $1 $NORMAL" && exit 1
 }
 
 [[ ! -e "$AWX_CONFIG" ]] && die "NOT FOUND FILE: $AWX_CONFIG"
@@ -39,3 +44,86 @@ do
     str="$k='$v'"
     echo "$str"
 done)
+
+get_file_list()
+{
+
+  [[ -z "$1" ]] && exit 1
+
+  find . -type f -iname "$1" | cut -c 3- | while read -r FILE
+  do
+    echo "$FILE"
+  done
+
+}
+
+filelist_projects()
+{
+
+  get_file_list 'ansible*.json'
+
+}
+
+filelist_job_templates()
+{
+
+  get_file_list 'job_template*.json'
+
+}
+
+filelist_workflows()
+{
+
+  get_file_list 'workflow*.json'
+
+}
+
+grant_project()
+{
+  awx-cli role grant \
+    -v               \
+    --type use       \
+    --team "$2"      \
+    --project "$1"
+}
+
+grant_job_template()
+{
+  awx-cli role grant \
+    -v               \
+    --type execute   \
+    --team "$2"      \
+    --job-template "$1"
+}
+
+grant_workflow()
+{
+  awx-cli role grant \
+    -v               \
+    --type execute   \
+    --team "$2"      \
+    --workflow "$1"
+}
+
+group_get_id()
+{
+  awx-cli group get  \
+    --inventory "$1" \
+    --name "$2"      \
+    --format id
+}
+
+host_get_id()
+{
+  awx-cli host get   \
+    --inventory "$1" \
+    --name "$2"      \
+    --format id
+}
+
+host_associate()
+{
+  awx-cli host associate \
+    --host "$1"          \
+    --group "$2"
+}
