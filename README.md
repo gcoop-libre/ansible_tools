@@ -87,6 +87,26 @@ After update ``requirements.yml``:
     name: gcoop-libre.ssh
 ```
 
+### ``awx-config``
+
+Overwrite ``~/.tower_cli.cfg`` with enviroment config using
+``~/.awx-config`` and ``pass`` command for retrieve passwords to use
+with ``awx-cli``.
+
+First copy ``.awx-config-example`` to ``~/.awx-config``, customize
+variables according your enviroment.
+
+Use:
+
+```bash
+
+  awx-config develop
+
+```
+
+This command, read ``awx-common`` to retrieve variables and common
+functions of other *AWX tools* scripts.
+
 ## License
 
 GNU General Public License, GPLv3.

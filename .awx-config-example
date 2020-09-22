@@ -1,0 +1,10 @@
+DEVELOP: awxdev
+MASTER: awxprd
+STAGE: awxstg
+LO: loawx
+DEVELOP_USER: admin
+MASTER_USER: admin
+STAGE_USER: admin
+LO_USER: admin
+PASS_PREFIX: awx
+DEFAULT_TEAM: devops
