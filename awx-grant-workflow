@@ -26,5 +26,6 @@ TEAM="$DEFAULT_TEAM"
 NAME="$1"
 
 [[ ! -z "$2" ]] && TEAM="$2"
+[[ -z "$TEAM" ]] && die "EMPTY TEAM"
 
 grant_workflow "$NAME" "$TEAM"

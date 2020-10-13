@@ -20,23 +20,25 @@
 
 DIR_BIN=$(dirname "$0") && source "$DIR_BIN/awx-common"
 
-[[ -z "$1" ]] && die "EMPTY INVENTORY"
-INVENTORY="$1"
+[[   -z "$1" ]] && die "EMPTY INVENTORY_SOURCE"
+[[ ! -z "$2" ]] && KEY="$2"
 
-[[ -z "$2" ]] && die "EMPTY LIMIT"
-LIMIT="$2"
+INVENTORY_SOURCE="$1"
 
-REGEXP='s(pxe|ans|apt|prn|ftp|cdn|git|log|rep)01f[0-9]+'
-[[ -z "$3" ]] || REGEXP="$3"
+YAML=$(mktemp --suffix .yml)
 
-COMMAND="sudo /usr/sbin/qm list | grep stopped | grep -E \"$REGEXP\" | while read ID HOST _;do echo \$HOST && /usr/sbin/qm start \$ID;sleep 5;done"
+awx-cli inventory_source get  \
+  --format yaml               \
+  --name "$INVENTORY_SOURCE"  > "$YAML" 2>/dev/null
 
-echo "\`\`\`"
-echo
-echo "  # awx-ad-hoc-shell $INVENTORY $LIMIT $COMMAND"
-echo
+[[ -s "$YAML" ]] || exit 1
 
-awx-ad-hoc-shell "$INVENTORY" "$LIMIT" "$COMMAND"
+if [[ -z "$KEY" ]]
+then
+  yq -r . "$YAML"
+else
+  VALUE="$(yq -r ".$KEY" "$YAML" | grep -vi null)"
+  echo "$VALUE"
+fi
 
-echo
-echo "\`\`\`"
+rm -f "$YAML"

@@ -37,6 +37,11 @@ success ()
   printf "%s\n" "${GREEN}[OK] $1 $NORMAL" && exit 1
 }
 
+stderror ()
+{
+  echo >&2 "$1"
+}
+
 [[ ! -e "$AWX_CONFIG" ]] && die "NOT FOUND FILE: $AWX_CONFIG"
 
 eval $(sed '/:/!d;/^ *#/d;s/:/ /;' < "$AWX_CONFIG" | while read -r k v
@@ -44,6 +49,16 @@ do
     str="$k='$v'"
     echo "$str"
 done)
+
+[[ -z "$HTTP_PROXY" ]] || stderror "Using HTTP_PROXY=$HTTP_PROXY"
+
+# check dependencies
+
+for i in awx-cli jq yq
+do
+  command -v "$i" >/dev/null || die "try: pip install $i " \
+    | sed 's/awx-cli/ansibel-tower-cli/g'
+done
 
 get_file_list()
 {
@@ -127,3 +142,70 @@ host_associate()
     --host "$1"          \
     --group "$2"
 }
+
+log_ansible_proxmox_kvm()
+{
+
+  [[ ! -e "$1" ]] && die "NOT FOUND FILE $1"
+
+  local DATE HOST VMID STATE
+
+  grep 'ansible-proxmox_kvm:' "$1" | while read -r LINE
+  do
+    DATE="$(echo "$LINE" | cut -c -15)"
+    HOST="$(echo "$LINE" | awk '{print $4}')"
+    VMID="$(echo "$LINE" | grep -oE 'vmid=[0-9]+')"
+    STATE="$(echo "$LINE" | grep -oE 'state=[a-z]+')"
+    printf "%s %s ansible-proxmox_kvm: %s %s\n" "$DATE" "$HOST" "$VMID" "$STATE"
+  done
+
+}
+
+project_update()
+{
+  awx-cli project update -n "$1" $AWX_DEBUG
+}
+
+awx_ad_hoc_shell_header()
+{
+  local INVENTORY LIMIT COMMAND TITLE MSG
+  INVENTORY="$1"
+  LIMIT="$2"
+  COMMAND="$3"
+  TITLE="$4"
+
+MSG=$(cat << EOF
+## Ejecutar %s en %s" "$TITLE" "$LIMIT"
+
+\`\`\`
+
+  # awx-ad-hoc-shell "$INVENTORY" "$LIMIT" "$COMMAND""
+
+EOF
+)
+
+echo "$MSG"
+
+}
+
+awx_ad_hoc_shell_launch()
+{
+  "$INVENTORY" "$LIMIT" "$COMMAND"
+  awx-ad-hoc-shell "$INVENTORY" "$LIMIT" "$COMMAND"
+}
+
+awx_ad_hoc_shell_footer()
+{
+  echo "\n\`\`\`"
+}
+
+awx_ad_hoc_shell()
+{
+  local INVENTORY LIMIT COMMAND TITLE
+
+awx_ad_hoc_shell_header "$INVENTORY" "$LIMIT" "$COMMAND" "$TITLE"
+awx_ad_hoc_shell_launch "$INVENTORY" "$LIMIT" "$COMMAND"
+awx_ad_hoc_shell_footer
+
+}
+

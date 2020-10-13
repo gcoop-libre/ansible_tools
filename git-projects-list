@@ -16,18 +16,13 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-BIN="$(basename "$0")"                                                  
-                                                                        
-die()                                                                   
-{                                                                       
-  echo "$BIN [ERRR] $1"                                                 
-  exit 1                                                                
-}  
+# shellcheck disable=SC1090
 
+DIR_BIN=$(dirname "$0") && source "$DIR_BIN/awx-common"
+                                                                        
 DOMAIN="$(hostname -d)"
 HOST="git.$DOMAIN"
 
-[[ ! -z "$1" ]] && REGEXP="$1"
 [[ ! -z "$GITLAB_CI_TOKEN" ]] && TOKEN="$GITLAB_CI_TOKEN"
 [[ -z "$TOKEN" ]] && die "NOT FOUND TOKEN"
 

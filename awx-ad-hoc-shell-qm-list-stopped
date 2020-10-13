@@ -16,10 +16,14 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-[[ -z "$1" ]] && exit 1
+# shellcheck disable=SC1090
+
+DIR_BIN=$(dirname "$0") && source "$DIR_BIN/awx-common"
+
+[[ -z "$1" ]] && die "EMPTY INVENTORY"
 INVENTORY="$1"
 
-[[ -z "$2" ]] && exit 1
+[[ -z "$2" ]] && die "EMPTY LIMIT"
 LIMIT="$2"
 
 REGEXP='f[0-9]+'
@@ -29,7 +33,7 @@ COMMAND="/usr/sbin/qm list | grep stopped | grep -E \"$REGEXP\""
 
 echo "\`\`\`"
 echo
-echo "  # awx-ad-hoc-shell "$INVENTORY" "$LIMIT" "$COMMAND""
+echo "  # awx-ad-hoc-shell $INVENTORY $LIMIT $COMMAND"
 echo
 
 awx-ad-hoc-shell "$INVENTORY" "$LIMIT" "$COMMAND"

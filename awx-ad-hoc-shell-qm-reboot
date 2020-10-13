@@ -16,24 +16,28 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-[[ -z "$1" ]] && exit 1
+# shellcheck disable=SC1090
+
+DIR_BIN=$(dirname "$0") && source "$DIR_BIN/awx-common"
+
+[[ -z "$1" ]] && die "EMPTY INVENTORY"
 INVENTORY="$1"
 
-[[ -z "$2" ]] && exit 1
+[[ -z "$2" ]] && die "EMPTY LIMIT"
 LIMIT="$2"
 
-[[ -z "$3" ]] && exit 1
+[[ -z "$3" ]] && die "EMPTY VMID"
 VMID="$3"
 
-[[ -z "$VMID" ]] && exit 1
+[[ -z "$VMID" ]] && die "EMPTY VMID"
 
-[[ "$VMID" -eq 100 ]] && exit 1
+[[ "$VMID" -eq 100 ]] && die "VMID = 100"
 
 COMMAND="/usr/sbin/qm reboot $VMID"
 
 echo "\`\`\`"
 echo
-echo "  # awx-ad-hoc-shell "$INVENTORY" "$LIMIT" "$COMMAND""
+echo "  # awx-ad-hoc-shell $INVENTORY $LIMIT $COMMAND"
 echo
 
 awx-ad-hoc-shell "$INVENTORY" "$LIMIT" "$COMMAND"

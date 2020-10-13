@@ -16,29 +16,31 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-[[ -z "$1" ]] && exit 1
+# shellcheck disable=SC1090
+
+DIR_BIN=$(dirname "$0") && source "$DIR_BIN/awx-common"
+
+[[ -z "$1" ]] && die "EMPTY INVENTORY"
 INVENTORY="$1"
 
-[[ -z "$2" ]] && exit 1
+[[ -z "$2" ]] && die "EMPTY LIMIT"
 LIMIT="$2"
 
-[[ -z "$3" ]] && exit 1
+[[ -z "$3" ]] && die "EMPTY MODULE_ARGS"
 MODULE_ARGS="$3"
 
 BECOME='true'
-CREDENTIAL='ssh_f0664_ansible'
-#INVENTORY='pve'
 JOB_TYPE='run'
 MODULE_NAME='shell'
 VERBOSE='more_verbose'
 
-awx-cli ad_hoc launch              \
-  --job-type        "$JOB_TYPE"    \
-  --inventory       "$INVENTORY"   \
-  --limit           "$LIMIT"       \
-  --credential      "$CREDENTIAL"  \
-  --module-name     "$MODULE_NAME" \
-  --module-args     "$MODULE_ARGS" \
-  --verbosity       "$VERBOSE"     \
-  --become-enabled  "$BECOME"      \
+awx-cli ad_hoc launch                          \
+  --job-type        "$JOB_TYPE"                \
+  --inventory       "$INVENTORY"               \
+  --limit           "$LIMIT"                   \
+  --credential      "$DEFAULT_SSH_CREDENTIAL"  \
+  --module-name     "$MODULE_NAME"             \
+  --module-args     "$MODULE_ARGS"             \
+  --verbosity       "$VERBOSE"                 \
+  --become-enabled  "$BECOME"                  \
   --monitor

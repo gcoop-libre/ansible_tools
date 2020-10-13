@@ -21,22 +21,15 @@
 DIR_BIN=$(dirname "$0") && source "$DIR_BIN/awx-common"
 
 [[ -z "$1" ]] && die "EMPTY INVENTORY"
+
 INVENTORY="$1"
+HOSTS="hosts-$INVENTORY"
 
-[[ -z "$2" ]] && die "EMPTY LIMIT"
-LIMIT="$2"
+[[ -e "$HOSTS" ]] || die "NOT FOUND $HOSTS"
 
-REGEXP='s(pxe|ans|apt|prn|ftp|cdn|git|log|rep)01f[0-9]+'
-[[ -z "$3" ]] || REGEXP="$3"
+AWX_ENABLE="awx-cli host modify --enabled true -i $INVENTORY"
 
-COMMAND="sudo /usr/sbin/qm list | grep stopped | grep -E \"$REGEXP\" | while read ID HOST _;do echo \$HOST && /usr/sbin/qm start \$ID;sleep 5;done"
-
-echo "\`\`\`"
-echo
-echo "  # awx-ad-hoc-shell $INVENTORY $LIMIT $COMMAND"
-echo
-
-awx-ad-hoc-shell "$INVENTORY" "$LIMIT" "$COMMAND"
-
-echo
-echo "\`\`\`"
+grep -i "$INVENTORY" "$HOSTS" | grep -v '\[' | while read -r HOST
+do
+  $AWX_ENABLE -n "$HOST"
+done

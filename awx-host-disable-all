@@ -20,23 +20,35 @@
 
 DIR_BIN=$(dirname "$0") && source "$DIR_BIN/awx-common"
 
-[[ -z "$1" ]] && die "EMPTY INVENTORY"
+HOST_IDS="$(mktemp)"
+
+function inventory_get_id()
+{
+  awx-cli inventory get \
+    --format id         \
+    --name "$1"
+}
+
+function disable_host()
+{
+  awx-cli host modify   \
+    --enabled false     \
+    --inventory "$1"    \
+    --format human "$2"
+    #| awk '/false/{print "$1,$2"}'
+}
+
+[[ -z "$1" ]] && exit t1
 INVENTORY="$1"
+INVENTORY_ID="$(inventory_get_id "$INVENTORY")"
 
-[[ -z "$2" ]] && die "EMPTY LIMIT"
-LIMIT="$2"
+awx-cli host list             \
+  --inventory "$INVENTORY_ID" \
+  --enabled true              \
+  --all-pages                 \
+  --format id | tr ' ' '\n'   > "$HOST_IDS"
 
-REGEXP='s(pxe|ans|apt|prn|ftp|cdn|git|log|rep)01f[0-9]+'
-[[ -z "$3" ]] || REGEXP="$3"
-
-COMMAND="sudo /usr/sbin/qm list | grep stopped | grep -E \"$REGEXP\" | while read ID HOST _;do echo \$HOST && /usr/sbin/qm start \$ID;sleep 5;done"
-
-echo "\`\`\`"
-echo
-echo "  # awx-ad-hoc-shell $INVENTORY $LIMIT $COMMAND"
-echo
-
-awx-ad-hoc-shell "$INVENTORY" "$LIMIT" "$COMMAND"
-
-echo
-echo "\`\`\`"
+while read -r HOST_ID
+do
+  disable_host "$INVENTORY_ID" "$HOST_ID"
+done < "$HOST_IDS"

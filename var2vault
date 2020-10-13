@@ -16,27 +16,11 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-# shellcheck disable=SC1090
+VAULT_ID='dev'
 
-DIR_BIN=$(dirname "$0") && source "$DIR_BIN/awx-common"
+[[ ! -z "$3" ]] && VAULT_ID="$3"
 
-[[ -z "$1" ]] && die "EMPTY INVENTORY"
-INVENTORY="$1"
-
-[[ -z "$2" ]] && die "EMPTY LIMIT"
-LIMIT="$2"
-
-REGEXP='s(pxe|ans|apt|prn|ftp|cdn|git|log|rep)01f[0-9]+'
-[[ -z "$3" ]] || REGEXP="$3"
-
-COMMAND="sudo /usr/sbin/qm list | grep stopped | grep -E \"$REGEXP\" | while read ID HOST _;do echo \$HOST && /usr/sbin/qm start \$ID;sleep 5;done"
-
-echo "\`\`\`"
-echo
-echo "  # awx-ad-hoc-shell $INVENTORY $LIMIT $COMMAND"
-echo
-
-awx-ad-hoc-shell "$INVENTORY" "$LIMIT" "$COMMAND"
-
-echo
-echo "\`\`\`"
+echo -n "$2"                       \
+  | ansible-vault encrypt_string   \
+    --encrypt-vault-id "$VAULT_ID" \
+    --stdin-name "$1"

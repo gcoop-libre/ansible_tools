@@ -20,23 +20,16 @@
 
 DIR_BIN=$(dirname "$0") && source "$DIR_BIN/awx-common"
 
-[[ -z "$1" ]] && die "EMPTY INVENTORY"
-INVENTORY="$1"
+[[ -z "$1" ]] && die "EMPTY USERNAME"
 
-[[ -z "$2" ]] && die "EMPTY LIMIT"
-LIMIT="$2"
+FIRST_NAME="$(echo "$1" | cut -c -1)"
+LAST_NAME="$(echo "$1" | cut -c 2-)"
+EMAIL="$1@$DEFAULT_EMAIL_DOMAIN"
 
-REGEXP='s(pxe|ans|apt|prn|ftp|cdn|git|log|rep)01f[0-9]+'
-[[ -z "$3" ]] || REGEXP="$3"
-
-COMMAND="sudo /usr/sbin/qm list | grep stopped | grep -E \"$REGEXP\" | while read ID HOST _;do echo \$HOST && /usr/sbin/qm start \$ID;sleep 5;done"
-
-echo "\`\`\`"
-echo
-echo "  # awx-ad-hoc-shell $INVENTORY $LIMIT $COMMAND"
-echo
-
-awx-ad-hoc-shell "$INVENTORY" "$LIMIT" "$COMMAND"
-
-echo
-echo "\`\`\`"
+awx-cli user create          \
+  --username "$1"            \
+  --email "$EMAIL"           \
+  --password "$1"            \
+  --is-superuser False       \
+  --first-name "$FIRST_NAME" \
+  --last-name "$LAST_NAME"

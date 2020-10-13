@@ -26,11 +26,12 @@ INVENTORY="$1"
 [[ -z "$2" ]] && die "EMPTY LIMIT"
 LIMIT="$2"
 
-REGEXP='s(pxe|ans|apt|prn|ftp|cdn|git|log|rep)01f[0-9]+'
-[[ -z "$3" ]] || REGEXP="$3"
+[[ -z "$DEFAULT_IPA_DOMAIN" ]] && die "EMPTY DEFAULT_IPA_DOMAIN"
 
-COMMAND="sudo /usr/sbin/qm list | grep stopped | grep -E \"$REGEXP\" | while read ID HOST _;do echo \$HOST && /usr/sbin/qm start \$ID;sleep 5;done"
+COMMAND="/usr/sbin/sssctl domain-status $DEFAULT_IPA_DOMAIN"
 
+printf "## Ejecutar sssctl status en %s" "$LIMIT"
+echo
 echo "\`\`\`"
 echo
 echo "  # awx-ad-hoc-shell $INVENTORY $LIMIT $COMMAND"

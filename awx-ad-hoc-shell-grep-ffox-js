@@ -26,11 +26,16 @@ INVENTORY="$1"
 [[ -z "$2" ]] && die "EMPTY LIMIT"
 LIMIT="$2"
 
-REGEXP='s(pxe|ans|apt|prn|ftp|cdn|git|log|rep)01f[0-9]+'
-[[ -z "$3" ]] || REGEXP="$3"
+[[ -z "$3" ]] && die "EMPTY USER"
+U="$3"
 
-COMMAND="sudo /usr/sbin/qm list | grep stopped | grep -E \"$REGEXP\" | while read ID HOST _;do echo \$HOST && /usr/sbin/qm start \$ID;sleep 5;done"
+[[ -z "$4" ]] && die "EMPTY REGEX"
+REGEX="$4"
 
+COMMAND="/usr/bin/find /home/bancocredicoop.coop/$U/.mozilla/firefox/ -type f -iname '*.js' | /usr/bin/xargs grep -E '$REGEX'"
+
+printf "## Ejecutar $COMMAND en %s" "$LIMIT"
+echo
 echo "\`\`\`"
 echo
 echo "  # awx-ad-hoc-shell $INVENTORY $LIMIT $COMMAND"

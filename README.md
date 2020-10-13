@@ -107,6 +107,17 @@ Use:
 This command, read ``awx-common`` to retrieve variables and common
 functions of other *AWX tools* scripts.
 
+### ``awx-project-get-variable``
+
+Return value of variable of project
+
+```bash
+
+  awx-project-get-variable inventory_v0.2.2 scm_revision
+  b97352fcad54110d3a1bb0882d0a238d59d3e926
+
+```
+
 ## License
 
 GNU General Public License, GPLv3.

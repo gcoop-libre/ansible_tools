@@ -20,23 +20,23 @@
 
 DIR_BIN=$(dirname "$0") && source "$DIR_BIN/awx-common"
 
-[[ -z "$1" ]] && die "EMPTY INVENTORY"
-INVENTORY="$1"
+[[ -z "$1" ]] && die "EMPTY HOST"
 
-[[ -z "$2" ]] && die "EMPTY LIMIT"
-LIMIT="$2"
+HOST="$1"
 
-REGEXP='s(pxe|ans|apt|prn|ftp|cdn|git|log|rep)01f[0-9]+'
-[[ -z "$3" ]] || REGEXP="$3"
+[[ "$HOST" =~ [a-z]+-.* ]] && PREFIX="${HOST//-*/}"
 
-COMMAND="sudo /usr/sbin/qm list | grep stopped | grep -E \"$REGEXP\" | while read ID HOST _;do echo \$HOST && /usr/sbin/qm start \$ID;sleep 5;done"
+if [[ -z "$PREFIX" ]]
+then
+  # input  : spve01.*
+  # output : pve
+  REGEX='[a-z]{3,4}'
+  PREFIX="$(echo "$HOST" | grep -oE "$REGEX" | rev | cut -c -3 | rev)"
+fi
 
-echo "\`\`\`"
-echo
-echo "  # awx-ad-hoc-shell $INVENTORY $LIMIT $COMMAND"
-echo
+INVENTORY="${PREFIX,,}"
 
-awx-ad-hoc-shell "$INVENTORY" "$LIMIT" "$COMMAND"
+[[ -z "$INVENTORY" ]] && die "EMPTY INVENTORY"
 
-echo
-echo "\`\`\`"
+echo awx-cli host modify --enabled true -i "$INVENTORY" -n "$HOST" -v
+awx-cli host modify --enabled true -i "$INVENTORY" -n "$HOST" -v
