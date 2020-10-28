@@ -27,6 +27,6 @@ NAME="$1"
 
 [[ ! -z "$2" ]] && TEAM="$2"
 
-[[ -z "$2" ]] && die "EMPTY TEAM"
+[[ -z "$TEAM" ]] && die "EMPTY TEAM"
 
 grant_job_template "$NAME" "$TEAM"
