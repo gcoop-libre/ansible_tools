@@ -25,20 +25,20 @@ DIR_BIN=$(dirname "$0") && source "$DIR_BIN/awx-common"
 
 INVENTORY_SOURCE="$1"
 
-YAML=$(mktemp --suffix .yml)
+JSON=$(mktemp --suffix .json)
 
 awx-cli inventory_source get  \
-  --format yaml               \
-  --name "$INVENTORY_SOURCE"  > "$YAML" 2>/dev/null
+  --format json               \
+  --name "$INVENTORY_SOURCE"  > "$JSON" 2>/dev/null
 
-[[ -s "$YAML" ]] || exit 1
+[[ -s "$JSON" ]] || exit 1
 
 if [[ -z "$KEY" ]]
 then
-  yq -r . "$YAML"
+  jq -r . "$JSON"
 else
-  VALUE="$(yq -r ".$KEY" "$YAML" | grep -vi null)"
+  VALUE="$(jq -r ".$KEY" "$JSON" | grep -vi null)"
   echo "$VALUE"
 fi
 
-rm -f "$YAML"
+rm -f "$JSON"
