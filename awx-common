@@ -93,6 +93,15 @@ filelist_workflows()
 
 }
 
+grant_inventory()
+{
+  awx-cli role grant \
+    -v               \
+    --type admin     \
+    --team "$2"      \
+    --inventory "$1"
+}
+
 grant_project()
 {
   awx-cli role grant \
