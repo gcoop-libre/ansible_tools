@@ -38,7 +38,7 @@ function disable_host()
     #| awk '/false/{print "$1,$2"}'
 }
 
-[[ -z "$1" ]] && exit t1
+[[ -z "$1" ]] && die "EMPTY INVENTORY"
 INVENTORY="$1"
 INVENTORY_ID="$(inventory_get_id "$INVENTORY")"
 
