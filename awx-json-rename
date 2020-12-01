@@ -1,0 +1,41 @@
+#!/bin/bash
+
+# This script comes with ABSOLUTELY NO WARRANTY, use at own risk
+# Copyright (C) 2020 Osiris Alejandro Gomez <osiris@gcoop.coop>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+
+# shellcheck disable=SC1090
+
+DIR_BIN=$(dirname "$0") && source "$DIR_BIN/awx-common"
+
+[[ -z "$1" ]] && die "EMPTY FILE"
+[[ -e "$1" ]] || die "NOT FOUND $1"
+[[ -z "$2" ]] || NEW_NAME="$2"
+
+JSON="$1"
+NAME="$(basename "$JSON" .json)"
+NEW_JSON="$(echo "$JSON" | sed "s/$NAME/$NEW_NAME/g")"
+
+echo "RENAME FROM $JSON TO $NEW_JSON"
+echo
+cat "$JSON" | sed "s/$NAME/$NEW_NAME/g" > "$NEW_JSON"
+
+LEN="$(wc -L "$JSON" | cut -d' ' -f1)"
+WIDTH="$((LEN+10))"
+[[ "$WIDTH" -gt 180 ]] && WIDTH='180'
+
+diff -y --suppress-common-lines -W "$WIDTH" "$JSON" "$NEW_JSON"
+
+echo
