@@ -21,6 +21,7 @@ GREEN="$(tput setaf 46)"
 DIR_REAL="$(realpath "$DIR_BIN")"
 DIR_BASE="$(dirname "$DIR_REAL")"
 AWX_CONFIG="$HOME/.awx-config"
+BIN=$(basename "$0")
 
 die ()
 {
