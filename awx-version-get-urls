@@ -17,27 +17,32 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 # shellcheck disable=SC1090
+# shellcheck disable=SC2183
 
 DIR_BIN=$(dirname "$0") && source "$DIR_BIN/awx-common"
-JSON_LIST="$(mktemp)"
+
+function usage()
+{
+cat << EOF
+Usage:
+  $BIN
+
+Description
+
+EOF
+exit 0
+}
+
+[[ "$1" =~ ^[-]+(h|help) ]] && usage
+
 
 [[ -z "$1" ]] && die "EMPTY VERSION"
 
-#function get_url()
-#{
-#  local PATH
-#
-#  [[ "$1" = 'project'      ]] && PATH='#/projects/'
-#  [[ "$1" = 'job_template' ]] && PATH='#/templates/job_template'
-#  [[ "$1" = 'workflow'     ]] && PATH='#/templates/workflow_job_template'
-#
-#  printf "%s/%s/%s" "$AWX_CFG_HOST" "$PATH" "$2"
-#}
-
 PAD_LIMIT="$(awk '{print $2}' "$1" | wc -L)"
 
-cat "$1" | while read TYPE NAME _
+while read -r TYPE NAME _
 do
-  ID="$(awx-cli $TYPE get -n $NAME -f id)"
-  printf "%-*s %s\n" "$PAD_LIMIT" "$NAME" "$(get_url "$TYPE" "$ID")"
-done
+  ID="$(awx-cli "$TYPE" get -n "$NAME" -f id)"
+  URL="$(get_url "$TYPE" "$ID")"
+  printf "%-*s %s\\n" "$PAD_LIMIT" "$NAME" "$URL"
+done < "$1"
