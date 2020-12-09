@@ -20,12 +20,27 @@
 
 DIR_BIN=$(dirname "$0") && source "$DIR_BIN/awx-common"
 
+function usage()
+{
+cat << EOF
+Usage:
+  $BIN
+
+Description
+
+EOF
+exit 0
+}
+
+[[ "$1" =~ ^[-]+(h|help) ]] && usage
+
+
 [[ -z "$1" ]] && die "EMPTY INVENTORY"
 [[ -z "$2" ]] && die "EMPTY GROUP"
 
 INVENTORY="$1"
 GROUP="$2"
-KEY="$3"
+VARIABLE="$3"
 
 JSON=$(mktemp --suffix .json)
 
@@ -40,12 +55,15 @@ YAML=$(mktemp --suffix .yml)
 
 jq -r ".variables" "$JSON" > "$YAML"
 
-if [[ -z "$KEY" ]]
+title2 "GET $VARIABLE FROM GROUP $GROUP IN INVENTORY $INVENTORY"
+code
+if [[ -z "$VARIABLE" ]]
 then
   yq -r '.' "$YAML"
 else
-  yq -r ".$KEY" "$YAML"
+  yq -r ".$VARIABLE" "$YAML"
 fi
+code
 
 rm -f "$YAML"
 rm -f "$JSON"
