@@ -1,4 +1,6 @@
+*.log
+*.bak
 inventory
-project
 job_template
+project
 workflow
