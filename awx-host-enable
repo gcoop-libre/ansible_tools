@@ -20,11 +20,60 @@
 
 DIR_BIN=$(dirname "$0") && source "$DIR_BIN/awx-common"
 
+function usage()
+{
+cat << EOF
+Usage:
+
+$(code)bash
+
+  $BIN HOST [INVENTORY]
+
+$(code)
+
+Enable _host_ in _inventory_.
+
+Example:
+
+  Implicit _inventory_ from _host_:
+
+$(code)bash
+
+  $BIN pve-dev01
+
+$(code)
+
+  Explicit _host_ and _inventory_:
+
+$(code)bash
+
+  $BIN dev01 pve
+
+$(code)
+
+Result:
+
+$(code)
+
+  === ========= ========= =======
+  id    name    inventory enabled
+  === ========= ========= =======
+  123 pve-dev01         2    true
+  === ========= ========= =======
+
+$(code)
+
+EOF
+exit 0
+}
+
+[[ "$1" =~ ^[-]+(h|help) ]] && usage
+
 [[ -z "$1" ]] && die "EMPTY HOST"
 
 HOST="$1"
 
-[[ "$HOST" =~ [a-z]+-.* ]] && PREFIX="${HOST//-*/}"
+[[ "$HOST" =~ [a-zA-Z]+-.* ]] && PREFIX="${HOST//-*/}"
 
 if [[ -z "$PREFIX" ]]
 then
@@ -36,7 +85,10 @@ fi
 
 INVENTORY="${PREFIX,,}"
 
+[[ -z "$2" ]] || INVENTORY="$2"
 [[ -z "$INVENTORY" ]] && die "EMPTY INVENTORY"
 
-echo awx-cli host modify --enabled true -i "$INVENTORY" -n "$HOST" -v
+title2 "ENABLE $HOST IN $INVENTORY INVENTORY"
+code
 awx-cli host modify --enabled true -i "$INVENTORY" -n "$HOST" -v
+code
