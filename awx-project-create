@@ -21,6 +21,21 @@
 
 DIR_BIN=$(dirname "$0") && source "$DIR_BIN/awx-common"
 
+function usage()
+{
+cat << EOF
+Usage:
+  $BIN
+
+Description
+
+EOF
+exit 0
+}
+
+[[ "$1" =~ ^[-]+(h|help) ]] && usage
+
+
 [[ -z "$1" ]] && die "EMPTY PROJECT NAME"
 [[ -z "$2" ]] && die "EMPTY BRANCH"
 BRANCH="$2"
@@ -41,5 +56,5 @@ awx-cli project create               \
   --scm-url "$URL"                   \
   --scm-branch "$BRANCH"             \
   --scm-credential "$SCM_CREDENTIAL" \
-  --scm-clean true                   \
+  --scm-clean false                  \
   --scm-delete-on-update true $AWX_DEBUG && project_update "$NAME"
