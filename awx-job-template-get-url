@@ -20,9 +20,24 @@
 
 DIR_BIN=$(dirname "$0") && source "$DIR_BIN/awx-common"
 
+function usage()
+{
+cat << EOF
+Usage:
+  $BIN
+
+Description
+
+EOF
+exit 0
+}
+
+[[ "$1" =~ ^[-]+(h|help) ]] && usage
+
+
 [[ -z "$1" ]] && die "EMPTY JOB_TEMPLATE"
 
 JOB_TEMPLATE="$1"
 ID="$(job_template_get_id "$JOB_TEMPLATE")"
 
-printf "%s %s\n" "$JOB_TEMPLATE" "$(get_url job_template "$ID")"
+printf "%s %s\\n" "$JOB_TEMPLATE" "$(get_url job_template "$ID")"
