@@ -17,38 +17,64 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 # shellcheck disable=SC1090
+# shellcheck disable=SC2002
 
 DIR_BIN=$(dirname "$0") && source "$DIR_BIN/awx-common"
 
+function usage()
+{
+cat << EOF
+Usage:
+
+$(code)bash
+
+  $BIN [INVENTORY]
+
+$(code)
+
+Disable all enabled hosts in _inventory_.
+
+Example:
+
+$(code)bash
+
+  $BIN pve
+
+$(code)
+
+EOF
+exit 0
+}
+
+[[ "$1" =~ ^[-]+(h|help) ]] && usage
+
 HOST_IDS="$(mktemp)"
-
-function inventory_get_id()
-{
-  awx-cli inventory get \
-    --format id         \
-    --name "$1"
-}
-
-function disable_host()
-{
-  awx-cli host modify   \
-    --enabled false     \
-    --inventory "$1"    \
-    --format human "$2"
-    #| awk '/false/{print "$1,$2"}'
-}
 
 [[ -z "$1" ]] && die "EMPTY INVENTORY"
 INVENTORY="$1"
 INVENTORY_ID="$(inventory_get_id "$INVENTORY")"
+[[ -z "$INVENTORY_ID" ]] && exit 1
 
-awx-cli host list             \
-  --inventory "$INVENTORY_ID" \
-  --enabled true              \
-  --all-pages                 \
-  --format id | tr ' ' '\n'   > "$HOST_IDS"
+host_list_enabled "$INVENTORY_ID" > "$HOST_IDS"
+
+TOTAL="$(cat "$HOST_IDS" | wc -l)"
+
+if [[ "$TOTAL" -eq 0 ]]
+then
+  stderror "NOTHING TO DO"
+  exit 0
+fi
+
+printf "FOUND %0d HOSTS TO DISABLE\\n" "$TOTAL"
 
 while read -r HOST_ID
 do
-  disable_host "$INVENTORY_ID" "$HOST_ID"
+
+  if [[ "$HOST_ID" =~ [0-9]+ ]]
+  then
+    host_disable "$INVENTORY_ID" "$HOST_ID"
+  fi
+
 done < "$HOST_IDS"
+
+rm -f "$HOST_IDS"
