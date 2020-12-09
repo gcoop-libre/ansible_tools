@@ -1,0 +1,82 @@
+#!/bin/bash
+
+# This script comes with ABSOLUTELY NO WARRANTY, use at own risk
+# Copyright (C) 2020 Osiris Alejandro Gomez <osiris@gcoop.coop>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+
+# shellcheck disable=SC1090
+
+DIR_BIN=$(dirname "$0") && source "$DIR_BIN/awx-common"
+
+function usage()
+{
+cat << EOF
+Usage:
+  $BIN
+
+Description
+
+EOF
+exit 0
+}
+
+[[ "$1" =~ ^[-]+(h|help) ]] && usage
+
+
+[[ -z "$1" ]] && die "EMPTY INVENTORY"
+[[ -z "$2" ]] && die "EMPTY GROUP"
+[[ -z "$3" ]] && die "EMPTY VARIABLE"
+[[ -z "$4" ]] && die "EMPTY VALUE"
+
+INVENTORY="$1"
+GROUP="$2"
+VARIABLE="$3"
+NEW_VALUE="$4"
+
+JSON=$(mktemp --suffix .json)
+
+awx-cli group get          \
+  --format json            \
+  --inventory "$INVENTORY" \
+  --name "$GROUP"          > "$JSON" 2>/dev/null
+
+[[ -s "$JSON" ]] || die "EMPTY JSON"
+
+YAML=$(mktemp --suffix .yml)
+
+jq -r ".variables" "$JSON" > "$YAML"
+
+[[ -s "$YAML" ]] || die "EMPTY YAML"
+
+VALUE="$(yq -r ".$VARIABLE" "$YAML")"
+
+if [[ "$VALUE" = "$NEW_VALUE" ]]
+then
+  echo "ALREADY SET $VARIABLE = $NEW_VALUE"
+  exit 0
+else
+
+  jq_yq_modify "$YAML" "$VARIABLE" "$NEW_VALUE"
+
+  [[ -s "$YAML" ]] || die "EMPTY YAML"
+
+  awx-cli group modify       \
+    --inventory "$INVENTORY" \
+    --name "$GROUP"          \
+    --variables "@$YAML"
+fi
+
+rm -f "$YAML"
+rm -f "$JSON"
