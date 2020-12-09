@@ -20,29 +20,62 @@
 
 DIR_BIN=$(dirname "$0") && source "$DIR_BIN/awx-common"
 
+function usage()
+{
+cat << EOF
+Usage:
+
+$(code)bash
+
+  $BIN INVENTORY VARIABLE
+
+$(code)
+
+Get variable value from _inventory_.
+
+Example:
+
+$(code)bash
+
+  $BIN pve subnet
+
+$(code)
+
+EOF
+exit 0
+}
+
+[[ "$1" =~ ^[-]+(h|help) ]] && usage
+
 [[ -z "$1" ]] && die "EMPTY INVENTORY"
 
 INVENTORY="$1"
+VARIABLE="$2"
 
 JSON=$(mktemp --suffix .json)
 
-awx-cli inventory get       \
-  --format json             \
-  --name "$INVENTORY"       > "$JSON" 2>/dev/null
+awx-cli inventory get \
+  --format json       \
+  --name "$INVENTORY" > "$JSON" 2>/dev/null
 
 YAML=$(mktemp --suffix .yml)
 
-[[ -s "$JSON" ]] || exit 1
+[[ -s "$JSON" ]] || die "EMPTY JSON"
 
 jq -r .variables "$JSON" > "$YAML" 2>/dev/null
 
-if [[ -z "$KEY" ]]
+[[ -s "$YAML" ]] || die "EMPTY YAML"
+
+title2 "GET $VARIABLE FROM $INVENTORY INVENTORY"
+code
+if [[ -z "$VARIABLE" ]]
 then
   yq -r . "$YAML"
 else
-  VALUE="$(yq -r ".$KEY" "$YAML" | grep -vi null)"
+  VALUE="$(yq -r ".$VARIABLE" "$YAML" | grep -vi null)"
   echo "$VALUE"
 fi
+code
 
 rm -f "$JSON"
 rm -f "$YAML"
