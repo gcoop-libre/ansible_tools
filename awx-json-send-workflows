@@ -17,8 +17,47 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 # shellcheck disable=SC1090
+# shellcheck disable=SC2002
 
 DIR_BIN=$(dirname "$0") && source "$DIR_BIN/awx-common"
+
+function usage()
+{
+cat << EOF
+Usage:
+
+$(code)bash
+
+  $BIN [JSON]
+
+$(code)
+
+Send to _AWX_ one or multiples _workflow_ and _workflows_ dependencies.
+
+Without file, scan \`.json\` files with \`WORKFLOW_PREFIX\` in
+\`WORKDIR\`.
+
+Default Variables in \`~/.awx-config\`
+
+$(code)ini
+
+  DIR_WORKFLOW: workflow
+  WORKFLOW_PREFIX: wfw
+
+$(code)
+
+Example:
+
+$(code)bash
+
+  $BIN workflow/wfw_pve_v0.1.0.json
+
+$(code)
+EOF
+exit 0
+}
+
+[[ "$1" =~ ^[-]+(h|help) ]] && usage
 
 [[ -d "$DIR_WORKFLOW" ]] || die "NOT FOUND $PWD/$DIR_WORKFLOW"
 
@@ -39,5 +78,8 @@ do
   get_json_workflows "$FILE"
 done | awk '!seen[$0]++' > "$JSON_ALL"
 
-filelist_total "$JSON_ALL" 'workflows'
-filelist_send_all "$JSON_ALL"
+get_json_workflows "workflow/wfw_box_all_v0.1.1.json"
+
+#cat "$JSON_ALL"
+#filelist_total "$JSON_ALL" 'workflows'
+#filelist_send_all "$JSON_ALL"
