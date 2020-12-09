@@ -17,8 +17,28 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 # shellcheck disable=SC1090
+# shellcheck disable=SC2001
 
 DIR_BIN=$(dirname "$0") && source "$DIR_BIN/awx-common"
+
+function usage()
+{
+cat << EOF
+Usage:
+
+$(code)bash
+
+  $BIN JSON
+
+$(code)
+
+Increment semantic version in \`.json\` file.
+
+EOF
+exit 0
+}
+
+[[ "$1" =~ ^[-]+(h|help) ]] && usage
 
 VERSION='bug'
 
@@ -31,17 +51,17 @@ NAME="$(basename "$JSON" .json)"
 NUMBER="$(echo "$NAME" | grep -Eo '[0-9]+\.[0-9]+\.[0-9]+')"
 NEW_NUMBER="$(bump-version "$NUMBER" "$VERSION")"
 
-NEW_NAME="$(echo "$NAME" | sed "s/$NUMBER/$NEW_NUMBER/g")"
+# FIXME NEW_NAME="$(echo "$NAME" | sed "s/$NUMBER/$NEW_NUMBER/g")"
 NEW_JSON="$(echo "$JSON" | sed "s/$NUMBER/$NEW_NUMBER/g")"
 
 LEN="$(wc -L "$JSON" | cut -d' ' -f1)"
 WIDTH="$((LEN+10))"
 
 echo "BUMP VERSION FROM $JSON TO $NEW_JSON"
-BRANCH="$(cat "$JSON" | jq -r '.[] | .scm_branch')"
-NEW_BRANCH="$(echo "$BRANCH" | sed "s/$NUMBER/$NEW_NUMBER/g")"
+# FIXME BRANCH="$(cat "$JSON" | jq -r '.[] | .scm_branch')"
+# FIXME NEW_BRANCH="$(echo "$BRANCH" | sed "s/$NUMBER/$NEW_NUMBER/g")"
 echo
-cat "$JSON" | sed "s/$NUMBER/$NEW_NUMBER/g" > "$NEW_JSON"
+sed "s/$NUMBER/$NEW_NUMBER/g" "$JSON" > "$NEW_JSON"
 
 diff -y --suppress-common-lines -W "$WIDTH" "$JSON" "$NEW_JSON"
 
