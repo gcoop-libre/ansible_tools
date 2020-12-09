@@ -16,8 +16,41 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
+# shellcheck disable=SC1090
+# shellcheck disable=SC2086
 
-[[ -z "$1" ]] && exit 1
+DIR_BIN=$(dirname "$0") && source "$DIR_BIN/awx-common"
+
+function usage()
+{
+cat << EOF
+Usage:
+
+$(code)bash
+
+  $BIN JSON
+
+$(code)
+
+Get dependencies of \`.json\` file and write a \`.version\` file with
+properties.
+
+Example:
+
+$(code)bash
+
+  $BIN workflow/wfw-pve.json
+
+$(code)
+
+EOF
+exit 0
+}
+
+[[ "$1" =~ ^[-]+(h|help) ]] && usage
+
+[[ -z "$1" ]] && die "EMPTY JSON"
+[[ -e "$1" ]] || die "NOT FOUND $1"
 JSON="$1"
 
 function get_dir()
@@ -51,7 +84,7 @@ function get_json()
 
   if [[ ! -e "$JSON" ]]
   then
-    >&2 echo receive $JSON
+    >&2 echo "receive $JSON"
     awx-cli receive --$1 "$2" > "$JSON"
   fi
 }
@@ -63,18 +96,19 @@ awx-json-get-unified-job-name "$1" | while read -r i
 do
   DIR="$(get_dir "$i")"
 
-  get_json $DIR $i
+  get_json "$DIR" "$i"
 
-  printf "%-15s %s\n" "$DIR" "$i"
+  printf "%-15s %s\\n" "$DIR" "$i"
 
   if [[ "$DIR" = 'job_template' ]]
   then
     awx-json-get-project "$DIR/$i.json" | while read -r j
     do
-      get_json project $j
+      get_json project "$j"
       BRANCH="$(get_branch "$j")"
       REVISION="$(get_revision "$j")"
-      printf "%-15s %-40s %15s %s\n" 'project' "$j" "$BRANCH" "$REVISION"
+      printf "%-15s %-40s %15s %s\\n" \
+             'project' "$j" "$BRANCH" "$REVISION"
     done
   else
     get_dependencies "$DIR/$i.json"
@@ -84,12 +118,16 @@ done | sort -u
 
 }
 
+VERSION="$(basename "$JSON" .json).version"
 DEP="$(mktemp)"
+
 get_dependencies "$JSON" > "$DEP"
-grep project       "$DEP"
-grep job_template  "$DEP"
-grep workflow      "$DEP"
+
+grep project       "$DEP" | tee    "$VERSION"
+grep job_template  "$DEP" | tee -a "$VERSION"
+grep workflow      "$DEP" | tee -a "$VERSION"
 
 FILE="$(echo "$JSON" | cut -d/ -f2)"
 
-printf "%-15s %s\n" "$(get_dir "$FILE")" "$(basename "$FILE" .json)"
+printf "%-15s %s\\n" \
+  "$(get_dir "$FILE")" "$(basename "$FILE" .json)" | tee -a "$VERSION"
