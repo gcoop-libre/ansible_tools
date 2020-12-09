@@ -16,18 +16,40 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-[[ -z "$1" ]] && exit 1
-[[ -e "$1" ]] || exit 1
+# shellcheck disable=SC1090
 
-awx-json-get-unified-job-name "$1" \
-  | while read i
+DIR_BIN=$(dirname "$0") && source "$DIR_BIN/awx-common"
+
+function usage()
+{
+cat << EOF
+Usage:
+  $BIN
+
+Description
+
+EOF
+exit 0
+}
+
+[[ "$1" =~ ^[-]+(h|help) ]] && usage
+
+
+[[ -z "$1" ]] && die "EMPTY JSON"
+[[ -e "$1" ]] || die "NOT FOUND $1"
+
+JSON="$1"
+
+awx-json-get-unified-job-name "$JSON" \
+  | while read -r i
     do
       job="workflow/$i.json"
       [[ -e "$job" ]] && continue
 
-      version=$(bump-version $i bug)
+      number="$(echo "$i" | grep -Eo '[0-9\.]+')"
+      version=$(bump-version "$number" bug)
       [[ -z "$version" ]] && continue
 
-      echo "update $i to $version in $1"
-      #sed -i "s/$i/$v/g" $1
+      echo "update $number to $version in $JSON"
+      sed -i "s/$number/$version/g" "$JSON"
     done
