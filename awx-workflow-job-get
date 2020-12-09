@@ -20,6 +20,21 @@
 
 DIR_BIN=$(dirname "$0") && source "$DIR_BIN/awx-common"
 
+function usage()
+{
+cat << EOF
+Usage:
+  $BIN
+
+Description
+
+EOF
+exit 0
+}
+
+[[ "$1" =~ ^[-]+(h|help) ]] && usage
+
+
 DURATION='00:00'
 END='00:00'
 
@@ -31,7 +46,7 @@ JSON=$(mktemp --suffix .json)
 
 awx-cli workflow_job get   \
   --format json            \
-  $WORKFLOW_JOB_ID         > "$JSON" 2>/dev/null
+  "$WORKFLOW_JOB_ID"       > "$JSON" 2>/dev/null
 
 [[ -s "$JSON" ]] || die "EMPTY JSON"
 
@@ -44,9 +59,10 @@ URL="$AWX_CFG_HOST/#/workflows/$WORKFLOW_JOB_ID"
 if [[ ! -z "$FINISHED" ]]
 then
   END="$(date --date "$FINISHED" '+%H:%M')"
-  DURATION="$(timediff "$END" "$(echo $START | cut -d' ' -f2)")"
+  DURATION="$(timediff "$END" "$(echo "$START" | cut -d' ' -f2)")"
 fi
 
-printf "%20s %5s %17s %5s %s\n" "$NAME" "$DURATION" "$START" "$END" "$URL"
+printf "%20s %5s %17s %5s %s\\n" \
+       "$NAME" "$DURATION" "$START" "$END" "$URL"
 
 rm -f "$JSON"
