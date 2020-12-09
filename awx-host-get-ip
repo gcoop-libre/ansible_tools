@@ -20,6 +20,28 @@
 
 DIR_BIN=$(dirname "$0") && source "$DIR_BIN/awx-common"
 
+function usage()
+{
+cat << EOF
+Usage:
+
+  $BIN [HOST]
+
+Get IP Address from \`ansible_host\` in host_vars of AWX.
+
+Example:
+
+  $BIN gateway
+
+  10.1.2.1
+
+EOF
+exit 0
+}
+
+[[ "$1" =~ ^[-]+(h|help) ]] && usage
+
+
 [[ -z "$1" ]] && die "EMPTY HOST"
 
 HOST="$1"
