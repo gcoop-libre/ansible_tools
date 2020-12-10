@@ -19,9 +19,33 @@
 # shellcheck disable=SC1090
 
 DIR_BIN=$(dirname "$0") && source "$DIR_BIN/awx-common"
-                                                                        
-DOMAIN="$(hostname -d)"
-HOST="git.$DOMAIN"
+
+function usage()
+{
+cat << EOF
+Usage:
+
+\`\`\`bash
+
+  $BIN
+
+\`\`\`
+
+List projects from Gitlab API.
+
+Example:
+
+\`\`\`bash
+
+  $BIN
+
+\`\`\`
+
+EOF
+exit 0
+}
+
+[[ "$1" =~ ^[-]+(h|help) ]] && usage
 
 [[ ! -z "$GITLAB_CI_TOKEN" ]] && TOKEN="$GITLAB_CI_TOKEN"
 [[ -z "$TOKEN" ]] && die "NOT FOUND TOKEN"
@@ -32,7 +56,7 @@ function get_projects()
 local PAGE=1
 [[ ! -z "$1" ]] && PAGE="$1"
 
-URL="https://$HOST/api/v4/projects?page=$PAGE&per_page=100&membership=true"
+URL="$SCM_URL_API/projects?page=$PAGE&per_page=100&membership=true"
 JSON="git-projects-${PAGE}.json"
 
 curl -s -k --header "PRIVATE-TOKEN: $TOKEN" "$URL" | jq -r > "$JSON"
@@ -41,7 +65,8 @@ MSG="$(jq -r .message "$JSON")"
 
 [[ "$MSG" =~ ^401.* ]] && die "$MSG"
 
-jq -r '.' "$JSON" | jq -r '.[] | "\(.name) \(.ssh_url_to_repo) \(.description)"'
+jq -r '.' "$JSON" \
+  | jq -r '.[] | "\(.name) \(.ssh_url_to_repo) \(.description)"'
 
 }
 
