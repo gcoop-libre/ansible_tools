@@ -16,6 +16,28 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
+BIN="$(basename "$0")"
+
+function usage()
+{
+cat << EOF
+Usage:
+
+\`\`\`bash
+
+  $BIN
+
+\`\`\`
+
+Update to last tag in \`version:\` of each repository in
+\`requirements.yml\`.
+
+EOF
+exit 0
+}
+
+[[ "$1" =~ ^[-]+(h|help) ]] && usage
+
 cd "$PWD" || exit 1
 YML='requirements.yml'
 
@@ -23,7 +45,7 @@ YML='requirements.yml'
 
 TMP=$(mktemp)
 
-grep 'src:' "$YML" | awk '{print $3}' | while read REPO
+grep 'src:' "$YML" | awk '{print $3}' | while read -r REPO
 do
   LAST_TAG=$(git-ls-remote-tags "$REPO" | head -1)
   NAME=$(grep -A3 "$REPO" "$YML" | grep name: | awk '{print $2}')
