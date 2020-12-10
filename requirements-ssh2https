@@ -43,5 +43,5 @@ GITLAB_HTTPS=$(echo "$GITLAB_GIT_URL" | grep -ow 'https')
 
 GITLAB_TOKEN=$(echo "$GITLAB_GIT_URL" | cut -d@ -f1 | cut -d/ -f3)
 
-sed -i "s/src: git@/src: https:\/\/$GITLAB_TOKEN@/g" "$ROLES_SRC" \
+sed -i "s/src: git@/src: https:\\/\\/$GITLAB_TOKEN@/g" "$ROLES_SRC" \
   && log "$PWD/$ROLES_SRC UPDATED"
