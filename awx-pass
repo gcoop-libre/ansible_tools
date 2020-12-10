@@ -20,6 +20,34 @@
 
 DIR_BIN=$(dirname "$0") && source "$DIR_BIN/awx-common"
 
+function usage()
+{
+cat << EOF
+Usage:
+
+$(code)bash
+
+  $BIN ENVIRONMENT
+
+$(code)
+
+Get _AWX_ credentials for environment according \`~/.awx-config\`.
+
+Example:
+
+$(code)bash
+
+  $BIN develop
+
+$(code)
+
+EOF
+exit 0
+}
+
+[[ "$1" =~ ^[-]+(h|help) ]] && usage
+
+
 if [[ ! -z "$ANSIBLE_PASS_PASSWORD_STORE_DIR" ]]
 then
   export PASSWORD_STORE_DIR="$ANSIBLE_PASS_PASSWORD_STORE_DIR"
@@ -31,7 +59,7 @@ ENV="${1^^}"
 USR="${ENV}_USER"
 AWX_ENV="$(echo "${!ENV}")"
 AWX_USER="$(echo "${!USR}")"
-AWX_PASS=$(pass "$PASS_PREFIX/$AWX_ENV/awx/admin_password")
+AWX_PASS=$(pass "$PASS_PREFIX/$AWX_ENV/awx/${AWX_USER}_password")
 
 [[ -z "$AWX_PASS" ]] && die "EMPTY AWX_PASS"
 echo "$AWX_PASS" | xclip -sel clip
