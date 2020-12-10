@@ -21,13 +21,33 @@
 
 DIR_BIN=$(dirname "$0") && source "$DIR_BIN/awx-common"
 
+function usage()
+{
+cat << EOF
+Usage:
+
+\`\`\`bash
+
+  $BIN
+
+\`\`\`
+
+Send to _AWX_ al \`.json\` files (_projects_, _job_templates_ and
+_workflows_).
+
+EOF
+exit 0
+}
+
+[[ "$1" =~ ^[-]+(h|help) ]] && usage
+
 JSON_LIST="$(mktemp)"
 
 filelist_projects      >  "$JSON_LIST"
 filelist_job_templates >> "$JSON_LIST"
 filelist_workflows     >> "$JSON_LIST"
 
-cat "$JSON_LIST" | while read -r FILE
-do
-  echo awx-cli send -vv "$FILE" | bash
-done
+wait_seconds JSONs
+filelist_send_all         "$JSON_LIST"
+
+rm -f "$JSON_LIST"
