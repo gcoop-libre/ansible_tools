@@ -16,6 +16,27 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
+BIN="$(basename "$0")"
+
+function usage()
+{
+cat << EOF
+Usage:
+
+\`\`\`bash
+
+  $BIN
+
+\`\`\`
+
+List remote tags of git repository.
+
+EOF
+exit 0
+}
+
+[[ "$1" =~ ^[-]+(h|help) ]] && usage
+
 REPO="$1"
 
 if [[ -z "$1" ]]
