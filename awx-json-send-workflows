@@ -78,8 +78,5 @@ do
   get_json_workflows "$FILE"
 done | awk '!seen[$0]++' > "$JSON_ALL"
 
-get_json_workflows "workflow/wfw_box_all_v0.1.1.json"
-
-#cat "$JSON_ALL"
-#filelist_total "$JSON_ALL" 'workflows'
-#filelist_send_all "$JSON_ALL"
+filelist_total "$JSON_ALL" 'workflows'
+filelist_send_all "$JSON_ALL"
