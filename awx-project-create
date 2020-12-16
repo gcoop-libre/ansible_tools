@@ -56,5 +56,5 @@ awx-cli project create               \
   --scm-url "$URL"                   \
   --scm-branch "$BRANCH"             \
   --scm-credential "$SCM_CREDENTIAL" \
-  --scm-clean false                  \
-  --scm-delete-on-update true $AWX_DEBUG && project_update "$NAME"
+  --scm-clean true                   \
+  --scm-delete-on-update false $AWX_DEBUG && project_update "$NAME"
