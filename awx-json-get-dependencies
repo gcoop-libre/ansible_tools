@@ -118,7 +118,7 @@ done | sort -u
 
 }
 
-VERSION="$(basename "$JSON" .json).version"
+VERSION="$DIR_WORKFLOW/$(basename "$JSON" .json).version"
 DEP="$(mktemp)"
 
 get_dependencies "$JSON" > "$DEP"
@@ -126,8 +126,8 @@ get_dependencies "$JSON" > "$DEP"
 grep project       "$DEP" | tee    "$VERSION"
 grep job_template  "$DEP" | tee -a "$VERSION"
 grep workflow      "$DEP" | tee -a "$VERSION"
-
+#echo $JSON
 FILE="$(echo "$JSON" | cut -d/ -f2)"
-
+#echo $FILE
 printf "%-15s %s\\n" \
   "$(get_dir "$FILE")" "$(basename "$FILE" .json)" | tee -a "$VERSION"
