@@ -20,12 +20,27 @@
 
 DIR_BIN=$(dirname "$0") && source "$DIR_BIN/awx-common"
 
+function usage()
+{
+cat << EOF
+Usage:
+  $BIN
+
+Description
+
+EOF
+exit 0
+}
+
+[[ "$1" =~ ^[-]+(h|help) ]] && usage
+
+
 [[ -z "$1" ]] && die "EMPTY HOST"
-[[ -z "$2" ]] && die "EMPTY KEY"
+[[ -z "$2" ]] && die "EMPTY VARIABLE"
 [[ -z "$3" ]] && die "EMPTY VALUE"
 
 HOST="$1"
-KEY="$2"
+VARIABLE="$2"
 NEW_VALUE="$3"
 PREFIX="${HOST//-*/}"
 INVENTORY="${PREFIX,,}"
@@ -37,22 +52,35 @@ awx-cli host get            \
   --inventory "$INVENTORY"  \
   --name "$HOST"            > "$JSON" 2>/dev/null
 
-YAML=$(mktemp --suffix .yml)
+YAML="$(mktemp --suffix .yml)"
 
-[[ -s "$JSON" ]] || exit 1
+[[ -s "$JSON" ]] || die "EMPTY JSON"
 
-jq -r .variables "$JSON" > "$YAML" 2>/dev/null
+jq -r .variables "$JSON" | yq -r . > "$YAML" 2>/dev/null
 
-VALUE="$(yq -r ".$KEY" "$YAML" | grep -vi null)"
+[[ -s "$YAML" ]] || die "EMPTY YAML"
 
-[[ "$VALUE" = "$NEW_VALUE" ]] && success "ALREADY SET $KEY = $NEW_VALUE"
+VALUE="$(yq -r ".$VARIABLE" "$YAML" | grep -vi null)"
 
-jq -r ".$KEY = \"$NEW_VALUE\"" "$YAML" | sponge "$YAML" || die "REPLACE"
+title2 "MODIFY $VARIABLE WITH $NEW_VALUE IN $HOST FROM $INVENTORY INVENTORY"
 
-awx-cli host modify        \
-  --inventory "$INVENTORY" \
-  --variables "@$YAML"     \
-  -n "$HOST"               || die "MODIFY"
-:
+code
+if [[ "$VALUE" = "$NEW_VALUE" ]]
+then
+  echo "ALREADY SET $VARIABLE = $NEW_VALUE"
+else
+
+  jq_yq_modify "$YAML" "$VARIABLE" "$NEW_VALUE"
+
+  [[ -s "$YAML" ]] || die "EMPTY YAML"
+
+  awx-cli host modify        \
+    --inventory "$INVENTORY" \
+    --name "$HOST"           \
+    --variables "@$YAML"
+
+fi
+code
+
 rm -f "$JSON"
 rm -f "$YAML"

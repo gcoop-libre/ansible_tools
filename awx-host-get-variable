@@ -20,6 +20,43 @@
 
 DIR_BIN=$(dirname "$0") && source "$DIR_BIN/awx-common"
 
+function usage()
+{
+cat << EOF
+Usage:
+
+$(code)bash
+
+  $BIN HOST [INVENTORY]
+
+$(code)
+
+Get _host_ variables from _inventory_
+
+Example:
+
+  Implicit _inventory_ from _host_:
+
+$(code)bash
+
+  $BIN pve-dev01
+
+$(code)
+
+  Explicit _host_ and _inventory_:
+
+$(code)bash
+
+  $BIN dev01 pve
+
+$(code)
+
+EOF
+exit 0
+}
+
+[[ "$1" =~ ^[-]+(h|help) ]] && usage
+
 [[ -z "$1" ]] && die "EMPTY HOST"
 
 HOST="$1"
@@ -36,17 +73,21 @@ awx-cli host get            \
 
 YAML=$(mktemp --suffix .yml)
 
-[[ -s "$JSON" ]] || exit 1
+[[ -s "$JSON" ]] || die "EMPTY JSON"
 
 jq -r .variables "$JSON" > "$YAML" 2>/dev/null
 
+code
 if [[ -z "$KEY" ]]
 then
+  title2 "GET ALL VARIABLES IN $HOST FROM $INVENTORY INVENTORY"
   yq -r . "$YAML"
 else
+  title2 "GET $KEY VARIABLE IN $HOST FROM $INVENTORY INVENTORY"
   VALUE="$(yq -r ".$KEY" "$YAML" | grep -vi null)"
   echo "$VALUE"
 fi
+code
 
 rm -f "$JSON"
 rm -f "$YAML"

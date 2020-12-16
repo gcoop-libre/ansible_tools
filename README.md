@@ -2,7 +2,7 @@
 
 ## overview
 
-Repository of usefull scripts for Ansible DevOps.
+Repository of useful scripts for Ansible DevOps.
 
 ## install
 
@@ -26,97 +26,11 @@ Add to ``~/.bashrc``:
 
 ```
 
-## scripts
+## commands
 
-### ``git-ls-remote-tags``
-
-Show tags of git repository.
-
-```bash
-
-  git-ls-remote-tags https://github.com/gcoop-libre/ansible_tools.git
-  v0.1.3
-  v0.1.2
-  v0.1.1
-  v0.1.0
-
-```
-
-### ``git-ls-remote-heads``
-
-Show heads of git repository.
-
-```bash
-
-  git-ls-remote-heads https://github.com/gcoop-libre/ansible_tools.git
-  master
-  develop
-
-```
-
-### ``requirements-version-update``
-
-Update ``version:`` with last tag of ``src:`` in ``requirements.yml``
-
-Before update ``requirements.yml``
-
-```yaml
-
-  - src: https://github.com/gcoop-libre/ansible-role-ssh
-    scm: git
-    name: gcoop-libre.ssh
-    branch: v0.1.0
-
-```
-
-Update ``requirements.yml`` in current directory:
-
-```bash
-
-  requirements-version-update
-
-```
-
-After update ``requirements.yml``:
-
-```yaml
-
-  - src: https://github.com/gcoop-libre/ansible-role-ssh
-    scm: git
-    version: v0.4.4
-    name: gcoop-libre.ssh
-```
-
-### ``awx-config``
-
-Overwrite ``~/.tower_cli.cfg`` with enviroment config using
-``~/.awx-config`` and ``pass`` command for retrieve passwords to use
-with ``awx-cli``.
-
-First copy ``.awx-config-example`` to ``~/.awx-config``, customize
-variables according your enviroment.
-
-Use:
-
-```bash
-
-  awx-config develop
-
-```
-
-This command, read ``awx-common`` to retrieve variables and common
-functions of other *AWX tools* scripts.
-
-### ``awx-project-get-variable``
-
-Return value of variable of project
-
-```bash
-
-  awx-project-get-variable inventory_v0.2.2 scm_revision
-  b97352fcad54110d3a1bb0882d0a238d59d3e926
-
-```
+- [awx commands](awx-help.md)
+- [git commands](git-help.md)
+- [requirements commands](requirements-help.md)
 
 ## License
 
@@ -125,5 +39,5 @@ GNU General Public License, GPLv3.
 ## Author Information
 
 This role was created in 2019 by
- [Osiris Alejandro Gomez](http://osiux.com/), worker cooperative of
- [gcoop Cooperativa de Software Libre](http://www.gcoop.coop/).
+ [Osiris Alejandro Gomez](https://osiux.com/), worker cooperative of
+ [gcoop Cooperativa de Software Libre](https://www.gcoop.coop/).

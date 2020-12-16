@@ -1,0 +1,6 @@
+*.log
+*.bak
+inventory
+job_template
+project
+workflow

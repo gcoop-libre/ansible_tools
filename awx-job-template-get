@@ -1,0 +1,68 @@
+#!/bin/bash
+
+# This script comes with ABSOLUTELY NO WARRANTY, use at own risk
+# Copyright (C) 2020 Osiris Alejandro Gomez <osiris@gcoop.coop>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+
+# shellcheck disable=SC1090
+
+DIR_BIN=$(dirname "$0") && source "$DIR_BIN/awx-common"
+
+function usage()
+{
+cat << EOF
+Usage:
+  $BIN
+
+Description
+
+EOF
+exit 0
+}
+
+[[ "$1" =~ ^[-]+(h|help) ]] && usage
+
+
+DURATION='00:00'
+END='00:00'
+
+[[ -z "$1" ]] && die "EMPTY WORKFLOW JOB"
+
+WORKFLOW_JOB_ID="$1"
+
+JSON=$(mktemp --suffix .json)
+
+awx-cli job get      \
+  --format json      \
+  "$WORKFLOW_JOB_ID" > "$JSON" 2>/dev/null
+
+[[ -s "$JSON" ]] || die "EMPTY JSON"
+
+NAME="$(jq -r '.name' "$JSON")"
+STARTED="$(jq -r '.started' "$JSON")"
+FINISHED="$(jq -r '.finished' "$JSON")"
+START="$(date --date "$STARTED" '+%F %H:%M')"
+URL="$AWX_CFG_HOST/#/workflows/$WORKFLOW_JOB_ID"
+
+if [[ ! -z "$FINISHED" ]]
+then
+  END="$(date --date "$FINISHED" '+%H:%M')"
+  DURATION="$(timediff "$END" "$(echo "$START" | cut -d' ' -f2)")"
+fi
+
+printf "%s %5s %17s %5s %s\\n" \
+       "$NAME" "$DURATION" "$START" "$END" "$URL"
+
+rm -f "$JSON"

@@ -20,6 +20,21 @@
 
 DIR_BIN=$(dirname "$0") && source "$DIR_BIN/awx-common"
 
+function usage()
+{
+cat << EOF
+Usage:
+  $BIN
+
+Description
+
+EOF
+exit 0
+}
+
+[[ "$1" =~ ^[-]+(h|help) ]] && usage
+
+
 TEAM="$DEFAULT_TEAM"
 
 [[ -z "$1" ]] && die 'EMPTY NAME'
@@ -27,6 +42,6 @@ NAME="$1"
 
 [[ ! -z "$2" ]] && TEAM="$2"
 
-[[ -z "$2" ]] && die "EMPTY TEAM"
+[[ -z "$TEAM" ]] && die "EMPTY TEAM"
 
 grant_job_template "$NAME" "$TEAM"

@@ -16,25 +16,40 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
+# shellcheck disable=SC2016
+# shellcheck disable=SC2028
+# shellcheck disable=SC2034
+# shellcheck disable=SC2046
+# shellcheck disable=SC2086
+
 RED="$(tput setaf 196)"
 GREEN="$(tput setaf 46)"
 DIR_REAL="$(realpath "$DIR_BIN")"
 DIR_BASE="$(dirname "$DIR_REAL")"
 AWX_CONFIG="$HOME/.awx-config"
+BIN=$(basename "$0")
 
 die ()
 {
-  printf "%s\n" "${RED}[ERROR] $1 $NORMAL" && exit 1
+  printf "%s\\n" "${RED}[ERROR] $1 $NORMAL" && exit 1
 }
 
 log ()
 {
-  printf "%s\n" "${NORMAL}[INFO] $1 $NORMAL"
+  local NOW
+  NOW="$(date +'%F %T')"
+  printf "%s\\n" "${NORMAL}${NOW} [INFO] $1 $NORMAL"
+}
+
+log_send_file()
+{
+  MAX_COLS="$(tput cols)"
+  echo "SEND $1 to $AWX_CFG_HOST *****"
 }
 
 success ()
 {
-  printf "%s\n" "${GREEN}[OK] $1 $NORMAL" && exit 1
+  printf "%s\\n" "${GREEN}[OK] $1 $NORMAL" && exit 0
 }
 
 stderror ()
@@ -60,12 +75,46 @@ do
     | sed 's/awx-cli/ansibel-tower-cli/g'
 done
 
+markdown()
+{
+cat << EOF
+---
+fontsize: 8pt
+code-block-font-size: 8pt
+classoption: landscape
+---
+EOF
+}
+
+code()
+{
+  printf "\\n\\n%s\\n\\n" '```'
+}
+
+title1()
+{
+  printf "\\n# %s\\n\\n" "$1"
+}
+
+title2()
+{
+  printf "\\n## %s\\n\\n" "$1"
+}
+
+title3()
+{
+  printf "\\n### %s\\n\\n" "$1"
+}
+
 get_file_list()
 {
+  local DIR
+  DIR='.'
 
   [[ -z "$1" ]] && exit 1
+  [[ ! -z "$2" ]] && DIR="$2"
 
-  find . -type f -iname "$1" | cut -c 3- | while read -r FILE
+  find -L "$DIR" -type f -iname "$1" | while read -r FILE
   do
     echo "$FILE"
   done
@@ -75,22 +124,54 @@ get_file_list()
 filelist_projects()
 {
 
-  get_file_list 'ansible*.json'
+  get_file_list "$PROJECT_PREFIX*.json" "$DIR_PROJECT"
+
+}
+
+filelist_inventory()
+{
+  [[ -d "$DIR_INVENTORY" ]] || die "NOT FOUND $PWD/$DIR_INVENTORY"
+
+  get_file_list '*.json' "$DIR_INVENTORY"
 
 }
 
 filelist_job_templates()
 {
 
-  get_file_list 'job_template*.json'
+  get_file_list "$JOB_TEMPLATE_PREFIX*.json" "$DIR_JOB_TEMPLATE"
 
 }
 
 filelist_workflows()
 {
 
-  get_file_list 'workflow*.json'
+  get_file_list "$WORKFLOW_PREFIX*.json" "$DIR_WORKFLOW"
 
+}
+
+filelist_send_all()
+{
+  local FILE
+
+  [[   -z "$1" ]] && exit 1
+  [[ ! -e "$1" ]] && exit 1
+
+  while read -r FILE
+  do
+    log_send_file "$FILE"
+    echo awx-cli send $AWX_DEBUG "$FILE" | bash
+  done < "$1"
+
+}
+
+grant_inventory()
+{
+  awx-cli role grant \
+    -v               \
+    --type admin     \
+    --team "$2"      \
+    --inventory "$1"
 }
 
 grant_project()
@@ -143,6 +224,35 @@ host_associate()
     --group "$2"
 }
 
+host_list_enabled()
+{
+
+awx-cli host list  \
+  --inventory "$1" \
+  --enabled true   \
+  --all-pages      \
+  --format id      \
+  | tr ' ' '\n'    \
+  | grep -vE '^$'
+
+}
+
+inventory_get_id()
+{
+  awx-cli inventory get \
+    --format id         \
+    --name "$1"
+}
+
+host_disable()
+{
+  awx-cli host modify   \
+    --enabled false     \
+    --inventory "$1"    \
+    --format human "$2"
+}
+
+
 log_ansible_proxmox_kvm()
 {
 
@@ -156,7 +266,7 @@ log_ansible_proxmox_kvm()
     HOST="$(echo "$LINE" | awk '{print $4}')"
     VMID="$(echo "$LINE" | grep -oE 'vmid=[0-9]+')"
     STATE="$(echo "$LINE" | grep -oE 'state=[a-z]+')"
-    printf "%s %s ansible-proxmox_kvm: %s %s\n" "$DATE" "$HOST" "$VMID" "$STATE"
+    printf "%s %s ansible-proxmox_kvm: %s %s\\n" "$DATE" "$HOST" "$VMID" "$STATE"
   done
 
 }
@@ -196,7 +306,7 @@ awx_ad_hoc_shell_launch()
 
 awx_ad_hoc_shell_footer()
 {
-  echo "\n\`\`\`"
+  echo "\\n\`\`\`"
 }
 
 awx_ad_hoc_shell()
@@ -209,3 +319,117 @@ awx_ad_hoc_shell_footer
 
 }
 
+awx_cfg_get_host()
+{
+
+grep host "$HOME/.tower_cli.cfg" | cut -d= -f2 | tr -d ' '
+
+}
+
+wait_seconds()
+{
+  local S
+  S=5
+
+  [[ ! -z "$2" ]] && S="$2"
+
+  for i in $(seq "$S" -1 0)
+  do
+    echo "wait $i seconds to find and send all $1... "
+    sleep 1
+  done
+}
+
+filelist_total()
+{
+  local TOTAL
+
+  TOTAL="$(wc -l "$1" | cut -d' ' -f1)"
+  printf "found %s %s\\n" "$TOTAL" "$2"
+}
+
+function get_json()
+{
+  local JSON
+  local NAME
+  local NOW
+  local BAK
+
+  mkdir -p "$1"
+  NAME="$(echo "$2" | tr '/' '-')"
+  JSON="$1/$NAME.json"
+  NOW="$(date +%s)"
+  BAK="$1/$NAME.json.$NOW.bak"
+
+  if [[ -e "$JSON" ]]
+  then
+    stderror "ALREADY EXISTS $JSON"
+    echo "BACKUP $JSON TO $BAK"
+    mv "$JSON" "$BAK"
+  fi
+
+  >&2 echo "RECEIVE $JSON"
+  awx-cli receive --$1 "$2" > "$JSON"
+}
+
+json_get_unified_job_name()
+{
+  local JQ
+
+  JQ='.[] | .asset_relation | .workflow_nodes | .[] | .unified_job_name'
+  jq -r "$JQ" "$1"
+}
+
+function get_json_workflows()
+{
+  local TMP
+
+  json_get_unified_job_name "$1" | grep "$WORKFLOW_PREFIX" \
+    | while read -r i
+      do
+        json_get_unified_job_name "$DIR_WORKFLOW/$i.json" \
+          | grep "$WORKFLOW_PREFIX"  \
+          | while read -r j
+            do
+              json_get_unified_job_name "$DIR_WORKFLOW/$j.json"
+              echo "$DIR_WORKFLOW/$j.json"
+            done
+        echo "$DIR_WORKFLOW/$i.json"
+      done
+  echo "$DIR_WORKFLOW/$1.json"
+}
+
+function get_url()
+{
+  local P
+
+  [[ "$1" = 'project'      ]] && P='#/projects/'
+  [[ "$1" = 'job_template' ]] && P='#/templates/job_template'
+  [[ "$1" = 'workflow'     ]] && P='#/templates/workflow_job_template'
+
+  printf "%s/%s/%s" "$AWX_CFG_HOST" "$P" "$2"
+}
+
+project_get_id()
+{
+  [[ -z "$1" ]] || awx-cli project get -n "$1" -f id
+}
+
+job_template_get_id()
+{
+  [[ -z "$1" ]] || awx-cli job_template get -n "$1" -f id
+}
+
+jq_yq_modify()
+{
+  jq empty "$1" 2>/dev/null
+
+  if [[ "$?" -eq 0 ]]
+  then
+    jq -r ".$2=\"$3\"" "$1" | sponge "$1"
+  else
+    yq -r ".$2=\"$3\"" "$1" | sponge "$1"
+  fi
+}
+
+AWX_CFG_HOST="$(awx_cfg_get_host)"

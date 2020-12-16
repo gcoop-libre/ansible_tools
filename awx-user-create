@@ -20,6 +20,21 @@
 
 DIR_BIN=$(dirname "$0") && source "$DIR_BIN/awx-common"
 
+function usage()
+{
+cat << EOF
+Usage:
+  $BIN
+
+Description
+
+EOF
+exit 0
+}
+
+[[ "$1" =~ ^[-]+(h|help) ]] && usage
+
+
 [[ -z "$1" ]] && die "EMPTY USERNAME"
 
 FIRST_NAME="$(echo "$1" | cut -c -1)"
