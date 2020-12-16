@@ -392,11 +392,11 @@ function get_json_workflows()
           | while read -r j
             do
               json_get_unified_job_name "$DIR_WORKFLOW/$j.json"
-              echo "$j"
+              echo "$DIR_WORKFLOW/$j.json"
             done
-        echo "$i"
+        echo "$DIR_WORKFLOW/$i.json"
       done
-  echo "$1"
+  echo "$DIR_WORKFLOW/$1.json"
 }
 
 function get_url()
