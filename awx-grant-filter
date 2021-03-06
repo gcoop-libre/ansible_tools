@@ -1,0 +1,93 @@
+#!/bin/bash
+
+# This script comes with ABSOLUTELY NO WARRANTY, use at own risk
+# Copyright (C) 2021 Osiris Alejandro Gomez <osiris@gcoop.coop>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+
+# shellcheck disable=SC1090
+
+DIR_BIN=$(dirname "$0") && source "$DIR_BIN/awx-common"
+
+function usage()
+{
+cat << EOF
+Usage:
+
+\`\`\`bash
+
+  $BIN ROLE_FILE TEAM_NAME
+
+\`\`\`
+
+Filter grants from ROLE_FILE and generate awx-cli role grant
+
+Example:
+
+\`\`\`bash
+
+  $BIN role/devops.csv support
+
+\`\`\`
+
+EOF
+exit 0
+}
+
+[[ "$1" =~ ^[-]+(h|help) ]] && usage
+
+[[ -z "$1" ]] && die "EMPTY ROLE FILE"
+[[ -z "$2" ]] && die "EMPTY TEAM NAME"
+[[ -e "$1" ]] || die "NOT FOUND FILE $1"
+
+TMP1="$(mktemp)"
+TMP2="$(mktemp)"
+ROLE="$1"
+TEAM="$2"
+
+CLI_PREFIX="awx-cli role grant -v --team $TEAM --type "
+
+for i in credential inventory project job_template workflow
+do
+
+  awk "/^$i/" "$ROLE" > "$TMP1"
+  REAL_PATH="$(realpath "$ROLE")"
+  DIR="$(dirname "$REAL_PATH")"
+  EXCLUDE="$DIR/$TEAM.$i.exclude"
+
+  if [[ -e "$EXCLUDE" ]]
+  then
+    grep -vf "$EXCLUDE" "$TMP1" > "$TMP2"
+  else
+    cp "$TMP1" "$TMP2"
+  fi
+
+  PREVIOUS=''
+
+  while read -r RESOURCE_TYPE RESOURCE_NAME TYPE
+  do
+
+    if [[ "$RESOURCE_TYPE" != "$PREVIOUS" ]]
+    then
+      printf "\\n## %s\\n\\n" "$RESOURCE_TYPE"
+    fi
+
+    printf "%s %-10s %-15s %s\\n" \
+           "$CLI_PREFIX" "$TYPE" "--$RESOURCE_TYPE" "$RESOURCE_NAME"
+
+    PREVIOUS="$RESOURCE_TYPE"
+
+  done < "$TMP2"
+
+done
