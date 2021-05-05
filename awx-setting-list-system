@@ -26,13 +26,13 @@ function usage()
 cat << EOF
 Usage:
 
-$(code)bash
+\`\`\`bash
 
   $BIN
 
-$(code)
+\`\`\`
 
-List _AWX_ setting
+List _AWX_ settings
 
 EOF
 exit 0
