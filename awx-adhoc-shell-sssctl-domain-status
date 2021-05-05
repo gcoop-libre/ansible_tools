@@ -45,14 +45,14 @@ LIMIT="$2"
 
 COMMAND="/usr/sbin/sssctl domain-status $DEFAULT_IPA_DOMAIN"
 
-printf "## Ejecutar sssctl status en %s" "$LIMIT"
+printf "## Execute sssctl status in %s" "$LIMIT"
 echo
 echo "\`\`\`"
 echo
-echo "  # awx-ad-hoc-shell $INVENTORY $LIMIT $COMMAND"
+echo "  # awx-adhoc-shell $INVENTORY $LIMIT $COMMAND"
 echo
 
-awx-ad-hoc-shell "$INVENTORY" "$LIMIT" "$COMMAND"
+awx-adhoc-shell "$INVENTORY" "$LIMIT" "$COMMAND"
 
 echo
 echo "\`\`\`"
