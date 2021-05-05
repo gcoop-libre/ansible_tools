@@ -8,17 +8,13 @@ classoption: landscape
 
 Usage:
 
-
-
 ```bash
 
   git-help
 
-
-
 ```
 
-Generate a markdown output for usage of each command script
+Generate a _markdown_ output for usage of each command _script_
 
 
 ## `git-ls-remote-heads`
