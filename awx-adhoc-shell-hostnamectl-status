@@ -24,9 +24,22 @@ function usage()
 {
 cat << EOF
 Usage:
-  $BIN
 
-Description
+\`\`\`bash
+
+  $BIN INVENTORY LIMIT
+
+\`\`\`
+
+Execute \`hostnamectl status\`.
+
+Example:
+
+\`\`\`bash
+
+  $BIN wst dev
+
+\`\`\`
 
 EOF
 exit 0
@@ -43,14 +56,14 @@ LIMIT="$2"
 
 COMMAND="/usr/bin/hostnamectl status"
 
-printf "## Ejecutar hostnamectl status en %s" "$LIMIT"
+printf "## Execute hostnamectl status in %s" "$LIMIT"
 echo
 echo "\`\`\`"
 echo
-echo "  # awx-ad-hoc-shell $INVENTORY $LIMIT $COMMAND"
+echo "  # awx-adhoc-shell $INVENTORY $LIMIT $COMMAND"
 echo
 
-awx-ad-hoc-shell "$INVENTORY" "$LIMIT" "$COMMAND"
+awx-adhoc-shell "$INVENTORY" "$LIMIT" "$COMMAND"
 
 echo
 echo "\`\`\`"
