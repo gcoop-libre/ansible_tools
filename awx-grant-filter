@@ -70,7 +70,7 @@ do
   then
     grep -vf "$EXCLUDE" "$TMP1" > "$TMP2"
   else
-    cp "$TMP1" "$TMP2"
+    cp -v "$TMP1" "$TMP2"
   fi
 
   PREVIOUS=''
@@ -83,11 +83,16 @@ do
       printf "\\n## %s\\n\\n" "$RESOURCE_TYPE"
     fi
 
-    printf "%s %-10s %-15s %s\\n" \
-           "$CLI_PREFIX" "$TYPE" "--$RESOURCE_TYPE" "$RESOURCE_NAME"
+    printf "%s %-10s %-15s %s\\n"                          \
+           "$CLI_PREFIX" "$TYPE"                           \
+           "--${RESOURCE_TYPE//job_template/job-template}" \
+           "$RESOURCE_NAME"
 
     PREVIOUS="$RESOURCE_TYPE"
 
   done < "$TMP2"
 
 done
+
+rm -f "$TMP1"
+rm -f "$TMP2"
