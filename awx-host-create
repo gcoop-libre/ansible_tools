@@ -1,0 +1,81 @@
+#!/bin/bash
+
+# This script comes with ABSOLUTELY NO WARRANTY, use at own risk
+# Copyright (C) 2021 Osiris Alejandro Gomez <osiris@gcoop.coop>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+
+# shellcheck disable=SC1090
+
+DIR_BIN=$(dirname "$0") && source "$DIR_BIN/awx-common"
+
+function usage()
+{
+cat << EOF
+Usage:
+
+\`\`\`bash
+
+  $BIN INVENTORY_HOSTNAME [INVENTORY]
+
+\`\`\`
+
+Create _host_ in _inventory_.
+
+Example:
+
+\`\`\`bash
+
+  $BIN wst-dev01
+
+  $BIN wstdev001 wst
+
+\`\`\`
+EOF
+exit 0
+}
+
+[[ "$1" =~ ^[-]+(h|help) ]] && usage
+
+[[ -z "$1" ]] && die "EMPTY INVENTORY_HOSTNAME"
+INVENTORY_HOSTNAME="$1"
+PREFIX="${INVENTORY_HOSTNAME//-*/}"
+INVENTORY="${PREFIX,,}"
+
+[[ -z "$2"         ]] || INVENTORY="$2"
+[[ -z "$INVENTORY" ]] && die "EMPTY INVENTORY"
+
+INVENTORY_ID="$(inventory_get_id "$INVENTORY")"
+
+[[ -z "$INVENTORY_ID" ]] && die "EMPTY INVENTORY_ID"
+
+YAML="host_vars/$INVENTORY_HOSTNAME.yml"
+
+if [[ -e "$YAML" ]]
+then
+
+  awx-cli host create                 \
+    --name      "$INVENTORY_HOSTNAME" \
+    --inventory "$INVENTORY_ID"       \
+    --enabled   true                  \
+    --variables "@$YAML"
+
+else
+
+  awx-cli host create                 \
+    --name      "$INVENTORY_HOSTNAME" \
+    --inventory "$INVENTORY_ID"       \
+    --enabled   true
+
+fi
