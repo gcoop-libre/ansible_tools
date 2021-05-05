@@ -21,6 +21,7 @@
 # shellcheck disable=SC2034
 # shellcheck disable=SC2046
 # shellcheck disable=SC2086
+# shellcheck disable=SC2181
 
 RED="$(tput setaf 196)"
 GREEN="$(tput setaf 46)"
@@ -165,11 +166,20 @@ filelist_send_all()
 
 }
 
-grant_inventory()
+grant_inventory_admin()
 {
   awx-cli role grant \
     -v               \
     --type admin     \
+    --team "$2"      \
+    --inventory "$1"
+}
+
+grant_inventory_use()
+{
+  awx-cli role grant \
+    -v               \
+    --type use       \
     --team "$2"      \
     --inventory "$1"
 }
@@ -285,7 +295,7 @@ awx_ad_hoc_shell_header()
   TITLE="$4"
 
 MSG=$(cat << EOF
-## Ejecutar %s en %s" "$TITLE" "$LIMIT"
+## Execute %s in %s" "$TITLE" "$LIMIT"
 
 \`\`\`
 
@@ -364,7 +374,7 @@ function get_json()
   if [[ -e "$JSON" ]]
   then
     stderror "ALREADY EXISTS $JSON"
-    echo "BACKUP $JSON TO $BAK"
+    stderror "BACKUP $JSON TO $BAK"
     mv "$JSON" "$BAK"
   fi
 
