@@ -24,16 +24,28 @@ function usage()
 {
 cat << EOF
 Usage:
-  $BIN
 
-Description
+\`\`\`bash
+
+  $BIN INVENTORY LIMIT USER REGEX
+
+\`\`\`
+
+Find _Firefox_ preferences
+
+Example:
+
+\`\`\`bash
+
+  $BIN wst dev ansible 'network.proxy.*'
+
+\`\`\`
 
 EOF
 exit 0
 }
 
 [[ "$1" =~ ^[-]+(h|help) ]] && usage
-
 
 [[ -z "$1" ]] && die "EMPTY INVENTORY"
 INVENTORY="$1"
@@ -47,13 +59,13 @@ U="$3"
 [[ -z "$4" ]] && die "EMPTY REGEX"
 REGEX="$4"
 
-COMMAND="/usr/bin/find /home/$DEFAULT_AD_DOMAIN/$U/.mozilla/firefox/ -type f -iname '*.js' | /usr/bin/xargs grep -E '$REGEX'"
+COMMAND="/usr/bin/find \$(getent passwd \"$U\" | cut -d: -f6)/.mozilla/firefox/ -type f -iname '*.js' | /usr/bin/xargs grep -E '$REGEX'"
 
-printf "## Ejecutar $COMMAND en %s" "$LIMIT"
+printf "## Execute $COMMAND in %s" "$LIMIT"
 code
-echo "  # awx-ad-hoc-shell $INVENTORY $LIMIT $COMMAND"
+echo "  # awx-adhoc-shell $INVENTORY $LIMIT $COMMAND"
 echo
 
-awx-ad-hoc-shell "$INVENTORY" "$LIMIT" "$COMMAND"
+awx-adhoc-shell "$INVENTORY" "$LIMIT" "$COMMAND"
 
 code
