@@ -26,7 +26,7 @@ function usage()
 cat << EOF
 Usage:
 
-$(code)bash
+\`\`\`bash
 
   $BIN JSON
 

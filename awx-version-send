@@ -51,7 +51,8 @@ function project_updated()
   [[ "$BRANCH"   != "$2" ]] && stderror "$BRANCH != $2"
   if [[ "$REVISION" != "$3" ]]
   then
-    stderror "$REVISION != $3"
+    stderror "PROJECT $1 NOT MATCH $REVISION != $3"
+    stderror "TRY awx-project-update $1"
     # FIXME awx-project-update $1 && sleep 5
   fi
 }
@@ -61,7 +62,7 @@ function version_send()
 
 grep "^$1" "$2" | while read -r _ NAME BRANCH REVISION
 do
-  JSON="$1/$NAME.json"
+  JSON="$1/${NAME//\//-}.json"
   [[ ! -e "$JSON" ]] && stderror "NOT FOUND $JSON"
   [[ "$1" = 'project' ]] && project_updated "$NAME" "$BRANCH" "$REVISION"
   echo awx-cli send "$JSON" | bash

@@ -25,13 +25,13 @@ function usage()
 cat << EOF
 Usage:
 
-$(code)bash
+\`\`\`bash
 
   $BIN
 
-$(code)
+\`\`\`
 
-Generate a markdown output for usage of each command script
+Generate a _markdown_ output for usage of each command _script_
 
 EOF
 exit 0

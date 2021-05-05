@@ -1,0 +1,78 @@
+#!/bin/bash
+
+# This script comes with ABSOLUTELY NO WARRANTY, use at own risk
+# Copyright (C) 2021 Osiris Alejandro Gomez <osiris@gcoop.coop>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+
+# shellcheck disable=SC1090
+
+DIR_BIN=$(dirname "$0") && source "$DIR_BIN/awx-common"
+
+function usage()
+{
+cat << EOF
+Usage:
+
+\`\`\`bash
+
+  $BIN GROUP_HOST_FILE INVENTORY_JSON
+
+\`\`\`
+
+Get _hosts_ from _group_ of _inventory_ \`json\` file.
+
+Example:
+
+\`\`\`bash
+
+  $BIN pve-deploy pve.json
+
+    spve01dev
+
+\`\`\`
+
+EOF
+exit 0
+}
+
+[[ "$1" =~ ^[-]+(h|help) ]] && usage
+
+[[ -z "$1" ]] && die "EMPTY GROUP_HOST_FILE"
+[[ -z "$2" ]] && die "EMPTY INVENTORY_JSON"
+
+GROUP_HOST_FILE="$1"
+INVENTORY_JSON="$2"
+
+[[ -e "$GROUP_HOST_FILE" ]] || die "NOT FOUND $GROUP_HOST_FILE"
+[[ -e "$INVENTORY_JSON"  ]] || die "NOT FOUND $INVENTORY_JSON"
+
+TMP="$(mktemp)"
+
+awx-json-inventory-group-hosts         \
+  "$GROUP_HOST_FILE" "$INVENTORY_JSON" > "$TMP"
+
+[[ ! -s "$TMP" ]] && die "EMPTY $TMP"
+
+while read -r GROUP HOST _
+do
+  GROUP_HOSTS="hosts-$GROUP"
+  HOST_IN_GROUP_HOSTS="$(grep -wc "$HOST" "$GROUP_HOSTS")"
+
+  if [[ "$HOST_IN_GROUP_HOSTS" -eq 0 ]]
+  then
+    echo "NOT FOUND $HOST in $GROUP_HOSTS"
+  fi
+
+done < "$TMP"

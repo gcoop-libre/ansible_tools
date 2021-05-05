@@ -46,14 +46,14 @@ REGEXP='f[0-9]+'
 
 COMMAND="/usr/sbin/qm list | grep running | grep -E \"$REGEXP\""
 
-printf "## Verificar VMs %s en estado running en %s\\n" "$REGEXP" "$LIMIT"
+printf "## Verify VMs %s running in %s\\n" "$REGEXP" "$LIMIT"
 echo
 echo "\`\`\`"
 echo
-echo "  # awx-ad-hoc-shell $INVENTORY $LIMIT $COMMAND"
+echo "  # awx-adhoc-shell $INVENTORY $LIMIT $COMMAND"
 echo
 
-awx-ad-hoc-shell "$INVENTORY" "$LIMIT" "$COMMAND"
+awx-adhoc-shell "$INVENTORY" "$LIMIT" "$COMMAND"
 
 echo
 echo "\`\`\`"

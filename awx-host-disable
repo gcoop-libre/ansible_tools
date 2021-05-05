@@ -24,9 +24,22 @@ function usage()
 {
 cat << EOF
 Usage:
-  $BIN
 
-Description
+\`\`\`
+
+  $BIN HOST_NAME INVENTORY_NAME
+
+\`\`\`
+
+Disable _host_ from _inventory_.
+
+Example:
+
+\`\`\`
+
+  $BIN spve01 pve
+
+\`\`\`
 
 EOF
 exit 0
@@ -34,14 +47,13 @@ exit 0
 
 [[ "$1" =~ ^[-]+(h|help) ]] && usage
 
-
 [[ -z "$1" ]] && die "EMPTY HOST"
-
 HOST="$1"
 
 PREFIX="${HOST//-*/}"
 INVENTORY="${PREFIX,,}"
 
-[[ -z "$INVENTORY" ]] && die "EMPTY INVENTORY"
+[[ ! -z "$2"         ]] && INVENTORY="$2"
+[[   -z "$INVENTORY" ]] && die "EMPTY INVENTORY"
 
 awx-cli host modify --enabled false -i "$INVENTORY" -n "$HOST"

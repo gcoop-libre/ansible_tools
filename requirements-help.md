@@ -11,17 +11,13 @@ classoption: landscape
 
 Usage:
 
-
-
 ```bash
 
   requirements-help
 
-
-
 ```
 
-Generate a markdown output for usage of each command script
+Generate a _markdown_ output for usage of each command _script_.
 
 
 ## `requirements-ssh2https`

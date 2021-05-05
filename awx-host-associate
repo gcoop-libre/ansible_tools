@@ -45,7 +45,7 @@ INVENTORY="${PREFIX,,}"
 GROUP="$2"
 
 HOST_ID="$(awx-cli host get -i "$INVENTORY" -n "$HOST" -f id)"
-GROUP_ID="$(get_group_id "$INVENTORY" "$GROUP")"
+GROUP_ID="$(group_get_id "$INVENTORY" "$GROUP")"
 
 [[ -z "$GROUP_ID" ]] && die "NOT FOUND GROUP_ID FOR GROUP $GROUP"
 [[ -z "$HOST_ID"  ]] && die "NOT FOUND HOST_ID FOR HOST $HOST"

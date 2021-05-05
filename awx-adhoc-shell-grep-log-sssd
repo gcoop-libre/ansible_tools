@@ -24,9 +24,18 @@ function usage()
 {
 cat << EOF
 Usage:
-  $BIN
 
-Description
+\`\`\`bash
+
+  $BIN INVENTORY LIMIT REGEX
+
+\`\`\`
+
+Execute \`grep REGEX\` in _SSSD_ _logs_
+
+Example:
+
+  $BIN wst dev '(0x0010|0x0020|0x0040)'
 
 EOF
 exit 0
@@ -46,14 +55,14 @@ REGEX="$3"
 
 COMMAND="/bin/grep -C20 -E '$REGEX' /var/log/sssd/*.log"
 
-printf "## Ejecutar $COMMAND en %s" "$LIMIT"
+printf "## Execute $COMMAND in %s" "$LIMIT"
 echo
 echo "\`\`\`"
 echo
-echo "  # awx-ad-hoc-shell $INVENTORY $LIMIT $COMMAND"
+echo "  # awx-adhoc-shell $INVENTORY $LIMIT $COMMAND"
 echo
 
-awx-ad-hoc-shell "$INVENTORY" "$LIMIT" "$COMMAND"
+awx-adhoc-shell "$INVENTORY" "$LIMIT" "$COMMAND"
 
 echo
 echo "\`\`\`"

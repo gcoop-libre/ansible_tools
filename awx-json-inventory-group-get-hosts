@@ -27,7 +27,7 @@ Usage:
 
 \`\`\`bash
 
-  $BIN [INVENTORY] [GROUP]
+  $BIN INVENTORY.json GROUP
 
 \`\`\`
 
@@ -56,6 +56,6 @@ INVENTORY="$1"
 [[ -z "$2" ]] && die "EMPTY GROUP"
 GROUP="$2"
 
-JQ=".[] | .asset_relation.group[] | .sub_groups[] | select(.name == \"$GROUP\") | .hosts[]"
+JQ=".[] | .asset_relation.group[] | select(.name == \"$GROUP\") | .hosts[]"
 
 jq -r "$JQ" "$INVENTORY"

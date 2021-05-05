@@ -46,14 +46,14 @@ FQDN="$3"
 
 COMMAND="/usr/bin/hostnamectl set-hostname $FQDN"
 
-printf "## Establecer hostname %s en %s" "$FQDN" "$LIMIT"
+printf "## Set hostname %s in %s" "$FQDN" "$LIMIT"
 echo
 echo "\`\`\`"
 echo
-echo "  # awx-ad-hoc-shell $INVENTORY $LIMIT $COMMAND"
+echo "  # awx-adhoc-shell $INVENTORY $LIMIT $COMMAND"
 echo
 
-awx-ad-hoc-shell "$INVENTORY" "$LIMIT" "$COMMAND"
+awx-adhoc-shell "$INVENTORY" "$LIMIT" "$COMMAND"
 
 echo
 echo "\`\`\`"

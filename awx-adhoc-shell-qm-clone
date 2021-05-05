@@ -58,14 +58,14 @@ NAME="$5"
 
 COMMAND="/usr/sbin/qm clone $TID $VMID --name $NAME"
 
-printf "## Clonar VMID %s a VMID %s %s en servidor %s" "$TID" "$VMID" "$NAME" "$LIMIT"
+printf "## Clone VMID %s as VMID %s %s in server %s" "$TID" "$VMID" "$NAME" "$LIMIT"
 echo
 echo "\`\`\`"
 echo
-echo "  # awx-ad-hoc-shell $INVENTORY $LIMIT $COMMAND"
+echo "  # awx-adhoc-shell $INVENTORY $LIMIT $COMMAND"
 echo
 
-awx-ad-hoc-shell "$INVENTORY" "$LIMIT" "$COMMAND"
+awx-adhoc-shell "$INVENTORY" "$LIMIT" "$COMMAND"
 
 echo
 echo "\`\`\`"

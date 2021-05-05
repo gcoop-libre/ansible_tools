@@ -24,16 +24,28 @@ function usage()
 {
 cat << EOF
 Usage:
-  $BIN
 
-Description
+\`\`\`bash
+
+  $BIN INVENTORY LIMIT IP
+
+\`\`\`
+
+Execute \`ping\` to _IP_ from _inventory_.
+
+Example:
+
+\`\`\`bash
+
+  $BIN wst dev 10.1.0.1
+
+\`\`\`
 
 EOF
 exit 0
 }
 
 [[ "$1" =~ ^[-]+(h|help) ]] && usage
-
 
 [[ -z "$1" ]] && die "EMPTY INVENTORY"
 INVENTORY="$1"
@@ -48,10 +60,10 @@ COMMAND="ping -c 1000 -A $IP"
 
 echo "\`\`\`"
 echo
-echo "  # awx-ad-hoc-shell $INVENTORY $LIMIT $COMMAND"
+echo "  # awx-adhoc-shell $INVENTORY $LIMIT $COMMAND"
 echo
 
-awx-ad-hoc-shell "$INVENTORY" "$LIMIT" "$COMMAND"
+awx-adhoc-shell "$INVENTORY" "$LIMIT" "$COMMAND"
 
 echo
 echo "\`\`\`"

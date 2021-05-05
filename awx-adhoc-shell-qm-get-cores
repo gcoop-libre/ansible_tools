@@ -43,14 +43,14 @@ LIMIT="$2"
 
 COMMAND="grep cores /etc/pve/qemu-server/*.conf"
 
-printf "## Verificar cantidad de cores en %s" "$LIMIT"
+printf "## Verify total CPU cores in %s" "$LIMIT"
 echo
 echo "\`\`\`"
 echo
-echo "  # awx-ad-hoc-shell $INVENTORY $LIMIT $COMMAND"
+echo "  # awx-adhoc-shell $INVENTORY $LIMIT $COMMAND"
 echo
 
-awx-ad-hoc-shell "$INVENTORY" "$LIMIT" "$COMMAND"
+awx-adhoc-shell "$INVENTORY" "$LIMIT" "$COMMAND"
 
 echo
 echo "\`\`\`"

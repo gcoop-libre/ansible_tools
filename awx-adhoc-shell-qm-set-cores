@@ -53,14 +53,14 @@ CORES="$4"
 
 COMMAND="/usr/sbin/qm set $VMID --cores $CORES"
 
-printf "## Establecer %s cores en VMID %s del servidor %s" "$CORES" "$VMID" "$LIMIT"
+printf "## Set %s cores to VMID %s in server %s" "$CORES" "$VMID" "$LIMIT"
 echo
 echo "\`\`\`"
 echo
-echo "  # awx-ad-hoc-shell $INVENTORY $LIMIT $COMMAND"
+echo "  # awx-adhoc-shell $INVENTORY $LIMIT $COMMAND"
 echo
 
-awx-ad-hoc-shell "$INVENTORY" "$LIMIT" "$COMMAND"
+awx-adhoc-shell "$INVENTORY" "$LIMIT" "$COMMAND"
 
 echo
 echo "\`\`\`"

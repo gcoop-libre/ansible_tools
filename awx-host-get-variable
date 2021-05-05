@@ -25,7 +25,7 @@ function usage()
 cat << EOF
 Usage:
 
-$(code)bash
+\`\`\`bash
 
   $BIN HOST [INVENTORY]
 
@@ -37,7 +37,7 @@ Example:
 
   Implicit _inventory_ from _host_:
 
-$(code)bash
+\`\`\`bash
 
   $BIN pve-dev01
 
@@ -45,7 +45,7 @@ $(code)
 
   Explicit _host_ and _inventory_:
 
-$(code)bash
+\`\`\`bash
 
   $BIN dev01 pve
 

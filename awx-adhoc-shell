@@ -25,13 +25,21 @@ function usage()
 cat << EOF
 Usage:
 
-  $BIN [INVENTORY] [LIMIT] [MODULE_ARGS]
+\`\`\`bash
 
-Execute commands usinn shell module in ad-hoc of AWX
+  $BIN INVENTORY LIMIT MODULE_ARGS
+
+\`\`\`
+
+Execute commands using \`shell\` module in \`ad-hoc\` of _AWX_
 
 Example:
 
+\`\`\`bash
+
   $BIN pve dev uptime
+
+\`\`\`
 
 EOF
 exit 0
@@ -53,6 +61,21 @@ JOB_TYPE='run'
 MODULE_NAME='shell'
 VERBOSE='more_verbose'
 
+if [[ "$LIMIT" = 'nolimit' ]]
+then
+
+awx-cli ad_hoc launch                         \
+  --job-type        "$JOB_TYPE"               \
+  --inventory       "$INVENTORY"              \
+  --credential      "$DEFAULT_SSH_CREDENTIAL" \
+  --module-name     "$MODULE_NAME"            \
+  --module-args     "$MODULE_ARGS"            \
+  --verbosity       "$VERBOSE"                \
+  --become-enabled  "$BECOME"                 \
+  --monitor
+
+else
+
 awx-cli ad_hoc launch                         \
   --job-type        "$JOB_TYPE"               \
   --inventory       "$INVENTORY"              \
@@ -63,3 +86,5 @@ awx-cli ad_hoc launch                         \
   --verbosity       "$VERBOSE"                \
   --become-enabled  "$BECOME"                 \
   --monitor
+
+fi

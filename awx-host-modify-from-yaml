@@ -25,7 +25,7 @@ function usage()
 cat << EOF
 Usage:
 
-$(code)bash
+\`\`\`bash
 
   $BIN HOST YAML INVENTORY
 
@@ -35,7 +35,7 @@ Modify _host_ variable providing \`.yaml\` file.
 
 Example:
 
-$(code)bash
+\`\`\`bash
 
   $BIN pve-dev01
 

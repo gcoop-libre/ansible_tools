@@ -26,7 +26,7 @@ function usage()
 cat << EOF
 Usage:
 
-$(code)bash
+\`\`\`bash
 
   $BIN JSON
 
@@ -37,7 +37,7 @@ properties.
 
 Example:
 
-$(code)bash
+\`\`\`bash
 
   $BIN workflow/wfw-pve.json
 
@@ -71,22 +71,6 @@ function get_branch()
 function get_revision()
 {
   awx-project-get-variable "$1" scm_revision
-}
-
-function get_json()
-{
-  local JSON
-  local NAME
-
-  mkdir -p "$1"
-  NAME="$(echo "$2" | tr '/' '-')"
-  JSON="$1/$NAME.json"
-
-  if [[ ! -e "$JSON" ]]
-  then
-    >&2 echo "receive $JSON"
-    awx-cli receive --$1 "$2" > "$JSON"
-  fi
 }
 
 function get_dependencies()

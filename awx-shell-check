@@ -17,6 +17,7 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 # shellcheck disable=SC1090
+# shellcheck disable=SC2035
 
 DIR_BIN=$(dirname "$0") && source "$DIR_BIN/awx-common"
 
@@ -39,8 +40,12 @@ exit 0
 
 [[ "$1" =~ ^[-]+(h|help) ]] && usage
 
-find . -maxdepth 1 -type f -executable -iname 'awx-*' \
-  | while read -r FILE
-do
-  shellcheck "$FILE"
-done
+file --mime-type *     \
+  | grep shellscript   \
+  | tr -d ':'          \
+  | while read -r FILE _
+    do
+      shellcheck "$FILE" >/dev/null
+      echo "$? $FILE"
+    done \
+      | grep -v '^0'

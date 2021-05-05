@@ -38,7 +38,6 @@ exit 0
 [[ -z "$1" ]] && die "EMPTY NAME"
 NAME="$1"
 [[ ! -z "$2" ]] && DESCRITION="$2"
-[[ ! -z "$3" ]] && ORGANIZATION="$3"
 
 [[ -z "$ORGANIZATION" ]] && ORGANIZATION="$DEFAULT_ORGANIZATION"
 
