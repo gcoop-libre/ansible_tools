@@ -26,11 +26,11 @@ function usage()
 cat << EOF
 Usage:
 
-$(code)bash
+\`\`\`bash
 
   $BIN [JSON]
 
-$(code)
+\`\`\`
 
 Send to _AWX_ one or multiples _workflow_ and _workflows_ dependencies.
 
@@ -39,27 +39,27 @@ Without file, scan \`.json\` files with \`WORKFLOW_PREFIX\` in
 
 Default Variables in \`~/.awx-config\`
 
-$(code)ini
+\`\`\`ini
 
   DIR_WORKFLOW: workflow
   WORKFLOW_PREFIX: wfw
 
-$(code)
+\`\`\`
 
 Example:
 
-$(code)bash
+\`\`\`bash
 
   $BIN workflow/wfw_pve_v0.1.0.json
 
-$(code)
+\`\`\`
 EOF
 exit 0
 }
 
 [[ "$1" =~ ^[-]+(h|help) ]] && usage
 
-[[ -d "$DIR_WORKFLOW" ]] || die "NOT FOUND $PWD/$DIR_WORKFLOW"
+[[ -d "$DIR_WORKFLOW" ]] || die "NOT FOUND DIRECTORY $PWD/$DIR_WORKFLOW"
 
 JSON_LIST="$(mktemp)"
 JSON_ALL="$(mktemp)"
@@ -69,7 +69,7 @@ then
   wait_seconds projects
   filelist_workflows > "$JSON_LIST"
 else
-  [[ -e "$1" ]] || die "NOT FOUND $1"
+  [[ -e "$1" ]] || die "NOT FOUND FILE $1"
   echo "$1" > "$JSON_LIST"
 fi
 
