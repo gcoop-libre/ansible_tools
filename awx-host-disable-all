@@ -26,7 +26,7 @@ function usage()
 cat << EOF
 Usage:
 
-$(code)bash
+\`\`\`bash
 
   $BIN [INVENTORY]
 
@@ -36,7 +36,7 @@ Disable all enabled hosts in _inventory_.
 
 Example:
 
-$(code)bash
+\`\`\`bash
 
   $BIN pve
 
