@@ -34,11 +34,11 @@ fi
 
 # check paramater to see which number to increment
 if [[ "$2" == "feature" ]]; then
-  minor=$(echo $minor + 1 | bc)
+  minor="$(echo "$minor + 1" | bc)"
 elif [[ "$2" == "bug" ]]; then
-  build=$(echo $build + 1 | bc)
+  build="$(echo "$build + 1" | bc)"
 elif [[ "$2" == "major" ]]; then
-  major=$(echo $major + 1 | bc)
+  major="$(echo "$major + 1" | bc)"
 else
   echo "usage: $0 version_number [major/feature/bug]"
   exit -1
