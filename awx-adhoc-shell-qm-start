@@ -48,14 +48,14 @@ VMID="$3"
 
 COMMAND="/usr/sbin/qm start $VMID"
 
-printf "## Iniciar VMID %s en servidor %s" "$VMID" "$LIMIT"
+printf "## Start VMID %s in server %s" "$VMID" "$LIMIT"
 echo
 echo "\`\`\`"
 echo
-echo "  # awx-ad-hoc-shell $INVENTORY $LIMIT $COMMAND"
+echo "  # awx-adhoc-shell $INVENTORY $LIMIT $COMMAND"
 echo
 
-awx-ad-hoc-shell "$INVENTORY" "$LIMIT" "$COMMAND"
+awx-adhoc-shell "$INVENTORY" "$LIMIT" "$COMMAND"
 
 echo
 echo "\`\`\`"
