@@ -52,7 +52,7 @@ awx-cli workflow_job get   \
 
 NAME="$(jq -r '.name' "$JSON")"
 STARTED="$(jq -r '.started' "$JSON")"
-FINISHED="$(jq -r '.finished' "$JSON")"
+FINISHED="$(jq -r '.finished' "$JSON" | grep -v null)"
 START="$(date --date "$STARTED" '+%F %H:%M')"
 URL="$AWX_CFG_HOST/#/workflows/$WORKFLOW_JOB_ID"
 
