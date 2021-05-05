@@ -17,6 +17,7 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 # shellcheck disable=SC1090
+# shellcheck disable=SC1117
 
 DIR_BIN=$(dirname "$0") && source "$DIR_BIN/awx-common"
 
@@ -57,7 +58,7 @@ jq -r "$JQ" "$ROLE_TEAM" \
   | while read -r RESOURCE_TYPE RESOURCE_NAME TYPE
   do
 
-    printf "%-25s %-50s %s\n"                            \
+    printf "%-25s %-50s %s\\n"                           \
       "${RESOURCE_TYPE//workflow_job_template/workflow}" \
       "$RESOURCE_NAME"                                   \
       "${TYPE,,}"
