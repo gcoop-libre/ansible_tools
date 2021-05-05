@@ -27,21 +27,19 @@ Usage:
 
 \`\`\`bash
 
-  $BIN [INVENTORY]
+  $BIN INVENTORY.json GROUP
 
 \`\`\`
 
-Get variables from primary group of inventory \`.json\` file
+Get hosts from group of inventory \`.json\` file
 
 Example:
 
 \`\`\`bash
 
-  $BIN inventory/pve.json
+  $BIN inventory/pve.json dev
 
-		hostname_suffix: dev
-		network: '{{ subnet }}.0'
-		subnet: 10.1.0
+    spve01dev
 
 \`\`\`
 
@@ -55,6 +53,9 @@ exit 0
 [[ -e "$1" ]] || die "NOT FOUND $1"
 INVENTORY="$1"
 
-JQ=".[] | .asset_relation.group[].variables"
+[[ -z "$2" ]] && die "EMPTY GROUP"
+GROUP="$2"
+
+JQ=".[] | .asset_relation.group[] | select(.name == \"$GROUP\") | .variables"
 
 jq -r "$JQ" "$INVENTORY"
