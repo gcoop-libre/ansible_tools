@@ -25,7 +25,7 @@ function usage()
 cat << EOF
 Usage:
 
-$(code)bash
+\`\`\`bash
 
   $BIN ENVIRONMENT
 
@@ -35,7 +35,7 @@ Get _AWX_ credentials for environment according \`~/.awx-config\`.
 
 Example:
 
-$(code)bash
+\`\`\`bash
 
   $BIN develop
 
