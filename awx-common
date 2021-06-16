@@ -446,6 +446,14 @@ json_get_unified_job_name()
   jq -r "$JQ" "$1"
 }
 
+function json_get_project()
+{
+  local JQ
+
+  JQ='.[] | .project'
+  jq -r "$JQ" "$1"
+}
+
 function get_json_workflows()
 {
   local TMP
