@@ -508,4 +508,12 @@ jq_yq_modify()
   fi
 }
 
+jq_modify_verbosity()
+{
+  [[ -e "$1" ]] || die "NOT FOUND $1"
+  [[ -z "$2" ]] && die "EMPTY VERBOSITY"
+
+  sed -i "s/\"verbosity\": .,/\"verbosity\": $2,/g" "$1"
+}
+
 AWX_CFG_HOST="$(awx_cfg_get_host)"
