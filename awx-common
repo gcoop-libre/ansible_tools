@@ -236,11 +236,22 @@ grant_job_template_execute()
 
 grant_workflow()
 {
-  awx-cli role grant \
-    -v               \
-    --type execute   \
-    --team "$2"      \
-    --workflow "$1"
+  local TYPE
+
+  TYPE='execute'
+
+  [[ ! -z "$3" ]] && TYPE="$3"
+
+  echo awx-cli role grant \
+    $AWX_DEBUG            \
+    --type "$TYPE"        \
+    --team "$2"           \
+    --workflow "$1"       | bash
+}
+
+grant_workflow_execute()
+{
+  grant_workflow "$1" "$2" 'execute'
 }
 
 group_get_id()
