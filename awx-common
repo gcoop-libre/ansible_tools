@@ -186,11 +186,27 @@ grant_inventory_use()
 
 grant_project()
 {
-  awx-cli role grant \
-    -v               \
-    --type use       \
-    --team "$2"      \
-    --project "$1"
+  local TYPE
+
+  TYPE='use'
+
+  [[ ! -z "$3" ]] && TYPE="$3"
+
+  echo awx-cli role grant \
+    "$AWX_DEBUG"          \
+    --type "$TYPE"        \
+    --team "$2"           \
+    --project "$1"        | bash
+}
+
+grant_project_use()
+{
+  grant_project "$1" "$2" 'use'
+}
+
+grant_project_admin()
+{
+  grant_project "$1" "$2" 'admin'
 }
 
 grant_job_template()
