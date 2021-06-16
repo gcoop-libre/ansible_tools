@@ -457,7 +457,9 @@ function json_get_project()
 function get_json_workflows()
 {
   local TMP
+  local N
 
+  N="$(basename "$1" .json)"
   json_get_unified_job_name "$1" | grep "$WORKFLOW_PREFIX" \
     | while read -r i
       do
@@ -470,7 +472,7 @@ function get_json_workflows()
             done
         echo "$DIR_WORKFLOW/$i.json"
       done
-  echo "$DIR_WORKFLOW/$1.json"
+  echo "$DIR_WORKFLOW/$N.json"
 }
 
 function get_url()
