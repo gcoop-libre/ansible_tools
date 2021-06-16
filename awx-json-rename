@@ -52,6 +52,8 @@ exit 0
 [[ -e "$1" ]] || die "NOT FOUND $1"
 [[ -z "$2" ]] || NEW_NAME="$2"
 
+[[ -z "$2" ]] && die "EMPTY NEW_NAME"
+
 JSON="$1"
 NAME="$(basename "$JSON" .json)"
 NEW_JSON="$(echo "$JSON" | sed "s/$NAME/$NEW_NAME/g")"
