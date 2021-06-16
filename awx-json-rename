@@ -62,9 +62,8 @@ echo "RENAME FROM $JSON TO $NEW_JSON"
 echo
 sed "s/$NAME/$NEW_NAME/g" "$JSON" > "$NEW_JSON"
 
-LEN="$(wc -L "$JSON" | cut -d' ' -f1)"
-WIDTH="$((LEN+10))"
-[[ "$WIDTH" -gt 180 ]] && WIDTH='180'
+LEN="$(grep -E '(unified_job_name|project)' "$NEW_JSON" | wc -c)"
+WIDTH="$((LEN*2+10))"
 
 diff -y --suppress-common-lines -W "$WIDTH" "$JSON" "$NEW_JSON"
 
