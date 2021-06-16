@@ -25,10 +25,22 @@ function usage()
 {
 cat << EOF
 Usage:
-  $BIN
 
-Description
+\`\`\`bash
 
+  $BIN JSON NEW_NAME
+
+\`\`\`
+
+Rename \`.json\` file and replace internal \`name\`.
+
+Example:
+
+\`\`\`bash
+
+  $BIN pve_kvm.json pve_vms_kvm
+
+\`\`\`
 EOF
 exit 0
 }
