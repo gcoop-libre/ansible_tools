@@ -45,19 +45,18 @@ exit 0
 
 [[ "$1" =~ ^[-]+(h|help) ]] && usage
 
-if [[ ! -z "$ANSIBLE_PASS_PASSWORD_STORE_DIR" ]]
-then
-  export PASSWORD_STORE_DIR="$ANSIBLE_PASS_PASSWORD_STORE_DIR"
-fi
-
 [[ -z "$1" ]] && die "EMPTY ENVIROMENT"
 
 ENV="${1^^}"
+
 USR="${ENV}_USER"
 AWX_ENV="$(echo "${!ENV}")"
 AWX_USER="$(echo "${!USR}")"
-AWX_HOST=$(pass "$PASS_PREFIX/$AWX_ENV/awx/host")
-AWX_PASS=$(pass "$PASS_PREFIX/$AWX_ENV/awx/${AWX_USER}_password")
+ENV_PASS_DIR="${ENV}_PASS_DIR"
+PASS_DIR="$(echo "${!ENV_PASS_DIR}")"
+export PASSWORD_STORE_DIR="$PASS_DIR"
+AWX_HOST=$(pass "$PASS_PREFIX/$AWX_ENV/host")
+AWX_PASS=$(pass "$PASS_PREFIX/$AWX_ENV/${AWX_USER}_password")
 
 [[ -z "$AWX_PASS" ]] && die "EMPTY AWX_PASS"
 

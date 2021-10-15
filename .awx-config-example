@@ -3,8 +3,12 @@ MASTER: awxprd
 STAGE: awxstg
 LO: loawx
 DEVELOP_USER: admin
+DEVELOP_PASS_DIR: /home/user/pass-repos/dev
 MASTER_USER: admin
+MASTER_PASS_DIR: /home/user/pass-repos/prd
 STAGE_USER: admin
+STAGE_PASS_DIR: /home/user/pass-repos/stg
 LO_USER: admin
+LO_PASS_DIR: /home/user/pass-repos/lo
 PASS_PREFIX: awx
 DEFAULT_TEAM: devops
