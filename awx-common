@@ -372,11 +372,9 @@ awx_ad_hoc_shell_footer
 
 }
 
-awx_cfg_get_host()
+awx_cfg_get()
 {
-
-grep host "$HOME/.tower_cli.cfg" | cut -d= -f2 | tr -d ' '
-
+  grep "$1" "$HOME/.tower_cli.cfg" | cut -d= -f2 | tr -d ' '
 }
 
 wait_seconds()
@@ -516,4 +514,4 @@ jq_modify_verbosity()
   sed -i "s/\"verbosity\": .,/\"verbosity\": $2,/g" "$1"
 }
 
-AWX_CFG_HOST="$(awx_cfg_get_host)"
+AWX_CFG_HOST="$(awx_cfg_get 'host')"
