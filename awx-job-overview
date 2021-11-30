@@ -1,0 +1,92 @@
+#!/bin/bash
+
+# This script comes with ABSOLUTELY NO WARRANTY, use at own risk
+# Copyright (C) 2021 Osiris Alejandro Gomez <osiris@gcoop.coop>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+
+# shellcheck disable=SC1090
+
+DIR_BIN=$(dirname "$0") && source "$DIR_BIN/awx-common"
+
+function usage()
+{
+cat << EOF
+Usage:
+
+\`\`\`bash
+
+  $BIN JOB_ID
+
+\`\`\`
+
+Get overview of _job_ execution.
+
+Example:
+
+\`\`\`bash
+
+  $BIN 1234
+
+  | 1234 | wst_ap_v1.1.0 | failed | 43.514 |     | 2021-05-10 | 17:04:32 | 17:05:15 | 00:00:43 | test |
+
+\`\`\`
+
+EOF
+exit 0
+}
+
+[[ "$1" =~ ^[-]+(h|help) ]] && usage
+
+PERCENT=''
+
+[[ -z "$1" ]] && die "EMPTY JOB_ID"
+JOB_ID="$1"
+
+JSON="${JOB_ID}.json"
+
+[[ -z "$2" ]] || TOTAL="$2"
+
+[[ ! -e "$JSON" ]] && awx-cli job get "$JOB_ID" -f json > "$JSON"
+[[ ! -s "$JSON" ]] && die "EMPTY JSON $JSON"
+
+ELAPSED="$(jq -r .elapsed  "$JSON")"
+FINISHED="$(jq -r .finished "$JSON")"
+LIMIT="$(jq -r .limit  "$JSON")"
+STARTED="$(jq -r .started  "$JSON")"
+STATUS="$(jq -r .status  "$JSON")"
+
+DATE="$(date -d "$STARTED" +'%F')"
+FINISH="$(date -d "$FINISHED" +'%T')"
+MINUTES="$(date -d "1970-01-01 +$ELAPSED seconds" +%T)"
+START="$(date -d "$STARTED" +'%T')"
+
+JOB_TEMPLATE="$(jq -r .summary_fields.job_template.name "$JSON")"
+
+if [[ ! -z "$TOTAL" ]]
+then
+  PERCENT="$(echo "scale=2;($ELAPSED/$TOTAL)*100" | bc) %"
+fi
+# FIXME calculate limit witdh column
+printf "| %s | %-30s | %10s | %8s | %8s | %s | %s | %s | %s | %-60s |\n" \
+       "$JOB_ID"   \
+       "$JOB_TEMPLATE" \
+       "$STATUS"   \
+       "$ELAPSED"  \
+       "$PERCENT"  \
+       "$DATE"     \
+       "$START"    \
+       "$FINISH"   \
+       "$MINUTES"  \
+       "$LIMIT"
