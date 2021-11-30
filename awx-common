@@ -408,6 +408,12 @@ function json_get_asset_type()
 
 }
 
+function json_is_project()
+{
+  [[ "$(json_get_asset_type)" = 'project' ]] && return 1
+  return 0
+}
+
 function json_is_inventory()
 {
   local JSON
