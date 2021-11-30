@@ -1,0 +1,87 @@
+#!/bin/bash
+
+# This script comes with ABSOLUTELY NO WARRANTY, use at own risk
+# Copyright (C) 2020 Osiris Alejandro Gomez <osiris@gcoop.coop>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+
+# shellcheck disable=SC1090
+
+DIR_BIN=$(dirname "$0") && source "$DIR_BIN/awx-common"
+
+function usage()
+{
+cat << EOF
+Usage:
+
+\`\`\`bash
+
+  $BIN INVENTORY_JSON [REGEX]
+
+\`\`\`
+
+Get \`.csv\` with _hosts_ of each _group_ of _inventory_ \`.json\` file.
+Optionally filter _groups_ by regular expression.
+
+  inventory_host,description,ansible_host,primary_maccadress,inventory_serial
+
+Example:
+
+\`\`\`bash
+
+  $BIN inventory/wst.json
+
+  'wst01dev01','imported','192.168.1.11','ca:fe:ca:fe:00:3d','S12345678'
+  'wst01dev02','imported','192.168.1.12','fa:fa:fa:02:ac:dc','S12345679'
+
+\`\`\`
+
+EOF
+exit 0
+}
+
+[[ "$1" =~ ^[-]+(h|help) ]] && usage
+
+REGEX='.*'
+
+[[ -z "$1" ]] && die "EMPTY INVENTORY_JSON"
+[[ -e "$1" ]] || die "NOT FOUND $1"
+INVENTORY_JSON="$1"
+
+[[ -z "$2" ]] || REGEX="$2"
+
+INVENTORY="$(jq -r '.[] | .name' "$INVENTORY_JSON")"
+
+json_is_inventory "$INVENTORY_JSON" || die "INVALID ASSET TYPE"
+
+GROUPS="$(mktemp)"
+
+awx-json-inventory-get-groups "$INVENTORY_JSON" \
+  | grep -E "$REGEX"                            \
+  | sort                                        > "$GROUPS"
+
+while read -r GROUP
+do
+
+  awx-json-inventory-group-get-hosts "$INVENTORY_JSON" "$GROUP" \
+    | while read -r HOST
+      do
+
+        awx-host-get-csv "$HOST" "$INVENTORY"
+
+      done | sort -k2
+
+done < "$GROUPS"
+
+rm -f "$GROUPS"
