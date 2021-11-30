@@ -420,6 +420,12 @@ function json_is_job_template()
   return 0
 }
 
+function json_is_workflow()
+{
+  [[ "$(json_get_asset_type)" = 'workflow' ]] && return 1
+  return 0
+}
+
 function json_is_inventory()
 {
   local JSON
