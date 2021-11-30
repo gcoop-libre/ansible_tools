@@ -1,0 +1,83 @@
+#!/bin/bash
+
+# This script comes with ABSOLUTELY NO WARRANTY, use at own risk
+# Copyright (C) 2020 Osiris Alejandro Gomez <osiris@gcoop.coop>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+
+# shellcheck disable=SC1090
+
+DIR_BIN=$(dirname "$0") && source "$DIR_BIN/awx-common"
+
+function usage()
+{
+cat << EOF
+Usage:
+
+\`\`\`bash
+
+  $BIN
+
+\`\`\`
+
+Get \`job_template\` recent _jobs_.
+Return job ID, timestamp and status of each job.
+
+Example:
+
+\`\`\`bash
+
+  $BIN wst_wol_v0.1.0
+
+	137020 2021-11-29 13:27:45 successful
+	136982 2021-11-29 08:15:40 successful
+	136877 2021-11-25 13:05:05 successful
+	136799 2021-11-25 09:12:57 successful
+	136793 2021-11-24 20:17:46 successful
+	136720 2021-11-24 10:31:45 successful
+	136719 2021-11-24 10:24:43 successful
+	136709 2021-11-24 08:50:15 successful
+	136696 2021-11-23 16:18:26 successful
+	136683 2021-11-23 12:59:12 successful
+
+\`\`\`
+
+EOF
+exit 0
+}
+
+[[ "$1" =~ ^[-]+(h|help) ]] && usage
+
+
+[[ -z "$1" ]] && die "EMPTY JOB_TEMPLATE"
+
+JOB_TEMPLATE="$1"
+
+JSON="$(mktemp --suffix .json)"
+
+awx-cli job_template get  \
+  --name "$JOB_TEMPLATE"  \
+  --format json > "$JSON"
+
+[[ -s "$JSON" ]] || die "EMPTY JSON"
+
+JQ='.summary_fields | .recent_jobs | .[] | "\(.id) \(.finished) \(.status)"'
+
+jq -r "$JQ" "$JSON" | while read -r ID D STATUS
+do
+  DATE="$(date -d "$D" +'%F %T')"
+  printf "%s %s %s\\n" "$ID" "$DATE" "$STATUS"
+done
+
+rm -f "$JSON"
