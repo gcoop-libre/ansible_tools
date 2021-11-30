@@ -23,21 +23,57 @@ DIR_BIN=$(dirname "$0") && source "$DIR_BIN/awx-common"
 function usage()
 {
 cat << EOF
-
 Usage:
 
-  $BIN [branch]
+\`\`\`bash
+
+  $BIN ENVIRONMENT
+
+\`\`\`
 
 Overwrite \`~/.tower_cli.cfg\` with enviroment config using
 \`~/.awx-config\` and \`pass\` command for retrieve passwords to use
 with \`awx-cli\`.
 
-First copy \`.awx-config\` to \`~/.awx-config\`, customize variables
-according your enviroment.
+First copy \`.awx-config-example\` to \`~/.awx-config\`, customize
+variables according your enviroment.
 
 Example:
 
-  $BIN develop
+\`\`\`bash
+
+  $BIN DEVELOP
+
+\`\`\`
+
+Define enviroments in \`~/.awx-config\`:
+
+\`\`\`
+
+	DEVELOP: awx-dev
+	DEVELOP_USER: admin
+	DEVELOP_PASSWORD_STORE_DIR: ~/.password-store-awx-dev
+	MASTER_PASSWORD_STORE_DIR: ~/.password-store-awx-prd
+	MASTER: awx-prd
+	MASTER_USER: admin
+	PASS_PREFIX: awx/
+	PASS_SUFFIX: /
+
+\`\`\`
+
+Generate or insert credentials in multiple \`pass\` repositories:
+
+\`\`\`bash
+
+  export PASSWORD_STORE_DIR=~/.password-store-awx-dev
+	pass awx/awx-dev/host
+	pass awx/awx-dev/admin_password
+
+  export PASSWORD_STORE_DIR=~/.password-store-awx-prd
+	pass awx/awx-prd/host
+	pass awx/awx-prd/admin_password
+
+\`\`\`
 
 EOF
 exit 0
@@ -45,7 +81,7 @@ exit 0
 
 [[ "$1" =~ ^[-]+(h|help) ]] && usage
 
-if [[ ! -z "$ANSIBLE_PASS_PASSWORD_STORE_DIR" ]]
+if [[ -n "$ANSIBLE_PASS_PASSWORD_STORE_DIR" ]]
 then
   export PASSWORD_STORE_DIR="$ANSIBLE_PASS_PASSWORD_STORE_DIR"
 fi
@@ -54,10 +90,17 @@ fi
 
 ENV="${1^^}"
 USR="${ENV}_USER"
+
+if [[ ! -z "${ENV}_PASSWORD_STORE_DIR" ]]
+then
+  AWX_PASS_DIR="${ENV}_PASSWORD_STORE_DIR"
+  export PASSWORD_STORE_DIR="${!AWX_PASS_DIR}"
+fi
+
 AWX_ENV="$(echo "${!ENV}")"
 AWX_USER="$(echo "${!USR}")"
-AWX_HOST=$(pass "$PASS_PREFIX/$AWX_ENV/awx/host")
-AWX_PASS=$(pass "$PASS_PREFIX/$AWX_ENV/awx/${AWX_USER}_password")
+AWX_HOST=$(pass "${PASS_PREFIX}${AWX_ENV}${PASS_SUFFIX}host")
+AWX_PASS=$(pass "${PASS_PREFIX}${AWX_ENV}${PASS_SUFFIX}${AWX_USER}_password")
 
 [[ -z "$AWX_PASS" ]] && die "EMPTY AWX_PASS"
 
