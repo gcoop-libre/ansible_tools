@@ -515,3 +515,5 @@ jq_modify_verbosity()
 }
 
 AWX_CFG_HOST="$(awx_cfg_get 'host')"
+AWX_CFG_PASS="$(awx_cfg_get 'pass')"
+AWX_CFG_USER="$(awx_cfg_get 'user')"
