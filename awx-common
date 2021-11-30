@@ -414,6 +414,12 @@ function json_is_project()
   return 0
 }
 
+function json_is_job_template()
+{
+  [[ "$(json_get_asset_type)" = 'job_template' ]] && return 1
+  return 0
+}
+
 function json_is_inventory()
 {
   local JSON
