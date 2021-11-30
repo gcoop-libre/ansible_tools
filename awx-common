@@ -399,6 +399,15 @@ filelist_total()
   printf "found %s %s\\n" "$TOTAL" "$2"
 }
 
+function json_get_asset_type()
+{
+  local JSON
+
+  JSON="$1"
+  jq -r '.[] | .asset_type' "$JSON"
+
+}
+
 function json_is_inventory()
 {
   local JSON
