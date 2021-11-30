@@ -1,0 +1,85 @@
+#!/bin/bash
+
+# This script comes with ABSOLUTELY NO WARRANTY, use at own risk
+# Copyright (C) 2020 Osiris Alejandro Gomez <osiris@gcoop.coop>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+
+# shellcheck disable=SC1090
+
+DIR_BIN=$(dirname "$0") && source "$DIR_BIN/awx-common"
+
+function usage()
+{
+cat << EOF
+Usage:
+
+\`\`\`bash
+
+  $BIN HOST [INVENTORY]
+
+\`\`\`
+
+Get associated _groups_ to a _host_.
+
+Example:
+
+  Implicit _inventory_ from _host_:
+
+\`\`\`bash
+
+  $BIN wst-dev01
+
+  wst
+  n01
+
+\`\`\`
+
+  Explicit _host_ and _inventory_:
+
+\`\`\`bash
+
+  $BIN wst01n01 wst
+
+  wst
+  n01
+
+\`\`\`
+
+EOF
+exit 0
+}
+
+[[ "$1" =~ ^[-]+(h|help) ]] && usage
+
+[[ -z "$1" ]] && die "EMPTY HOST"
+
+HOST="$1"
+PREFIX="${HOST//-*/}"
+INVENTORY="${PREFIX,,}"
+
+[[ -n "$2" ]] && INVENTORY="$2"
+
+JSON="$(mktemp --suffix .json)"
+
+awx-cli host get            \
+  --format json             \
+  --inventory "$INVENTORY"  \
+  --name "$HOST"            > "$JSON" 2>/dev/null
+
+[[ -s "$JSON" ]] || die "EMPTY JSON"
+
+jq -r '.summary_fields.groups.results' "$JSON" | jq -r '.[] | .name'
+
+rm -f "$JSON"
