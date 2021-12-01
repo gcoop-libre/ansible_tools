@@ -18,18 +18,19 @@
 
 # shellcheck disable=SC1090
 
-DIR_BIN=$(dirname "$0") && source "$DIR_BIN/awx-common"
+DIR_BIN="$(dirname "$0")" && source "$DIR_BIN/awx-common"
 
 function usage()
 {
 cat << EOF
+
 Usage:
 
 \`\`\`bash
 
   $BIN
 
-$(code)
+\`\`\`
 
 Generate a markdown output for usage of each command script
 
