@@ -16,18 +16,36 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-BIN="$(basename "$0")"
+# shellcheck disable=SC1090
 
-die()
+DIR_BIN=$(dirname "$0") && source "$DIR_BIN/awx-common"
+
+function usage()
 {
-  echo "$BIN [ERRR] $1"
-  exit 1
+cat << EOF
+Usage:
+
+\`\`\`bash
+
+  $BIN
+
+\`\`\`
+
+Convert git URL from _SSH_ to _HTTPS_ in \`src:\` of \`requirements.yml\`
+
+Example:
+
+\`\`\`bash
+
+ $BIN
+
+\`\`\`
+
+EOF
+exit 0
 }
 
-log()
-{
-  echo "$BIN [INFO] $1"
-}
+[[ "$1" =~ ^[-]+(h|help) ]] && usage
 
 REQ='roles/requirements.yml'
 
@@ -36,12 +54,12 @@ REQ='roles/requirements.yml'
 [[ -e "tests/$REQ" ]] && ROLES_SRC="tests/$REQ"
 [[ -z "$ROLES_SRC" ]] && die "NOT FOUND ROLES IN $PWD"
 
-GITLAB_GIT_URL=$(git config --get remote.origin.url)
-GITLAB_HTTPS=$(echo "$GITLAB_GIT_URL" | grep -ow 'https')
+GITLAB_GIT_URL="$(git config --get remote.origin.url | head -1)"
+GITLAB_HTTPS="$(echo "$GITLAB_GIT_URL" | grep -ow 'https')"
 
 [[ "$GITLAB_HTTPS" = 'https' ]] || die "NOT FOUND HTTPS ORIGIN"
 
-GITLAB_TOKEN=$(echo "$GITLAB_GIT_URL" | cut -d@ -f1 | cut -d/ -f3)
+GITLAB_TOKEN="$(echo "$GITLAB_GIT_URL" | cut -d@ -f1 | cut -d/ -f3)"
 
 sed -i "s/src: git@/src: https:\\/\\/$GITLAB_TOKEN@/g" "$ROLES_SRC" \
   && log "$PWD/$ROLES_SRC UPDATED"
