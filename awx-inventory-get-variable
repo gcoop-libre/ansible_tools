@@ -52,13 +52,13 @@ exit 0
 INVENTORY="$1"
 VARIABLE="$2"
 
-JSON=$(mktemp --suffix .json)
+JSON="$(mktemp --suffix .json)"
 
 awx-cli inventory get \
   --format json       \
   --name "$INVENTORY" > "$JSON" 2>/dev/null
 
-YAML=$(mktemp --suffix .yml)
+YAML="$(mktemp --suffix .yml)"
 
 [[ -s "$JSON" ]] || die "EMPTY JSON"
 
