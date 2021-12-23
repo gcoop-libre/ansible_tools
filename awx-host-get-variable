@@ -62,7 +62,7 @@ exit 0
 HOST="$1"
 KEY="$2"
 PREFIX="${HOST//-*/}"
-INVENTORY="${PREFIX,,}"
+[[ -z "$INVENTORY" ]] && INVENTORY="${PREFIX,,}"
 
 JSON="$(mktemp --suffix .json)"
 
