@@ -535,6 +535,17 @@ jq_modify_verbosity()
   sed -i "s/\"verbosity\": .,/\"verbosity\": $2,/g" "$1"
 }
 
+yaml_host_vars()
+{
+
+  printf "%s\\n\\n" '---'
+  [[ -z "$1" ]] || printf "ansible_host: %s\\n"        "$1"
+  [[ -z "$2" ]] || printf "primary_maccaddress: %s\\n" "$2"
+  [[ -z "$3" ]] || printf "hostname: %s\\n"            "$3"
+  [[ -z "$4" ]] || printf "inventory_serial: %s\\n"    "$4"
+
+}
+
 AWX_CFG_HOST="$(awx_cfg_get 'host')"
 AWX_CFG_PASS="$(awx_cfg_get 'pass')"
 AWX_CFG_USER="$(awx_cfg_get 'user')"
