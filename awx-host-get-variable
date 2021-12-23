@@ -29,7 +29,7 @@ Usage:
 
   $BIN HOST [INVENTORY]
 
-$(code)
+\`\`\`
 
 Get _host_ variables from _inventory_
 
@@ -41,7 +41,7 @@ Example:
 
   $BIN pve-dev01
 
-$(code)
+\`\`\`
 
   Explicit _host_ and _inventory_:
 
@@ -49,7 +49,7 @@ $(code)
 
   $BIN dev01 pve
 
-$(code)
+\`\`\`
 
 EOF
 exit 0
@@ -77,17 +77,13 @@ YAML=$(mktemp --suffix .yml)
 
 jq -r .variables "$JSON" > "$YAML" 2>/dev/null
 
-code
 if [[ -z "$KEY" ]]
 then
-  title2 "GET ALL VARIABLES IN $HOST FROM $INVENTORY INVENTORY"
   yq -r . "$YAML"
 else
-  title2 "GET $KEY VARIABLE IN $HOST FROM $INVENTORY INVENTORY"
   VALUE="$(yq -r ".$KEY" "$YAML" | grep -vi null)"
   echo "$VALUE"
 fi
-code
 
 rm -f "$JSON"
 rm -f "$YAML"
