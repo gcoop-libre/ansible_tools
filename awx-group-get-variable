@@ -55,7 +55,7 @@ INVENTORY="$1"
 GROUP="$2"
 VARIABLE="$3"
 
-JSON=$(mktemp --suffix .json)
+JSON="$(mktemp --suffix .json)"
 
 awx-cli group get          \
   --format json            \
@@ -64,7 +64,7 @@ awx-cli group get          \
 
 [[ -s "$JSON" ]] || exit 1
 
-YAML=$(mktemp --suffix .yml)
+YAML="$(mktemp --suffix .yml)"
 
 jq -r ".variables" "$JSON" > "$YAML"
 
