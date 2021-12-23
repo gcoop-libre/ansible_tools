@@ -23,17 +23,30 @@ DIR_BIN=$(dirname "$0") && source "$DIR_BIN/awx-common"
 function usage()
 {
 cat << EOF
+
 Usage:
-  $BIN
+
+\`\`\`bash
+
+  $BIN INVENTORY GROUP
+
+\`\`\`
 
 Description
+
+Example:
+
+\`\`\`bash
+
+  $BIN wst dev
+
+\`\`\`
 
 EOF
 exit 0
 }
 
 [[ "$1" =~ ^[-]+(h|help) ]] && usage
-
 
 [[ -z "$1" ]] && die "EMPTY INVENTORY"
 [[ -z "$2" ]] && die "EMPTY GROUP"
