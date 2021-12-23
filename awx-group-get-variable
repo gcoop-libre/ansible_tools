@@ -68,15 +68,12 @@ YAML="$(mktemp --suffix .yml)"
 
 jq -r ".variables" "$JSON" > "$YAML"
 
-title2 "GET $VARIABLE FROM GROUP $GROUP IN INVENTORY $INVENTORY"
-code
 if [[ -z "$VARIABLE" ]]
 then
   yq -r '.' "$YAML"
 else
   yq -r ".$VARIABLE" "$YAML"
 fi
-code
 
 rm -f "$YAML"
 rm -f "$JSON"
