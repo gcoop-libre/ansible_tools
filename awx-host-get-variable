@@ -64,14 +64,14 @@ KEY="$2"
 PREFIX="${HOST//-*/}"
 INVENTORY="${PREFIX,,}"
 
-JSON=$(mktemp --suffix .json)
+JSON="$(mktemp --suffix .json)"
 
 awx-cli host get            \
   --format json             \
   --inventory "$INVENTORY"  \
   --name "$HOST"            > "$JSON" 2>/dev/null
 
-YAML=$(mktemp --suffix .yml)
+YAML="$(mktemp --suffix .yml)"
 
 [[ -s "$JSON" ]] || die "EMPTY JSON"
 
