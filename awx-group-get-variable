@@ -70,7 +70,12 @@ jq -r ".variables" "$JSON" > "$YAML"
 
 if [[ -z "$VARIABLE" ]]
 then
-  yq -r '.' "$YAML"
+
+  printf "%s\\n\\n" '---'
+  yq --sort-keys -y -r '.' "$YAML"           \
+    | sed "s/__ansible_vault: '/ !vault |/g" \
+    | sed "s/^\s\+'//g"
+
 else
   yq -r ".$VARIABLE" "$YAML"
 fi
