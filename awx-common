@@ -404,7 +404,7 @@ function json_get_asset_type()
   local JSON
 
   JSON="$1"
-  jq -r '.[] | .asset_type' "$JSON"
+  jq -r '.[] | .asset_type' "$JSON" 2>/dev/null
 
 }
 
