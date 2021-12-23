@@ -79,7 +79,10 @@ jq -r .variables "$JSON" > "$YAML" 2>/dev/null
 
 if [[ -z "$KEY" ]]
 then
-  yq -r . "$YAML"
+
+  printf "%s\\n\\n" '---'
+  yq -y --sort-keys -r . "$YAML"
+
 else
   VALUE="$(yq -r ".$KEY" "$YAML" | grep -vi null)"
   echo "$VALUE"
