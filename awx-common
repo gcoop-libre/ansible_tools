@@ -546,6 +546,14 @@ yaml_host_vars()
 
 }
 
+ssh_config()
+{
+
+  [[ -z "$1" ]] || printf "\\n\\nHost %s %s"       "$1" "$2"
+  [[ -z "$3" ]] || printf "\\n     Hostname %s\\n" "$3"
+
+}
+
 AWX_CFG_HOST="$(awx_cfg_get 'host')"
 AWX_CFG_PASS="$(awx_cfg_get 'pass')"
 AWX_CFG_USER="$(awx_cfg_get 'user')"
