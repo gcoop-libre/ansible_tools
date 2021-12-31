@@ -1,0 +1,59 @@
+#!/bin/bash
+
+# This script comes with ABSOLUTELY NO WARRANTY, use at own risk
+# Copyright (C) 2021 Osiris Alejandro Gomez <osiris@gcoop.coop>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+
+# shellcheck disable=SC1090
+
+DIR_BIN="$(dirname "$0")" && source "$DIR_BIN/awx-common"
+
+function usage()
+{
+cat << EOF
+
+Usage:
+
+\`\`\`bash
+
+  $BIN [STDOUT_JOB_FILE]
+
+\`\`\`
+
+Plot _hosts_ versions group by network from _stdout_ job file.
+
+Example:
+
+\`\`\`bash
+
+  $BIN 12345.log
+
+\`\`\`
+EOF
+exit 0
+}
+
+[[ "$1" =~ ^[-]+(h|help) ]] && usage
+
+CSV='awx-host-versions.csv'
+DAT='awx-host-versions.dat'
+PNG='awx-host-versions.png'
+
+LOG=''
+
+[[ -z "$1"   ]] && LOG="$1"
+[[ -e "$CSV" ]] || awx-log-host-get-data       "$LOG" > "$CSV"
+[[ -e "$DAT" ]] || awx-csv-host-versions2table "$CSV" > "$DAT"
+[[ -e "$DAT" ]] && awx-plot-host-versions             > "$PNG"
