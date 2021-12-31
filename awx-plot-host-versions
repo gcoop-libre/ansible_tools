@@ -1,0 +1,31 @@
+#!/usr/bin/gnuplot
+
+set term png enhanced font 'Inconsolata,10' lw 2 size 1920,1080
+set title  "Versions" font 'Inconsolata,14'
+set xlabel "groups"   font 'Inconsolata,10'
+set ylabel "hosts"    font 'Inconsolata,10'
+unset mxtics
+unset xtics
+set ytics tc ls 8
+set  tics tc ls 8
+set mytics
+set border 3 front ls 8
+set tics nomirror out
+set key samplen 8
+set key spacing 1.5
+set key font 'Inconsolata,12'
+set lmargin 10
+set bmargin 5
+set rmargin 5
+set tmargin 5
+
+set style line 102 lc rgb '#c0c0c0' lt 0 lw 1
+set grid nomxtics mytics ytics back ls 102
+
+set style data histograms
+set style histogram rowstacked
+set boxwidth 1 relative
+set style fill solid 1.0 border -1
+
+T=`awk '{print NF}' awx-host-versions.dat | sort -nr | head -1`
+plot for [i=2:T:1] 'awx-host-versions.dat' u i:xticlabels(1) t columnheader
