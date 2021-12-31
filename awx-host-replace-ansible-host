@@ -1,0 +1,95 @@
+#!/bin/bash
+
+# This script comes with ABSOLUTELY NO WARRANTY, use at own risk
+# Copyright (C) 2021 Osiris Alejandro Gomez <osiris@gcoop.coop>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+
+# shellcheck disable=SC2001
+# shellcheck disable=SC1090
+
+DIR_BIN=$(dirname "$0") && source "$DIR_BIN/awx-common"
+
+function usage()
+{
+cat << EOF
+Usage:
+
+\`\`\`bash
+
+  $BIN [HOST_INVENTORY]
+
+\`\`\`
+
+Replace \`ansible_host\` value with _FQDN_ in host_vars YAML files of inventory.
+
+Example:
+
+\`\`\`bash
+
+  $BIN hosts-pve
+
+\`\`\`
+
+EOF
+exit 0
+}
+
+[[ "$1" =~ ^[-]+(h|help) ]] && usage
+
+[[ -z "$HOST_DOMAIN"         ]] && HOST_DOMAIN="$DEFAULT_HOST_DOMAIN"
+[[ -z "$HOST_DOMAIN_PREFIX"  ]] && HOST_DOMAIN_PREFIX="$DEFAULT_HOST_DOMAIN_PREFIX"
+[[ -z "$HOST_INVENTORY"      ]] && HOST_INVENTORY="$DEFAULT_HOST_INVENTORY"
+[[ -z "$HOST_PREFIX_REPLACE" ]] && HOST_PREFIX_REPLACE="$DEFAULT_HOST_PREFIX_REPLACE"
+[[ -z "$HOST_PREFIX_SEARCH"  ]] && HOST_PREFIX_SEARCH="$DEFAULT_HOST_PREFIX_SEARCH"
+[[ -z "$HOST_SUFFIX"         ]] && HOST_SUFFIX="$DEFAULT_HOST_SUFFIX"
+
+[[ -z "$1" ]] || HOST_INVENTORY="$1"
+
+grep -E "^$HOST_PREFIX_SEARCH" "$HOST_INVENTORY" \
+  | grep -v '\['                                 \
+  | while read -r HOST
+    do
+
+      NUMBER="${HOST/$HOST_PREFIX_SEARCH/}"
+      YAML="host_vars/$HOST.yml"
+      FQDN="$HOST_PREFIX_REPLACE.$HOST_DOMAIN_PREFIX${NUMBER}.$HOST_DOMAIN"
+      SUFFIX="$HOST_SUFFIX${NUMBER}"
+
+      if [[ ! -e "$YAML" ]]
+      then
+
+YML=$(cat << EOF
+---
+
+ansible_host: $FQDN
+hostname: $HOST
+hostname_suffix: $SUFFIX
+network_address_shift: 0
+primary_macaddress: null
+pve_group: $SUFFIX
+
+EOF
+)
+
+        echo "$YML" > "$YAML" && echo "Generate $YAML ..."
+
+      else
+
+        sed -i "s/ansible_host:.*$/ansible_host: $FQDN/g" "$YAML"
+        echo "Replace $FQDN in $YAML ..."
+
+      fi
+
+    done
