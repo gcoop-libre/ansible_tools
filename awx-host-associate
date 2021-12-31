@@ -23,11 +23,25 @@ DIR_BIN=$(dirname "$0") && source "$DIR_BIN/awx-common"
 function usage()
 {
 cat << EOF
+
 Usage:
-  $BIN
 
-Description
+\`\`\`bash
 
+  $BIN HOST GROUP_NAME [INVENTORY]
+
+\`\`\`bash
+
+Associate _host_ to _group_.
+Use PREFIX-HOST as INVENTORY.
+
+\`\`\`bash
+
+  $BIN wst-dev01 dev
+
+  $BIN wstdev01 dev wst
+
+\`\`\`
 EOF
 exit 0
 }
@@ -40,6 +54,7 @@ exit 0
 HOST="$1"
 PREFIX="${HOST//-*/}"
 INVENTORY="${PREFIX,,}"
+[[ ! -z "$3" ]] && INVENTORY="$3"
 
 [[ -z "$2" ]] && die "EMPTY GROUP NAME"
 GROUP="$2"
