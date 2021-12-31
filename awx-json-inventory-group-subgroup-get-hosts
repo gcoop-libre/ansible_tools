@@ -17,7 +17,6 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 # shellcheck disable=SC1090
-# shellcheck disable=SC2001
 
 DIR_BIN=$(dirname "$0") && source "$DIR_BIN/awx-common"
 
@@ -28,43 +27,38 @@ Usage:
 
 \`\`\`bash
 
-  $BIN JSON NEW_NAME
+  $BIN INVENTORY.json GROUP SUBGROUP
 
 \`\`\`
 
-Rename \`.json\` file and replace internal \`name\`.
+Get hosts from subgroup of group of inventory \`.json\` file
 
 Example:
 
 \`\`\`bash
 
-  $BIN pve_kvm.json pve_vms_kvm
+  $BIN inventory/pve.json dev lab
+
+    spve01dev
 
 \`\`\`
+
 EOF
 exit 0
 }
 
 [[ "$1" =~ ^[-]+(h|help) ]] && usage
 
-
-[[ -z "$1" ]] && die "EMPTY FILE"
+[[ -z "$1" ]] && die "EMPTY INVENTORY"
 [[ -e "$1" ]] || die "NOT FOUND $1"
-[[ -z "$2" ]] || NEW_NAME="$2"
+INVENTORY="$1"
 
-[[ -z "$2" ]] && die "EMPTY NEW_NAME"
+[[ -z "$2" ]] && die "EMPTY GROUP"
+GROUP="$2"
 
-JSON="$1"
-NAME="$(basename "$JSON" .json)"
-NEW_JSON="$(echo "$JSON" | sed "s/$NAME/$NEW_NAME/g")"
+[[ -z "$3" ]] && die "EMPTY SUB_GROUP"
+SUB_GROUP="$3"
 
-echo "RENAME FROM $JSON TO $NEW_JSON"
-echo
-sed "s/$NAME/$NEW_NAME/g" "$JSON" > "$NEW_JSON"
+JQ=".[] | .asset_relation.group[] | select(.name == \"$GROUP\") | .sub_groups[] | select(.name == \"$SUB_GROUP\") | .hosts[]"
 
-LEN="$(grep -E '(unified_job_name|project)' "$NEW_JSON" | wc -c)"
-WIDTH="$((LEN*2+10))"
-
-diff -y --suppress-common-lines -W "$WIDTH" "$JSON" "$NEW_JSON"
-
-echo
+jq -r "$JQ" "$INVENTORY"

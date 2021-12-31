@@ -17,54 +17,44 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 # shellcheck disable=SC1090
-# shellcheck disable=SC2001
+# shellcheck disable=SC2002
 
 DIR_BIN=$(dirname "$0") && source "$DIR_BIN/awx-common"
 
 function usage()
 {
 cat << EOF
+
 Usage:
 
 \`\`\`bash
 
-  $BIN JSON NEW_NAME
+  $BIN JSON
 
 \`\`\`
 
-Rename \`.json\` file and replace internal \`name\`.
-
-Example:
+Get extra_vars from \`.json\`.
 
 \`\`\`bash
 
-  $BIN pve_kvm.json pve_vms_kvm
+  $BIN job_template/ipa_sss_syn_v0.1.0.json
+
+	---
+	sssd_cache_script_path: /opt/freeipa-sssd-tools/ipa-sss-syn
+	sssd_cache_rt_path: /opt/freeipa-sssd-tools
 
 \`\`\`
+
 EOF
 exit 0
 }
 
 [[ "$1" =~ ^[-]+(h|help) ]] && usage
 
-
-[[ -z "$1" ]] && die "EMPTY FILE"
-[[ -e "$1" ]] || die "NOT FOUND $1"
-[[ -z "$2" ]] || NEW_NAME="$2"
-
-[[ -z "$2" ]] && die "EMPTY NEW_NAME"
+[[   -z "$1" ]] && die "EMPTY JSON"
+[[ ! -e "$1" ]] && die "NOT FOUND JSON $1"
 
 JSON="$1"
-NAME="$(basename "$JSON" .json)"
-NEW_JSON="$(echo "$JSON" | sed "s/$NAME/$NEW_NAME/g")"
 
-echo "RENAME FROM $JSON TO $NEW_JSON"
-echo
-sed "s/$NAME/$NEW_NAME/g" "$JSON" > "$NEW_JSON"
-
-LEN="$(grep -E '(unified_job_name|project)' "$NEW_JSON" | wc -c)"
-WIDTH="$((LEN*2+10))"
-
-diff -y --suppress-common-lines -W "$WIDTH" "$JSON" "$NEW_JSON"
-
-echo
+JQ='.[] | .extra_vars'
+jq -r "$JQ" "$JSON"

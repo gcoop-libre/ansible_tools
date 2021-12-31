@@ -17,7 +17,7 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 # shellcheck disable=SC1090
-# shellcheck disable=SC2001
+# shellcheck disable=SC2002
 
 DIR_BIN=$(dirname "$0") && source "$DIR_BIN/awx-common"
 
@@ -28,43 +28,40 @@ Usage:
 
 \`\`\`bash
 
-  $BIN JSON NEW_NAME
+  $BIN [JSON_LIST]
 
 \`\`\`
 
-Rename \`.json\` file and replace internal \`name\`.
-
-Example:
+Get _playbook_ from one or more _job template_ \`.json\` file.
 
 \`\`\`bash
 
-  $BIN pve_kvm.json pve_vms_kvm
+  $BIN job_template/wst_apt_v1.1.0.json
+
+  main.yml
 
 \`\`\`
+
 EOF
 exit 0
 }
 
 [[ "$1" =~ ^[-]+(h|help) ]] && usage
 
+JSON_LIST="$(mktemp)"
 
-[[ -z "$1" ]] && die "EMPTY FILE"
-[[ -e "$1" ]] || die "NOT FOUND $1"
-[[ -z "$2" ]] || NEW_NAME="$2"
+if [[ -z "$1" ]]
+then
+  filelist_job_templates >> "$JSON_LIST"
+else
+  [[ ! -e "$1" ]] && die "NOT FOUND JSON_LIST $1"
+  echo "$1" >> "$JSON_LIST"
+fi
 
-[[ -z "$2" ]] && die "EMPTY NEW_NAME"
+while read -r FILE
+do
+  JQ='.[] | .playbook'
+  jq -r "$JQ" "$FILE"
+done < "$JSON_LIST"
 
-JSON="$1"
-NAME="$(basename "$JSON" .json)"
-NEW_JSON="$(echo "$JSON" | sed "s/$NAME/$NEW_NAME/g")"
-
-echo "RENAME FROM $JSON TO $NEW_JSON"
-echo
-sed "s/$NAME/$NEW_NAME/g" "$JSON" > "$NEW_JSON"
-
-LEN="$(grep -E '(unified_job_name|project)' "$NEW_JSON" | wc -c)"
-WIDTH="$((LEN*2+10))"
-
-diff -y --suppress-common-lines -W "$WIDTH" "$JSON" "$NEW_JSON"
-
-echo
+rm -f "$JSON_LIST"

@@ -186,29 +186,72 @@ grant_inventory_use()
 
 grant_project()
 {
-  awx-cli role grant \
-    -v               \
-    --type use       \
-    --team "$2"      \
-    --project "$1"
+  local TYPE
+
+  TYPE='use'
+
+  [[ ! -z "$3" ]] && TYPE="$3"
+
+  echo awx-cli role grant \
+    "$AWX_DEBUG"          \
+    --type "$TYPE"        \
+    --team "$2"           \
+    --project "$1"        | bash
+}
+
+grant_project_use()
+{
+  grant_project "$1" "$2" 'use'
+}
+
+grant_project_admin()
+{
+  grant_project "$1" "$2" 'admin'
 }
 
 grant_job_template()
 {
-  awx-cli role grant \
-    -v               \
-    --type execute   \
-    --team "$2"      \
-    --job-template "$1"
+  local TYPE
+
+  TYPE='execute'
+
+  [[ ! -z "$3" ]] && TYPE="$3"
+
+  echo awx-cli role grant \
+    "$AWX_DEBUG"          \
+    --type "$TYPE"        \
+    --team "$2"           \
+    --job-template "$1"   | bash
+}
+
+grant_job_template_admin()
+{
+  grant_job_template "$1" "$2" 'admin'
+}
+
+grant_job_template_execute()
+{
+  grant_job_template "$1" "$2" 'execute'
 }
 
 grant_workflow()
 {
-  awx-cli role grant \
-    -v               \
-    --type execute   \
-    --team "$2"      \
-    --workflow "$1"
+  local TYPE
+
+  TYPE='execute'
+
+  [[ ! -z "$3" ]] && TYPE="$3"
+
+  echo awx-cli role grant \
+    $AWX_DEBUG            \
+    --type "$TYPE"        \
+    --team "$2"           \
+    --workflow "$1"       | bash
+}
+
+grant_workflow_execute()
+{
+  grant_workflow "$1" "$2" 'execute'
 }
 
 group_get_id()
@@ -329,11 +372,9 @@ awx_ad_hoc_shell_footer
 
 }
 
-awx_cfg_get_host()
+awx_cfg_get()
 {
-
-grep host "$HOME/.tower_cli.cfg" | cut -d= -f2 | tr -d ' '
-
+  grep "$1" "$HOME/.tower_cli.cfg" | cut -d= -f2 | tr -d ' '
 }
 
 wait_seconds()
@@ -356,6 +397,40 @@ filelist_total()
 
   TOTAL="$(wc -l "$1" | cut -d' ' -f1)"
   printf "found %s %s\\n" "$TOTAL" "$2"
+}
+
+function json_get_asset_type()
+{
+  local JSON
+
+  JSON="$1"
+  jq -r '.[] | .asset_type' "$JSON" 2>/dev/null
+
+}
+
+function json_is_project()
+{
+  [[ "$(json_get_asset_type "$1")" = 'project' ]] || return 1
+  return 0
+}
+
+function json_is_job_template()
+{
+  [[ "$(json_get_asset_type "$1")" = 'job_template' ]] || return 1
+  return 0
+}
+
+function json_is_workflow()
+{
+  [[ "$(json_get_asset_type "$1")" = 'workflow' ]] || return 1
+  return 0
+}
+
+function json_is_inventory()
+{
+  [[ "$(json_get_asset_type "$1")" = 'inventory' ]] || return 1
+  return 0
+
 }
 
 function get_json()
@@ -390,10 +465,20 @@ json_get_unified_job_name()
   jq -r "$JQ" "$1"
 }
 
+function json_get_project()
+{
+  local JQ
+
+  JQ='.[] | .project'
+  jq -r "$JQ" "$1"
+}
+
 function get_json_workflows()
 {
   local TMP
+  local N
 
+  N="$(basename "$1" .json)"
   json_get_unified_job_name "$1" | grep "$WORKFLOW_PREFIX" \
     | while read -r i
       do
@@ -406,7 +491,7 @@ function get_json_workflows()
             done
         echo "$DIR_WORKFLOW/$i.json"
       done
-  echo "$DIR_WORKFLOW/$1.json"
+  echo "$DIR_WORKFLOW/$N.json"
 }
 
 function get_url()
@@ -442,4 +527,33 @@ jq_yq_modify()
   fi
 }
 
-AWX_CFG_HOST="$(awx_cfg_get_host)"
+jq_modify_verbosity()
+{
+  [[ -e "$1" ]] || die "NOT FOUND $1"
+  [[ -z "$2" ]] && die "EMPTY VERBOSITY"
+
+  sed -i "s/\"verbosity\": .,/\"verbosity\": $2,/g" "$1"
+}
+
+yaml_host_vars()
+{
+
+  printf "%s\\n\\n" '---'
+  [[ -z "$1" ]] || printf "ansible_host: %s\\n"        "$1"
+  [[ -z "$2" ]] || printf "primary_maccaddress: %s\\n" "$2"
+  [[ -z "$3" ]] || printf "hostname: %s\\n"            "$3"
+  [[ -z "$4" ]] || printf "inventory_serial: %s\\n"    "$4"
+
+}
+
+ssh_config()
+{
+
+  [[ -z "$1" ]] || printf "\\n\\nHost %s %s"       "$1" "$2"
+  [[ -z "$3" ]] || printf "\\n     Hostname %s\\n" "$3"
+
+}
+
+AWX_CFG_HOST="$(awx_cfg_get 'host')"
+AWX_CFG_PASS="$(awx_cfg_get 'pass')"
+AWX_CFG_USER="$(awx_cfg_get 'user')"

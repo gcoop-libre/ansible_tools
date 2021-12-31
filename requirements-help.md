@@ -22,7 +22,24 @@ Generate a _markdown_ output for usage of each command _script_.
 
 ## `requirements-ssh2https`
 
-requirements-ssh2https [ERRR] NOT FOUND ROLES IN /home/osiris/git/bccl/filiales/ansible_tools
+Usage:
+
+```bash
+
+  requirements-ssh2https
+
+```
+
+Convert git URL from _SSH_ to _HTTPS_ in `src:` of `requirements.yml`
+
+Example:
+
+```bash
+
+ requirements-ssh2https
+
+```
+
 
 ## `requirements-version-update`
 

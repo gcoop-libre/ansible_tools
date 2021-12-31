@@ -17,7 +17,6 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 # shellcheck disable=SC1090
-# shellcheck disable=SC2001
 
 DIR_BIN=$(dirname "$0") && source "$DIR_BIN/awx-common"
 
@@ -28,43 +27,57 @@ Usage:
 
 \`\`\`bash
 
-  $BIN JSON NEW_NAME
+  $BIN HOST [INVENTORY]
 
 \`\`\`
 
-Rename \`.json\` file and replace internal \`name\`.
+Get _host_ description from _AWX_ _inventory_.
 
 Example:
 
+  Implicit _inventory_ from _host_:
+
 \`\`\`bash
 
-  $BIN pve_kvm.json pve_vms_kvm
+  $BIN pve-dev01
+
+  Proxmox develop server
 
 \`\`\`
+
+  Explicit _host_ and _inventory_:
+
+\`\`\`bash
+
+  $BIN dev01 pve
+
+  Proxmox develop server
+
+\`\`\`
+
+$(code)
+
 EOF
 exit 0
 }
 
 [[ "$1" =~ ^[-]+(h|help) ]] && usage
 
+[[ -z "$1" ]] && die "EMPTY HOST"
 
-[[ -z "$1" ]] && die "EMPTY FILE"
-[[ -e "$1" ]] || die "NOT FOUND $1"
-[[ -z "$2" ]] || NEW_NAME="$2"
+HOST="$1"
+PREFIX="${HOST//-*/}"
+INVENTORY="${PREFIX,,}"
 
-[[ -z "$2" ]] && die "EMPTY NEW_NAME"
+JSON=$(mktemp --suffix .json)
 
-JSON="$1"
-NAME="$(basename "$JSON" .json)"
-NEW_JSON="$(echo "$JSON" | sed "s/$NAME/$NEW_NAME/g")"
+awx-cli host get            \
+  --format json             \
+  --inventory "$INVENTORY"  \
+  --name "$HOST"            > "$JSON" 2>/dev/null
 
-echo "RENAME FROM $JSON TO $NEW_JSON"
-echo
-sed "s/$NAME/$NEW_NAME/g" "$JSON" > "$NEW_JSON"
+[[ -s "$JSON" ]] || die "EMPTY JSON"
 
-LEN="$(grep -E '(unified_job_name|project)' "$NEW_JSON" | wc -c)"
-WIDTH="$((LEN*2+10))"
+jq -r '.description' "$JSON" 2>/dev/null
 
-diff -y --suppress-common-lines -W "$WIDTH" "$JSON" "$NEW_JSON"
-
-echo
+rm -f "$JSON"

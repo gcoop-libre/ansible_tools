@@ -58,4 +58,4 @@ GROUP="$2"
 
 JQ=".[] | .asset_relation.group[] | select(.name == \"$GROUP\") | .hosts[]"
 
-jq -r "$JQ" "$INVENTORY"
+jq -r "$JQ" "$INVENTORY" | sort

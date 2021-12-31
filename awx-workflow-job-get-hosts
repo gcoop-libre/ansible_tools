@@ -17,54 +17,60 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 # shellcheck disable=SC1090
-# shellcheck disable=SC2001
 
 DIR_BIN=$(dirname "$0") && source "$DIR_BIN/awx-common"
 
 function usage()
 {
 cat << EOF
+
 Usage:
 
 \`\`\`bash
 
-  $BIN JSON NEW_NAME
+  $BIN WORKFLOW_JOB_ID
 
 \`\`\`
 
-Rename \`.json\` file and replace internal \`name\`.
+Get enabled hosts of limit groups from workflow_job
 
 Example:
 
 \`\`\`bash
 
-  $BIN pve_kvm.json pve_vms_kvm
+  $BIN 123
+
+  dev wstdev01
+  dev wstdev02
+  dev wstdev03
+  lab wstlab01
+  lab wstlab02
 
 \`\`\`
+
 EOF
 exit 0
 }
 
 [[ "$1" =~ ^[-]+(h|help) ]] && usage
 
+INVENTORY="wst"
 
-[[ -z "$1" ]] && die "EMPTY FILE"
-[[ -e "$1" ]] || die "NOT FOUND $1"
-[[ -z "$2" ]] || NEW_NAME="$2"
+[[ -z "$1" ]] && die "EMPTY WORKFLOW_JOB_ID"
 
-[[ -z "$2" ]] && die "EMPTY NEW_NAME"
+WORKFLOW_JOB_ID="$1"
 
-JSON="$1"
-NAME="$(basename "$JSON" .json)"
-NEW_JSON="$(echo "$JSON" | sed "s/$NAME/$NEW_NAME/g")"
+awx-workflow-job-get-limit "$WORKFLOW_JOB_ID" \
+  | while read -r GROUP
+    do
 
-echo "RENAME FROM $JSON TO $NEW_JSON"
-echo
-sed "s/$NAME/$NEW_NAME/g" "$JSON" > "$NEW_JSON"
+			GROUP_ID="$(group_get_id "$INVENTORY" "$GROUP")"
+      [[ -z "$GROUP_ID" ]] && continue
 
-LEN="$(grep -E '(unified_job_name|project)' "$NEW_JSON" | wc -c)"
-WIDTH="$((LEN*2+10))"
+      awx-host-list-inventory-group "$INVENTORY" "$GROUP_ID" \
+        | grep "$INVENTORY" | while read -r _ HOST
+          do
+            echo "$GROUP $HOST"
+          done
 
-diff -y --suppress-common-lines -W "$WIDTH" "$JSON" "$NEW_JSON"
-
-echo
+    done

@@ -1,0 +1,98 @@
+#!/bin/bash
+
+# This script comes with ABSOLUTELY NO WARRANTY, use at own risk
+# Copyright (C) 2020 Osiris Alejandro Gomez <osiris@gcoop.coop>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+
+# shellcheck disable=SC1090
+# shellcheck disable=SC2002
+
+DIR_BIN=$(dirname "$0") && source "$DIR_BIN/awx-common"
+
+function usage()
+{
+cat << EOF
+
+Usage:
+
+\`\`\`bash
+
+  $BIN WORKFLOW_JSON
+
+\`\`\`
+
+Add suffix to workflow with dependencies and show diff
+
+Example:
+
+\`\`\`bash
+
+  $BIN workflow/wfw_pve_v0.2.0.json hotfix
+
+RENAME FROM workflow/wfw_pve_v0.2.0.json TO workflow/wfw_pve_v0.2.0-hotfix.json
+
+  "name": "wfw_pve_v0.2.0"               |  "name": "wfw_pve_v0.2.0-hotfix"
+
+  REPLACE wfw_ftp_v0.2.0 WITH wfw_ftp_v0.2.0-hotfix
+  REPLACE wfw_git_v0.1.0 WITH wfw_git_v0.1.0-hotfix
+  REPLACE wfw_cdn_v0.2.0 WITH wfw_cdn_v0.2.0-hotfix
+  REPLACE wfw_apt_v1.1.3 WITH wfw_apt_v1.1.3-hotfix
+
+  DIFF workflow/wfw_pve_v0.2.0.json WITH workflow/wfw_pve_v0.2.0-hotfix.json
+
+  "unified_job_name": "wfw_ftp_v0.2.0",  |  "unified_job_name": "wfw_ftp_v0.2.0-hotfix",
+  "unified_job_name": "wfw_git_v0.1.0",  |  "unified_job_name": "wfw_git_v0.1.0-hotfix",
+  "unified_job_name": "wfw_cdn_v0.2.0",  |  "unified_job_name": "wfw_cdn_v0.2.0-hotfix",
+  "unified_job_name": "wfw_apt_v1.1.3",  |  "unified_job_name": "wfw_apt_v1.1.3-hotfix",
+
+  "name": "wfw_pve_v0.2.0"               |  "name": "wfw_pve_v0.2.0-hotfix"
+
+\`\`\`
+
+EOF
+exit 0
+}
+
+[[ "$1" =~ ^[-]+(h|help) ]] && usage
+
+[[ -z "$1" ]] && die "EMPTY JSON"
+[[ -e "$1" ]] || die "NOT FOUND JSON $1"
+[[ -z "$2" ]] && die "EMPTY SUFFIX"
+
+JSON="$1"
+SUFFIX="$2"
+
+NAME="$(basename "$JSON" .json)"
+NEW_NAME="$NAME-$SUFFIX"
+DIR="$(dirname "$JSON")"
+NEW_JSON="$DIR/$NAME-$SUFFIX.json"
+
+awx-json-rename "$JSON" "$NEW_NAME"
+
+[[ ! -e "$NEW_JSON" ]] && die "NOT FOUND $NEW_JSON"
+
+json_get_unified_job_name "$JSON" | while read -r N
+do
+  echo "REPLACE $N WITH $N-$SUFFIX"
+  sed -i "s/$N/$N-$SUFFIX/g" "$NEW_JSON"
+done
+
+LEN="$(grep unified_job_name "$NEW_JSON" | wc -L | cut -d' ' -f1)"
+WIDTH="$((LEN*2))"
+
+echo
+echo "DIFF $JSON WITH $NEW_JSON"
+echo
+diff -y --suppress-common-lines -W "$WIDTH" "$JSON" "$NEW_JSON"

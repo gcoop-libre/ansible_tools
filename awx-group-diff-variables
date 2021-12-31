@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # This script comes with ABSOLUTELY NO WARRANTY, use at own risk
-# Copyright (C) 2020 Osiris Alejandro Gomez <osiris@gcoop.coop>
+# Copyright (C) 2021 Osiris Alejandro Gomez <osiris@gcoop.coop>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -32,7 +32,7 @@ Usage:
 
 \`\`\`
 
-Description
+Compare and merge AWX group variables with local YAML group file.
 
 Example:
 
@@ -53,32 +53,32 @@ exit 0
 
 INVENTORY="$1"
 GROUP="$2"
-VARIABLE="$3"
 
-JSON="$(mktemp --suffix .json)"
+SRC_YML="group_vars/${GROUP}.yml"
+BAK_YML="group_vars/${GROUP}-$(date +%s).yml"
+SRD_YML="$(mktemp --suffix .yml)"
+AWX_YML="$(mktemp --suffix .yml)"
+MRG_YML="$(mktemp --suffix .yml)"
 
-awx-cli group get          \
-  --format json            \
-  --inventory "$INVENTORY" \
-  --name "$GROUP"          > "$JSON" 2>/dev/null
+[[ -e "$SRC_YML" ]] || die "NOT FOUND $SRC_YML"
 
-[[ -s "$JSON" ]] || exit 1
+cp -f "$SRC_YML" "$BAK_YML"
 
-YAML="$(mktemp --suffix .yml)"
+awx-group-get-variable "$INVENTORY" "$GROUP" > "$AWX_YML"
+yq -y --sort-keys -r . "$SRC_YML"            > "$SRD_YML"
 
-jq -r ".variables" "$JSON" > "$YAML"
+TOT_SRD="$(wc -l "$SRD_YML" | awk '{print $1}')"
+TOT_AWX="$(wc -l "$AWX_YML" | awk '{print $1}')"
+TOT_DFF="$((TOT_SRD+TOT_AWX))"
 
-if [[ -z "$VARIABLE" ]]
-then
+diff -U "$TOT_DFF" "$SRD_YML" "$AWX_YML" \
+  | sed 's/^+//g'                        \
+  | sed 's/^-//g'                        \
+  | grep -v '@@'                         \
+  | tail -n+3                            \
+  | sed 's/^--$/---\n\n/g'               \
+  | sed 's/^ \([a-z]\+\)/\1/g'           > "$SRC_YML"
 
-  printf "%s\\n\\n" '---'
-  yq --sort-keys -y -r '.' "$YAML"           \
-    | sed "s/__ansible_vault: '/ !vault |/g" \
-    | sed "s/^\s\+'//g"
-
-else
-  yq -r ".$VARIABLE" "$YAML"
-fi
-
-rm -f "$YAML"
-rm -f "$JSON"
+rm -f "$SRD_YML"
+rm -f "$AWX_YML"
+rm -f "$MRG_YML"

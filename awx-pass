@@ -29,7 +29,7 @@ Usage:
 
   $BIN ENVIRONMENT
 
-$(code)
+\`\`\`
 
 Get _AWX_ credentials for environment according \`~/.awx-config\`.
 
@@ -39,7 +39,7 @@ Example:
 
   $BIN develop
 
-$(code)
+\`\`\`
 
 EOF
 exit 0
@@ -57,9 +57,16 @@ fi
 
 ENV="${1^^}"
 USR="${ENV}_USER"
+
+if [[ ! -z "${ENV}_PASSWORD_STORE_DIR" ]]
+then
+  AWX_PASS_DIR="${ENV}_PASSWORD_STORE_DIR"
+  export PASSWORD_STORE_DIR="${!AWX_PASS_DIR}"
+fi
+
 AWX_ENV="$(echo "${!ENV}")"
 AWX_USER="$(echo "${!USR}")"
-AWX_PASS=$(pass "$PASS_PREFIX/$AWX_ENV/awx/${AWX_USER}_password")
+AWX_PASS=$(pass "${PASS_PREFIX}${AWX_ENV}${PASS_SUFFIX}${AWX_USER}_password")
 
 [[ -z "$AWX_PASS" ]] && die "EMPTY AWX_PASS"
 echo "$AWX_PASS" | xclip -sel clip

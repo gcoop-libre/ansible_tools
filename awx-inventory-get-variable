@@ -29,7 +29,7 @@ Usage:
 
   $BIN INVENTORY VARIABLE
 
-$(code)
+\`\`\`
 
 Get variable value from _inventory_.
 
@@ -39,7 +39,7 @@ Example:
 
   $BIN pve subnet
 
-$(code)
+\`\`\`
 
 EOF
 exit 0
@@ -52,13 +52,13 @@ exit 0
 INVENTORY="$1"
 VARIABLE="$2"
 
-JSON=$(mktemp --suffix .json)
+JSON="$(mktemp --suffix .json)"
 
 awx-cli inventory get \
   --format json       \
   --name "$INVENTORY" > "$JSON" 2>/dev/null
 
-YAML=$(mktemp --suffix .yml)
+YAML="$(mktemp --suffix .yml)"
 
 [[ -s "$JSON" ]] || die "EMPTY JSON"
 
@@ -66,16 +66,19 @@ jq -r .variables "$JSON" > "$YAML" 2>/dev/null
 
 [[ -s "$YAML" ]] || die "EMPTY YAML"
 
-title2 "GET $VARIABLE FROM $INVENTORY INVENTORY"
-code
+
 if [[ -z "$VARIABLE" ]]
 then
-  yq -r . "$YAML"
+
+  printf "%s\\n\\n" '---'
+  yq --sort-keys -y -r '.' "$YAML"           \
+    | sed "s/__ansible_vault: '/ !vault |/g" \
+    | sed "s/^\s\+'//g"
+
 else
   VALUE="$(yq -r ".$VARIABLE" "$YAML" | grep -vi null)"
   echo "$VALUE"
 fi
-code
 
 rm -f "$JSON"
 rm -f "$YAML"

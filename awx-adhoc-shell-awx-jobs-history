@@ -17,7 +17,6 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 # shellcheck disable=SC1090
-# shellcheck disable=SC2001
 
 DIR_BIN=$(dirname "$0") && source "$DIR_BIN/awx-common"
 
@@ -28,43 +27,38 @@ Usage:
 
 \`\`\`bash
 
-  $BIN JSON NEW_NAME
+  $BIN INVENTORY LIMIT
 
 \`\`\`
 
-Rename \`.json\` file and replace internal \`name\`.
+Show _AWX_ deploy history in \`/etc/awx-history/jobs-history.json\`
 
 Example:
 
-\`\`\`bash
+  $BIN wst dev
 
-  $BIN pve_kvm.json pve_vms_kvm
-
-\`\`\`
 EOF
 exit 0
 }
 
 [[ "$1" =~ ^[-]+(h|help) ]] && usage
 
+[[ -z "$1" ]] && die "EMPTY INVENTORY"
+INVENTORY="$1"
 
-[[ -z "$1" ]] && die "EMPTY FILE"
-[[ -e "$1" ]] || die "NOT FOUND $1"
-[[ -z "$2" ]] || NEW_NAME="$2"
+[[ -z "$2" ]] && die "EMPTY LIMIT"
+LIMIT="$2"
 
-[[ -z "$2" ]] && die "EMPTY NEW_NAME"
+COMMAND="jq -r '.[] | \"\(.job_id) \(.job_template_name)\", \"\(.job_id) \(.workflow_job_name)\"' /etc/awx-history/jobs-history.json | grep -vE '(null|awx_log)' | sort -nr"
 
-JSON="$1"
-NAME="$(basename "$JSON" .json)"
-NEW_JSON="$(echo "$JSON" | sed "s/$NAME/$NEW_NAME/g")"
-
-echo "RENAME FROM $JSON TO $NEW_JSON"
+printf "## Execute $COMMAND in %s" "$LIMIT"
 echo
-sed "s/$NAME/$NEW_NAME/g" "$JSON" > "$NEW_JSON"
+echo "\`\`\`"
+echo
+echo "  # awx-adhoc-shell $INVENTORY $LIMIT $COMMAND"
+echo
 
-LEN="$(grep -E '(unified_job_name|project)' "$NEW_JSON" | wc -c)"
-WIDTH="$((LEN*2+10))"
-
-diff -y --suppress-common-lines -W "$WIDTH" "$JSON" "$NEW_JSON"
+awx-adhoc-shell "$INVENTORY" "$LIMIT" "$COMMAND"
 
 echo
+echo "\`\`\`"

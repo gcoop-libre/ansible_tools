@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # This script comes with ABSOLUTELY NO WARRANTY, use at own risk
-# Copyright (C) 2020 Osiris Alejandro Gomez <osiris@gcoop.coop>
+# Copyright (C) 2021 Osiris Alejandro Gomez <osiris@gcoop.coop>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -16,8 +16,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-# shellcheck disable=SC1090
 # shellcheck disable=SC2001
+# shellcheck disable=SC1090
 
 DIR_BIN=$(dirname "$0") && source "$DIR_BIN/awx-common"
 
@@ -28,43 +28,41 @@ Usage:
 
 \`\`\`bash
 
-  $BIN JSON NEW_NAME
+  $BIN HOST_VARS_YAML
 
 \`\`\`
 
-Rename \`.json\` file and replace internal \`name\`.
+Generate _SSH_ host config from host_vars _YAML_ file.
 
 Example:
 
 \`\`\`bash
 
-  $BIN pve_kvm.json pve_vms_kvm
+  $BIN host_vars/wstdev01.yml
 
 \`\`\`
+
 EOF
 exit 0
 }
 
 [[ "$1" =~ ^[-]+(h|help) ]] && usage
 
+[[ -z "$1" ]] && die "EMPTY HOST VARS YAML"
+[[ -e "$1" ]] || die "NOT FOUND FILE $1"
 
-[[ -z "$1" ]] && die "EMPTY FILE"
-[[ -e "$1" ]] || die "NOT FOUND $1"
-[[ -z "$2" ]] || NEW_NAME="$2"
+YML="$1"
 
-[[ -z "$2" ]] && die "EMPTY NEW_NAME"
+NAME="$(basename "$YML" .yml)"
+HOST="$(yq -r .ansible_host "$YML")"
 
-JSON="$1"
-NAME="$(basename "$JSON" .json)"
-NEW_JSON="$(echo "$JSON" | sed "s/$NAME/$NEW_NAME/g")"
-
-echo "RENAME FROM $JSON TO $NEW_JSON"
+echo "Host $NAME"
+echo "     Hostname $HOST"
 echo
-sed "s/$NAME/$NEW_NAME/g" "$JSON" > "$NEW_JSON"
 
-LEN="$(grep -E '(unified_job_name|project)' "$NEW_JSON" | wc -c)"
-WIDTH="$((LEN*2+10))"
+[[ "$HOST" =  "$NAME" ]] && exit 0
+[[ "$HOST" =~ ^[0-9]+ ]] && exit 0
 
-diff -y --suppress-common-lines -W "$WIDTH" "$JSON" "$NEW_JSON"
-
+echo "Host $HOST"
+echo "     Hostname $HOST"
 echo

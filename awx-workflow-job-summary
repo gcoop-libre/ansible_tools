@@ -24,9 +24,34 @@ function usage()
 {
 cat << EOF
 Usage:
+
+\`\`\`bash
+
+  $BIN WORKFLOW_JOB_ID
+
+\`\`\`
+
+Get summary of \`workflow_job\` execution.
+
+Example:
+
+\`\`\`bash
+
   $BIN
 
-Description
+  awx-workflow-job-summary 143
+
+  === ================== ====== ========== ======================== =======
+  id         name         type    status           created          elapsed
+  === ================== ====== ========== ======================== =======
+  144 vms_bak_dsk_v0.3.0 job    successful 2021-11-30T18:54:13.7518 19.166
+  146 vms_rbt_wfr_v0.1.0 job    successful 2021-11-30T18:54:33.5181 185.63
+  147 vms_apt_upd_v0.1.0 job    successful 2021-11-30T18:57:39.7561 14.068
+  149 vms_crn_rsy_v0.4.0 job    successful 2021-11-30T18:57:54.4358 18.851
+  151 vms_nfs_own_v0.4.0 job    successful 2021-11-30T18:58:13.9210 24.452
+  === ================== ====== ========== ======================== =======
+
+\`\`\`
 
 EOF
 exit 0

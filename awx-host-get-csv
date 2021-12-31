@@ -1,0 +1,112 @@
+#!/bin/bash
+
+# This script comes with ABSOLUTELY NO WARRANTY, use at own risk
+# Copyright (C) 2020 Osiris Alejandro Gomez <osiris@gcoop.coop>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+
+# shellcheck disable=SC1090
+
+DIR_BIN=$(dirname "$0") && source "$DIR_BIN/awx-common"
+
+function usage()
+{
+cat << EOF
+Usage:
+
+\`\`\`bash
+
+  $BIN HOST_NAME [INVENTORY]
+
+\`\`\`
+
+Get \`.csv\` with basic attributes of _host_.
+
+  inventory_host,description,ansible_host,primary_macaddress,inventory_serial
+
+Example:
+
+\`\`\`bash
+
+  $BIN wst01dev01 wst
+
+  'wst01dev01','imported','192.168.1.11','ca:fe:ca:fe:00:3d','S12345678'
+  'wst01dev02','imported','192.168.1.12','fa:fa:fa:02:ac:dc','S12345679'
+
+\`\`\`
+
+EOF
+exit 0
+}
+
+[[ "$1" =~ ^[-]+(h|help) ]] && usage
+
+[[ -z "$1" ]] && die 'EMPTY HOST'
+
+HOST="$1"
+PREFIX="${HOST//-*/}"
+INVENTORY="${PREFIX,,}"
+
+[[ ! -z "$2" ]] && INVENTORY="$2"
+
+JSON="$(mktemp --suffix .json)"
+YAML="$(mktemp --suffix .yml)"
+
+awx-cli host get            \
+  --inventory "$INVENTORY"  \
+  --name "$HOST"            \
+  --format json             > "$JSON" 2>/dev/null
+
+[[ -s "$JSON" ]] || die 'EMPTY JSON'
+
+jq -r '.variables' "$JSON" > "$YAML"
+
+V_HOST="$(yq   -r '. | .ansible_host'       "$YAML")"
+V_PMAC="$(yq   -r '. | .primary_macaddress' "$YAML")"
+V_MAC="$(yq    -r '. | .macaddress'         "$YAML")"
+V_SERIAL="$(yq -r '. | .inventory_serial'   "$YAML")"
+V_NAME="$(yq   -r '. | .hostname'           "$YAML" | awk '{print $1}')"
+
+H_NAME="$(jq        -r '. | .name'        "$JSON")"
+H_DESCRIPTION="$(jq -r '. | .description' "$JSON" | tr "' " " " | awk '{print $1}')"
+
+[[ "$V_PMAC" = 'null' ]] && V_PMAC="$V_MAC"
+
+YQ='.inventory_serial'
+
+if [[ "$V_SERIAL" = 'null' ]]
+then
+
+  HOST_YML1="$PWD/inventory/host_vars/$H_NAME.yml"
+  HOST_YML2="$PWD/host_vars/$H_NAME.yml"
+
+  [[ -e "$HOST_YML1" ]] && V_SERIAL="$(yq -r "$YQ" "$HOST_YML1")"
+  [[ -e "$HOST_YML2" ]] && V_SERIAL="$(yq -r "$YQ" "$HOST_YML2")"
+
+fi
+
+[[ -z "$H_DESCRIPTION" ]] && H_DESCRIPTION="$V_NAME"
+[[ -z "$H_DESCRIPTION" ]] && H_DESCRIPTION='null'
+
+echo "$H_NAME $H_DESCRIPTION $V_HOST $V_PMAC $V_SERIAL" \
+  | while read -r NAME DESCRIPTION IP MAC SERIAL
+    do
+
+      printf "'%s','%s','%s','%s','%s'\\n" \
+             "$NAME" "$DESCRIPTION" "$IP" "$MAC" "$SERIAL"
+
+    done
+
+rm -f "$JSON"
+rm -f "$YAML"

@@ -17,7 +17,6 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 # shellcheck disable=SC1090
-# shellcheck disable=SC2001
 
 DIR_BIN=$(dirname "$0") && source "$DIR_BIN/awx-common"
 
@@ -28,19 +27,20 @@ Usage:
 
 \`\`\`bash
 
-  $BIN JSON NEW_NAME
+  $BIN
 
 \`\`\`
 
-Rename \`.json\` file and replace internal \`name\`.
+Grant with execute permission a _workflow_ to _team_.
 
 Example:
 
 \`\`\`bash
 
-  $BIN pve_kvm.json pve_vms_kvm
+  $BIN wfw_pve_kvm_v0.1.0 devops
 
 \`\`\`
+
 EOF
 exit 0
 }
@@ -48,23 +48,12 @@ exit 0
 [[ "$1" =~ ^[-]+(h|help) ]] && usage
 
 
-[[ -z "$1" ]] && die "EMPTY FILE"
-[[ -e "$1" ]] || die "NOT FOUND $1"
-[[ -z "$2" ]] || NEW_NAME="$2"
+TEAM="$DEFAULT_TEAM"
 
-[[ -z "$2" ]] && die "EMPTY NEW_NAME"
+[[ -z "$1" ]] && die 'EMPTY WORKFLOW NAME'
+NAME="$1"
 
-JSON="$1"
-NAME="$(basename "$JSON" .json)"
-NEW_JSON="$(echo "$JSON" | sed "s/$NAME/$NEW_NAME/g")"
+[[ -n "$2" ]] && TEAM="$2"
+[[ -z "$TEAM" ]] && die "EMPTY TEAM"
 
-echo "RENAME FROM $JSON TO $NEW_JSON"
-echo
-sed "s/$NAME/$NEW_NAME/g" "$JSON" > "$NEW_JSON"
-
-LEN="$(grep -E '(unified_job_name|project)' "$NEW_JSON" | wc -c)"
-WIDTH="$((LEN*2+10))"
-
-diff -y --suppress-common-lines -W "$WIDTH" "$JSON" "$NEW_JSON"
-
-echo
+grant_workflow_execute "$NAME" "$TEAM"

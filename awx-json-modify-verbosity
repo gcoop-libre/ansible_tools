@@ -17,7 +17,6 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 # shellcheck disable=SC1090
-# shellcheck disable=SC2001
 
 DIR_BIN=$(dirname "$0") && source "$DIR_BIN/awx-common"
 
@@ -28,17 +27,18 @@ Usage:
 
 \`\`\`bash
 
-  $BIN JSON NEW_NAME
+  $BIN JSON VERBOSITY
 
 \`\`\`
 
-Rename \`.json\` file and replace internal \`name\`.
-
-Example:
+Modify verbosity in \`.json\` _file_.
 
 \`\`\`bash
 
-  $BIN pve_kvm.json pve_vms_kvm
+  $BIN pve_kvm.json 1
+
+	BACKUP job_template/pve_kvm.json TO /tmp/tmp.YKCruLt5xb.json
+    "verbosity": 2,                      |     "verbosity": 1,
 
 \`\`\`
 EOF
@@ -47,24 +47,17 @@ exit 0
 
 [[ "$1" =~ ^[-]+(h|help) ]] && usage
 
-
-[[ -z "$1" ]] && die "EMPTY FILE"
+[[ -z "$1" ]] && die "EMPTY JSON"
 [[ -e "$1" ]] || die "NOT FOUND $1"
-[[ -z "$2" ]] || NEW_NAME="$2"
-
-[[ -z "$2" ]] && die "EMPTY NEW_NAME"
+[[ -z "$2" ]] && die "EMPTY VERBOSITY"
 
 JSON="$1"
-NAME="$(basename "$JSON" .json)"
-NEW_JSON="$(echo "$JSON" | sed "s/$NAME/$NEW_NAME/g")"
+VERBOSITY="$2"
 
-echo "RENAME FROM $JSON TO $NEW_JSON"
-echo
-sed "s/$NAME/$NEW_NAME/g" "$JSON" > "$NEW_JSON"
+BAK="$(mktemp --suffix .json)"
+stderror "BACKUP $JSON TO $BAK"
+cp -f "$JSON" "$BAK"
 
-LEN="$(grep -E '(unified_job_name|project)' "$NEW_JSON" | wc -c)"
-WIDTH="$((LEN*2+10))"
+jq_modify_verbosity "$JSON" "$VERBOSITY"
 
-diff -y --suppress-common-lines -W "$WIDTH" "$JSON" "$NEW_JSON"
-
-echo
+diff -y --suppress-common-lines "$BAK" "$JSON"

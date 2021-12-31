@@ -54,6 +54,8 @@ exit 0
 [[ -e "$1" ]] || die "NOT FOUND $1"
 INVENTORY="$1"
 
+JSON="$(mktemp --suffix .json)"
+
 JQ=".[] | .asset_relation.group[] | .name"
 
 jq -r "$JQ" "$INVENTORY" > "$JSON"

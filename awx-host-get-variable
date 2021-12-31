@@ -29,7 +29,7 @@ Usage:
 
   $BIN HOST [INVENTORY]
 
-$(code)
+\`\`\`
 
 Get _host_ variables from _inventory_
 
@@ -41,7 +41,7 @@ Example:
 
   $BIN pve-dev01
 
-$(code)
+\`\`\`
 
   Explicit _host_ and _inventory_:
 
@@ -49,7 +49,7 @@ $(code)
 
   $BIN dev01 pve
 
-$(code)
+\`\`\`
 
 EOF
 exit 0
@@ -62,32 +62,31 @@ exit 0
 HOST="$1"
 KEY="$2"
 PREFIX="${HOST//-*/}"
-INVENTORY="${PREFIX,,}"
+[[ -z "$INVENTORY" ]] && INVENTORY="${PREFIX,,}"
 
-JSON=$(mktemp --suffix .json)
+JSON="$(mktemp --suffix .json)"
 
 awx-cli host get            \
   --format json             \
   --inventory "$INVENTORY"  \
   --name "$HOST"            > "$JSON" 2>/dev/null
 
-YAML=$(mktemp --suffix .yml)
+YAML="$(mktemp --suffix .yml)"
 
 [[ -s "$JSON" ]] || die "EMPTY JSON"
 
 jq -r .variables "$JSON" > "$YAML" 2>/dev/null
 
-code
 if [[ -z "$KEY" ]]
 then
-  title2 "GET ALL VARIABLES IN $HOST FROM $INVENTORY INVENTORY"
-  yq -r . "$YAML"
+
+  printf "%s\\n\\n" '---'
+  yq -y --sort-keys -r . "$YAML"
+
 else
-  title2 "GET $KEY VARIABLE IN $HOST FROM $INVENTORY INVENTORY"
   VALUE="$(yq -r ".$KEY" "$YAML" | grep -vi null)"
   echo "$VALUE"
 fi
-code
 
 rm -f "$JSON"
 rm -f "$YAML"

@@ -1,6 +1,9 @@
-*.log
 *.bak
+*.dat
+*.log
 *.pdf
+*.tar.gz
+bak/*
 inventory
 job_template
 project

@@ -1,0 +1,94 @@
+#!/bin/bash
+
+# This script comes with ABSOLUTELY NO WARRANTY, use at own risk
+# Copyright (C) 2021 Osiris Alejandro Gomez <osiris@gcoop.coop>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+
+# shellcheck disable=SC1090
+
+DIR_BIN=$(dirname "$0") && source "$DIR_BIN/awx-common"
+
+function usage()
+{
+cat << EOF
+Usage:
+
+\`\`\`bash
+
+  $BIN WORKFLOW_JOB_ID
+
+\`\`\`
+
+Get overview of _workflow job_ execution and nodes.
+
+Example
+
+\`\`\`bash
+
+	$BIN 143
+
+	| 143 | wfw_vms_bak_v0.4.1 | successful |  265.368 | 100.00 % | 2021-11-30 | 15:54:13 | 15:58:38 | 00:04:25 | dev |
+	| 144 | vms_bak_dsk_v0.3.0 | successful |   19.166 |   7.00 % | 2021-11-30 | 15:54:14 | 15:54:33 | 00:00:19 | dev |
+	| 146 | vms_rbt_wfr_v0.1.0 | successful |   185.63 |  69.00 % | 2021-11-30 | 15:54:33 | 15:57:39 | 00:03:05 | dev |
+	| 147 | vms_apt_upd_v0.1.0 | successful |   14.068 |   5.00 % | 2021-11-30 | 15:57:40 | 15:57:54 | 00:00:14 | vms |
+	| 149 | vms_crn_rsy_v0.4.0 | successful |   18.851 |   7.00 % | 2021-11-30 | 15:57:54 | 15:58:13 | 00:00:18 | vms |
+	| 151 | vms_nfs_own_v0.4.0 | successful |   24.452 |   9.00 % | 2021-11-30 | 15:58:14 | 15:58:38 | 00:00:24 | vms |
+
+\`\`\`
+
+EOF
+exit 0
+}
+
+[[ "$1" =~ ^[-]+(h|help) ]] && usage
+
+[[ -z "$1" ]] && die "EMPTY WORKFLOW_JOB_ID"
+JOB_ID="$1"
+
+JSON="${JOB_ID}.json"
+
+awx-cli workflow_job get "$JOB_ID" -f json > "$JSON"
+
+[[ ! -s "$JSON" ]] && die "EMPTY JSON $JSON"
+
+ELAPSED="$(jq -r .elapsed  "$JSON")"
+FINISHED="$(jq -r .finished "$JSON")"
+LIMIT="$(jq -r .limit  "$JSON")"
+STARTED="$(jq -r .started  "$JSON")"
+STATUS="$(jq -r .status  "$JSON")"
+
+DATE="$(date -d "$STARTED" +'%F')"
+FINISH="$(date -d "$FINISHED" +'%T')"
+MINUTES="$(date -d "1970-01-01 +$ELAPSED seconds" +%T)"
+START="$(date -d "$STARTED" +'%T')"
+
+WORKFLOW="$(jq -r .summary_fields.workflow_job_template.name "$JSON")"
+# FIXME calculate limit witdh column
+printf "| %s | %-30s | %10s | %8s | %s | %s | %s | %s | %s | %-60s |\\n" \
+       "$JOB_ID"   \
+       "$WORKFLOW" \
+       "$STATUS"   \
+       "$ELAPSED"  \
+       '100.00 %'  \
+       "$DATE"     \
+       "$START"    \
+       "$FINISH"   \
+       "$MINUTES"  \
+       "$LIMIT"
+
+awx-workflow-job-summary "$JOB_ID" | grep -w job | while read -r ID _
+do
+  awx-job-overview "$ID" "$ELAPSED"
+done

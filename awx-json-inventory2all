@@ -1,0 +1,131 @@
+#!/bin/bash
+
+# This script comes with ABSOLUTELY NO WARRANTY, use at own risk
+# Copyright (C) 2021 Osiris Alejandro Gomez <osiris@gcoop.coop>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+
+# shellcheck disable=SC1090
+# shellcheck disable=SC2129
+
+DIR_BIN="$(dirname "$0")" && source "$DIR_BIN/awx-common"
+
+function usage()
+{
+cat << EOF
+Usage:
+
+\`\`\`bash
+
+  $BIN [INVENTORY_JSON] GROUP
+
+\`\`\`
+
+Generate hosts inventory file and ssh config from inventory \`.json\`
+
+Example:
+
+\`\`\`bash
+
+  $BIN inventory/pve.json
+
+  inventory hosts:
+
+    [pve]
+    spve01dev
+    spve01prd
+
+    [dev]
+    spve01dev
+
+    [prd]
+    spve01prd
+
+  ssh config:
+
+    Host spve01dev
+         Hostname spve01dev.example.com
+
+    Host spve01dev
+         Hostname spve01dev.example.com
+
+\`\`\`
+
+EOF
+exit 0
+}
+
+[[ "$1" =~ ^[-]+(h|help) ]] && usage
+
+[[ -z "$1" ]] && die "EMPTY INVENTORY_JSON"
+[[ -e "$1" ]] || die "NOT FOUND $1"
+INVENTORY_JSON="$1"
+
+json_is_inventory "$INVENTORY_JSON" || die "INVALID INVENTORY_JSON"
+
+[[ -z "$2" ]] && die "EMPTY GROUP $2"
+INVENTORY_GROUP="$2"
+
+SSH_CONFIG="sshconfig-${INVENTORY_GROUP}"
+INVENTORY_HOSTS="hosts-${INVENTORY_GROUP}"
+
+true > "$SSH_CONFIG"
+true > "$INVENTORY_HOSTS"
+
+[[ -z "$HOST_PREFIX_SEARCH"  ]] && HOST_PREFIX_SEARCH="$DEFAULT_HOST_PREFIX_SEARCH"
+[[ -z "$HOST_PREFIX_REPLACE" ]] && HOST_PREFIX_REPLACE="$DEFAULT_HOST_PREFIX_REPLACE"
+[[ -z "$HOST_DOMAIN_PREFIX"  ]] && HOST_DOMAIN_PREFIX="$DEFAULT_HOST_DOMAIN_PREFIX"
+[[ -z "$HOST_DOMAIN"         ]] && HOST_DOMAIN="$DEFAULT_HOST_DOMAIN"
+
+printf "[%s]\\n" "$INVENTORY_GROUP"    >> "$INVENTORY_HOSTS"
+
+awx-json-inventory-group-get-hosts \
+  "$INVENTORY_JSON" "$INVENTORY_GROUP" >> "$INVENTORY_HOSTS"
+
+printf "\\n"                           >> "$INVENTORY_HOSTS"
+
+awx-json-inventory-get-subgroups "$INVENTORY_JSON" "$INVENTORY_GROUP" \
+  | while read -r SGROUP
+    do
+
+      HOSTS="$(awx-json-inventory-group-subgroup-get-hosts \
+        "$INVENTORY_JSON" "$INVENTORY_GROUP" "$SGROUP")"
+
+      NAME="$(echo "$HOSTS" | grep "s${INVENTORY_GROUP}")"
+      NUMBER="${NAME/$HOST_PREFIX_SEARCH/}"
+      FQDN="$HOST_PREFIX_REPLACE.$HOST_DOMAIN_PREFIX${NUMBER}.$HOST_DOMAIN"
+
+      echo "$HOSTS" | while read -r HOST
+      do
+
+        HOST_YAML="host_vars/$HOST.yml"
+        VARIABLES="$(INVENTORY=$INVENTORY_GROUP awx-host-get-variable "$HOST")"
+        [[ -z "$VARIABLES" ]] || echo "$VARIABLES" > "$HOST_YAML"
+
+      done
+
+      SSH_HOSTS="$(echo "$HOSTS" | tr '\n' ' ')"
+      printf "Host %s\\n" "$SSH_HOSTS"           >> "$SSH_CONFIG"
+      printf "     Hostname %s\\n\\n" "$FQDN"    >> "$SSH_CONFIG"
+
+      printf "[%s]\\n" "$SGROUP"                 >> "$INVENTORY_HOSTS"
+      printf "%s\\n\\n" "$HOSTS"                 >> "$INVENTORY_HOSTS"
+
+    done
+
+TOTAL_HOSTS="$(grep -v '\[' "$INVENTORY_HOSTS" | grep -c -v '^$')"
+TOTAL_SSH="$(grep -c "^Host" "$SSH_CONFIG")"
+
+echo "$TOTAL_HOSTS $INVENTORY_HOSTS"
+echo "$TOTAL_SSH   $SSH_CONFIG"

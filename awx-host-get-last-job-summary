@@ -17,7 +17,6 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 # shellcheck disable=SC1090
-# shellcheck disable=SC2001
 
 DIR_BIN=$(dirname "$0") && source "$DIR_BIN/awx-common"
 
@@ -28,43 +27,57 @@ Usage:
 
 \`\`\`bash
 
-  $BIN JSON NEW_NAME
+  $BIN HOST [INVENTORY]
 
 \`\`\`
 
-Rename \`.json\` file and replace internal \`name\`.
+Get summary fields last job executed in host using \`curl\`.
 
 Example:
 
 \`\`\`bash
 
-  $BIN pve_kvm.json pve_vms_kvm
+  $BIN wst01n01 wst
+
+  1234 wst_apt_v1.1.0 failed true 43.514 888 wst_apt_v1.1.0
 
 \`\`\`
+
 EOF
 exit 0
 }
 
 [[ "$1" =~ ^[-]+(h|help) ]] && usage
 
+[[ -z "$1" ]] && die "EMPTY HOST"
 
-[[ -z "$1" ]] && die "EMPTY FILE"
-[[ -e "$1" ]] || die "NOT FOUND $1"
-[[ -z "$2" ]] || NEW_NAME="$2"
+HOST="$1"
+PREFIX="${HOST//-*/}"
+INVENTORY="${PREFIX,,}"
 
-[[ -z "$2" ]] && die "EMPTY NEW_NAME"
+[[ -n "$2" ]] && INVENTORY="$2"
 
-JSON="$1"
-NAME="$(basename "$JSON" .json)"
-NEW_JSON="$(echo "$JSON" | sed "s/$NAME/$NEW_NAME/g")"
+HOST_ID="$(host_get_id "$INVENTORY" "$HOST")"
 
-echo "RENAME FROM $JSON TO $NEW_JSON"
-echo
-sed "s/$NAME/$NEW_NAME/g" "$JSON" > "$NEW_JSON"
+[[ -z "$HOST_ID"      ]] && die "EMPTY HOST_ID"
+[[ -z "$AWX_CFG_USER" ]] && die "EMPTY AWX_CFG_USER"
+[[ -z "$AWX_CFG_PASS" ]] && die "EMPTY AWX_CFG_PASS"
+[[ -z "$AWX_CFG_HOST" ]] && die "EMPTY AWX_CFG_HOST"
 
-LEN="$(grep -E '(unified_job_name|project)' "$NEW_JSON" | wc -c)"
-WIDTH="$((LEN*2+10))"
+JSON="$(mktemp)"
 
-diff -y --suppress-common-lines -W "$WIDTH" "$JSON" "$NEW_JSON"
+curl -k -s --user "$AWX_CFG_USER:$AWX_CFG_PASS"     \
+  "$AWX_CFG_HOST/api/v2/hosts/$HOST_ID/job_events/" | jq -r . > "$JSON"
 
-echo
+[[ ! -s "$JSON" ]] && die "EMPTY JSON $JSON"
+
+JQ=$(cat << EOF
+first(.[]).summary_fields.job \
+ | "\(.id) \(.name) \(.status)\
+ \(.failed) \(.elapsed) \(.job_template_id) \(.job_template_name)"
+EOF
+)
+
+jq -r '.results' "$JSON" | jq -r "$JQ"
+
+rm -f "$JSON"
