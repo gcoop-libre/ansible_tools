@@ -403,12 +403,6 @@ Generate or insert credentials in multiple `pass` repositories:
 ```
 
 
-## `awx credential` commands
-
-
-### `awx-credential-create`
-
-
 ## `awx csv` commands
 
 
@@ -440,6 +434,60 @@ Example:
   n00              2         0         4         0         0
   n09              1         0         6         0         0
   n10              4         1         1         2         0
+
+
+### `awx-csv-host2all`
+
+
+Usage:
+
+```bash
+
+  awx-csv-host2all CSV [FILTER_NAME] [FILTER_GROUP]
+
+```
+
+Read CSV and generate files:
+
+  - `config` (all hosts order by group and host)
+
+    Host wst12345 wst01dev
+         Hostname wst01dev.example.com
+
+    Host wst12346 wst01prd
+         Hostname wst01prd.example.com
+
+  - `groups` (all groups)
+
+    dev
+    prd
+
+  - `host_vars/INVENTORY_HOST.yml` (one file per host)
+
+			---
+
+			ansible_host: 10.0.0.45
+			primary_maccaddress: ca:fe:ca:fe:01:23
+			hostname: wst01dev
+			inventory_serial: W31415926
+
+  - `hosts` (all hosts in groups)
+
+			[dev]
+			wst12345
+
+			[prd]
+			wst12346
+
+```
+
+Example:
+
+```bash
+
+  awx-csv-host2all wst.csv wst dev
+
+```
 
 
 ## `awx grant` commands
@@ -670,10 +718,24 @@ Grant with admin permission a _job template_ to _team_.
 
 ### `awx-group-get-variable`
 
+
 Usage:
-  awx-group-get-variable
+
+```bash
+
+  awx-group-get-variable INVENTORY GROUP
+
+```
 
 Description
+
+Example:
+
+```bash
+
+  awx-group-get-variable wst dev
+
+```
 
 
 ### `awx-group-modify-variable`
@@ -684,10 +746,33 @@ Usage:
 Description
 
 
+### `awx-group-diff-variables`
+
+
+Usage:
+
+```bash
+
+  awx-group-diff-variables INVENTORY GROUP
+
+```
+
+Compare and merge AWX group variables with local YAML group file.
+
+Example:
+
+```bash
+
+  awx-group-diff-variables wst dev
+
+```
+
+
 ## `awx help` commands
 
 
 ### `awx-help`
+
 
 Usage:
 
@@ -886,8 +971,6 @@ Usage:
 
   awx-host-get-variable HOST [INVENTORY]
 
-
-
 ```
 
 Get _host_ variables from _inventory_
@@ -900,8 +983,6 @@ Example:
 
   awx-host-get-variable pve-dev01
 
-
-
 ```
 
   Explicit _host_ and _inventory_:
@@ -909,8 +990,6 @@ Example:
 ```bash
 
   awx-host-get-variable dev01 pve
-
-
 
 ```
 
@@ -1000,42 +1079,6 @@ Example:
 
   'wst01dev01','imported','192.168.1.11','ca:fe:ca:fe:00:3d','S12345678'
   'wst01dev02','imported','192.168.1.12','fa:fa:fa:02:ac:dc','S12345679'
-
-```
-
-
-### `awx-host-get-id`
-
-
-Usage:
-
-```bash
-
-  awx-host-get-id HOST [INVENTORY]
-
-```
-
-Get _host_ variables from _inventory_.
-
-Example:
-
-  Implicit _inventory_ from _host_:
-
-```bash
-
-  awx-host-get-id pve-dev01
-
-
-
-```
-
-  Explicit _host_ and _inventory_:
-
-```bash
-
-  awx-host-get-id dev01 pve
-
-
 
 ```
 
@@ -1165,6 +1208,48 @@ Example:
 ```
 
 
+### `awx-host-replace-ansible-host`
+
+Usage:
+
+```bash
+
+  awx-host-replace-ansible-host [HOST_INVENTORY]
+
+```
+
+Replace `ansible_host` value with _FQDN_ in host_vars YAML files of inventory.
+
+Example:
+
+```bash
+
+  awx-host-replace-ansible-host hosts-pve
+
+```
+
+
+### `awx-host-vars2ssh-config`
+
+Usage:
+
+```bash
+
+  awx-host-vars2ssh-config HOST_VARS_YAML
+
+```
+
+Generate _SSH_ host config from host_vars _YAML_ file.
+
+Example:
+
+```bash
+
+  awx-host-vars2ssh-config host_vars/wstdev01.yml
+
+```
+
+
 ## `awx inventory` commands
 
 
@@ -1217,8 +1302,6 @@ Usage:
 
   awx-inventory-get-variable INVENTORY VARIABLE
 
-
-
 ```
 
 Get variable value from _inventory_.
@@ -1228,8 +1311,6 @@ Example:
 ```bash
 
   awx-inventory-get-variable pve subnet
-
-
 
 ```
 
@@ -2123,29 +2204,69 @@ Modify verbosity in `.json` _file_.
 
 ```
 
-### `awx-json-worklow-job-get-created-by`
-
+### `awx-json-inventory-group-subgroup-get-hosts`
 
 Usage:
 
 ```bash
 
-  awx-json-worklow-job-get-created-by JSON
+  awx-json-inventory-group-subgroup-get-hosts INVENTORY.json GROUP SUBGROUP
 
 ```
 
-Description
+Get hosts from subgroup of group of inventory `.json` file
 
 Example:
 
 ```bash
 
+  awx-json-inventory-group-subgroup-get-hosts inventory/pve.json dev lab
+
+    spve01dev
+
 ```
 
 
-### `awx-json-workflow2playbook`
+### `awx-json-inventory2all`
 
-#FIXME
+Usage:
+
+```bash
+
+  awx-json-inventory2all [INVENTORY_JSON] GROUP
+
+```
+
+Generate hosts inventory file and ssh config from inventory `.json`
+
+Example:
+
+```bash
+
+  awx-json-inventory2all inventory/pve.json
+
+  inventory hosts:
+
+    [pve]
+    spve01dev
+    spve01prd
+
+    [dev]
+    spve01dev
+
+    [prd]
+    spve01prd
+
+  ssh config:
+
+    Host spve01dev
+         Hostname spve01dev.example.com
+
+    Host spve01dev
+         Hostname spve01dev.example.com
+
+```
+
 
 ## `awx log` commands
 
@@ -2173,8 +2294,50 @@ Example:
 
 ### `awx-log-get-host-last-job`
 
+Usage:
+
+```bash
+
+  awx-log-get-host-last-job JOB_LOG_FILE
+
+```
+
+Get last job of awx_history_stdout in job `.log` file.
+
+Example:
+
+```bash
+
+  awx-log-get-host-last-job 12345.log
+
+	wstdev01 wfw_wst_upd_v1.2.0
+	wstdev02 wfw_wst_upd_v1.3.0
+
+```
+
 
 ### `awx-log-host-get-data`
+
+Usage:
+
+```bash
+
+  awx-log-host-get-data JOB_LOG_PATTERN
+
+```
+
+Get group, description, inventory_host and last job of awx_history_stdout in multiples job `.log` files.
+
+Example:
+
+```bash
+
+  awx-log-host-get-data 12*.log
+
+	dev wstdevelop01 wstdev01 wfw_wst_upd_v1.2.0
+	dev wstdevelop02 wstdev02 wfw_wst_upd_v1.3.0
+
+```
 
 
 ## `awx organization` commands
@@ -2325,31 +2488,6 @@ Usage:
   awx-project-list-name
 
 List all projects
-
-
-## `awx revoke` commands
-
-
-### `awx-revoke-workflow-execute`
-
-
-Usage:
-
-```bash
-
-  awx-revoke-workflow-execute
-
-```
-
-Description
-
-Example:
-
-```bash
-
-  awx-revoke-workflow-execute
-
-```
 
 
 ## `awx role` commands
