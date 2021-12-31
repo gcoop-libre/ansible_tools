@@ -1,0 +1,95 @@
+#!/bin/bash
+
+# This script comes with ABSOLUTELY NO WARRANTY, use at own risk
+# Copyright (C) 2021 Osiris Alejandro Gomez <osiris@gcoop.coop>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+
+# shellcheck disable=SC1090
+# shellcheck disable=SC2001
+
+DIR_BIN="$(dirname "$0")" && source "$DIR_BIN/awx-common"
+
+function usage()
+{
+cat << EOF
+Usage:
+
+\`\`\`bash
+
+  $BIN JOB_LOG_FILE
+
+\`\`\`
+
+Get last job of awx_history_stdout in job \`.log\` file.
+
+Example:
+
+\`\`\`bash
+
+  $BIN 12345.log
+
+	wstdev01 wfw_wst_upd_v1.2.0
+	wstdev02 wfw_wst_upd_v1.3.0
+
+\`\`\`
+
+EOF
+exit 0
+}
+
+[[ "$1" =~ ^[-]+(h|help) ]] && usage
+
+[[ -z "$1" ]] && exit 1
+[[ -e "$1" ]] || exit 1
+
+LOG="$1"
+
+function get_host()
+{
+  echo -n "$1" | grep -Eo 'wst-[A-Z0-9]+' | tr -d "\n" | head -1
+}
+
+function get_last_job()
+{
+  echo -n "$1"         \
+    | tr '\\' ' '      \
+    | awk '{print $3}' \
+    | tr -d "\n"       \
+    | tr -d '"'        \
+    | head -1
+}
+
+TMP="$(mktemp)"
+
+grep awx_history_stdout -B1 "$LOG" | grep -A1 ok: > "$TMP"
+
+PREV=''
+while read -r LINE
+do
+
+  [[ "$LINE" =~ ^ok                     ]] && HOST="$(get_host "$LINE")"
+  [[ "$LINE" =~ '"awx_history_stdout":' ]] && JOB="$(get_last_job "$LINE")"
+
+  [[ -z "$JOB" ]] && continue
+
+  if [[ "$PREV" != "$HOST" ]]
+  then
+    PREV="$HOST"
+    printf "%s %s\n" "$HOST" "$JOB"
+  fi
+
+done < "$TMP"
+
+rm -f "$TMP"
