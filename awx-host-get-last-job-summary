@@ -1,0 +1,83 @@
+#!/bin/bash
+
+# This script comes with ABSOLUTELY NO WARRANTY, use at own risk
+# Copyright (C) 2020 Osiris Alejandro Gomez <osiris@gcoop.coop>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+
+# shellcheck disable=SC1090
+
+DIR_BIN=$(dirname "$0") && source "$DIR_BIN/awx-common"
+
+function usage()
+{
+cat << EOF
+Usage:
+
+\`\`\`bash
+
+  $BIN HOST [INVENTORY]
+
+\`\`\`
+
+Get summary fields last job executed in host using \`curl\`.
+
+Example:
+
+\`\`\`bash
+
+  $BIN wst01n01 wst
+
+  1234 wst_apt_v1.1.0 failed true 43.514 888 wst_apt_v1.1.0
+
+\`\`\`
+
+EOF
+exit 0
+}
+
+[[ "$1" =~ ^[-]+(h|help) ]] && usage
+
+[[ -z "$1" ]] && die "EMPTY HOST"
+
+HOST="$1"
+PREFIX="${HOST//-*/}"
+INVENTORY="${PREFIX,,}"
+
+[[ -n "$2" ]] && INVENTORY="$2"
+
+HOST_ID="$(host_get_id "$INVENTORY" "$HOST")"
+
+[[ -z "$HOST_ID"      ]] && die "EMPTY HOST_ID"
+[[ -z "$AWX_CFG_USER" ]] && die "EMPTY AWX_CFG_USER"
+[[ -z "$AWX_CFG_PASS" ]] && die "EMPTY AWX_CFG_PASS"
+[[ -z "$AWX_CFG_HOST" ]] && die "EMPTY AWX_CFG_HOST"
+
+JSON="$(mktemp)"
+
+curl -k -s --user "$AWX_CFG_USER:$AWX_CFG_PASS"     \
+  "$AWX_CFG_HOST/api/v2/hosts/$HOST_ID/job_events/" | jq -r . > "$JSON"
+
+[[ ! -s "$JSON" ]] && die "EMPTY JSON $JSON"
+
+JQ=$(cat << EOF
+first(.[]).summary_fields.job \
+ | "\(.id) \(.name) \(.status)\
+ \(.failed) \(.elapsed) \(.job_template_id) \(.job_template_name)"
+EOF
+)
+
+jq -r '.results' "$JSON" | jq -r "$JQ"
+
+rm -f "$JSON"
