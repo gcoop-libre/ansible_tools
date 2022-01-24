@@ -33,6 +33,16 @@ Usage:
 
 Filter grants from ROLE_FILE and generate awx-cli role grant
 
+Example CSV:
+
+\`\`\`
+RESOURCE_TYPE RESOURCE_NAME       TYPE
+inventory     wst                 admin
+project       ansible_wst_v1.6.0  use
+job_template  wst_upd_v1.6.0      execute
+workflow      wfw_pve_apt_v1.2.0  execute
+\`\`\`
+
 Example:
 
 \`\`\`bash
