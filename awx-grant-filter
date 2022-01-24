@@ -94,9 +94,9 @@ do
 
   if [[ -e "$EXCLUDE" ]]
   then
-    grep -vf "$EXCLUDE" "$TMP1" > "$TMP2"
+    grep -f "$EXCLUDE" "$TMP1" > "$TMP2"
   else
-    cp -v "$TMP1" "$TMP2"
+    cp -f "$TMP1" "$TMP2"
   fi
 
   PREVIOUS=''
