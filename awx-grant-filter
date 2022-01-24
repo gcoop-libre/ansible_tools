@@ -49,6 +49,22 @@ Example:
 
   $BIN role/devops.csv support
 
+	## inventory
+
+	awx-cli role grant -v --team support --type  admin      --inventory     wst
+
+	## project
+
+	awx-cli role grant -v --team support --type  use        --project       ansible_wst_v1.6.0
+
+	## job_template
+
+	awx-cli role grant -v --team support --type  execute    --job-template  wst_upd_v1.6.0
+
+	## workflow
+
+	awx-cli role grant -v --team support --type  execute    --workflow      wfw_pve_apt_v1.2.0
+
 \`\`\`
 
 EOF
