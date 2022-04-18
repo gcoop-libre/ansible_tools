@@ -24,9 +24,24 @@ function usage()
 {
 cat << EOF
 Usage:
-  $BIN
 
-Description
+\`\`\`bash
+
+  $BIN USERNAME [SUPERUSER]
+
+\`\`\`
+
+Modify user type as SysAdmin
+
+Example:
+
+\`\`\`bash
+
+  $BIN elliot
+
+  $BIN dom false
+
+\`\`\`
 
 EOF
 exit 0
