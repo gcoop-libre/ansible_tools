@@ -62,6 +62,8 @@ exit 0
 HOST="$1"
 KEY="$2"
 PREFIX="${HOST//-*/}"
+[[ -z "$2"         ]] && KEY='all'
+[[ -z "$3"         ]] || INVENTORY="$3"
 [[ -z "$INVENTORY" ]] && INVENTORY="${PREFIX,,}"
 
 JSON="$(mktemp --suffix .json)"
@@ -77,7 +79,7 @@ YAML="$(mktemp --suffix .yml)"
 
 jq -r .variables "$JSON" > "$YAML" 2>/dev/null
 
-if [[ -z "$KEY" ]]
+if [[ "$KEY" = 'all' ]]
 then
 
   printf "%s\\n\\n" '---'
