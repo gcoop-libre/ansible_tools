@@ -104,6 +104,8 @@ do
   while read -r RESOURCE_TYPE RESOURCE_NAME TYPE
   do
 
+    [[ -z "$TYPE" ]] && TYPE='use'
+
     if [[ "$RESOURCE_TYPE" != "$PREVIOUS" ]]
     then
       printf "\\n## %s\\n\\n" "$RESOURCE_TYPE"
