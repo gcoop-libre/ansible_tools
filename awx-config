@@ -114,5 +114,17 @@ EOF
 
 AWX_CFG="$HOME/.tower_cli.cfg"
 echo "$CONFIG" > "$AWX_CFG" && chmod 600 "$AWX_CFG"
-awx-setting-get-tower-url-base
-awx-setting-get-custom-login-info
+
+HTTP_CODE="$(curl -s -o /dev/null -w "%{http_code}" "$AWX_HOST")"
+
+[[ "$HTTP_CODE" != '200' ]] && die "HTTP RESPONSE CODE != 200 $AWX_HOST"
+
+SUPERUSER="$(awx-cli user get "$AWX_USER" -f json | jq '.is_superuser')"
+
+if [[ "$AWX_USER" = 'true' ]]
+then
+  awx-setting-get-tower-url-base
+  awx-setting-get-custom-login-info
+fi
+
+awx-cli version
