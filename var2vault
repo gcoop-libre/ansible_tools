@@ -16,11 +16,105 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
+# shellcheck disable=SC1090
+
+DIR_BIN=$(dirname "$0") && source "$DIR_BIN/awx-common"
+
+function usage()
+{
+cat << EOF
+Usage:
+
+\`\`\`bash
+
+  $BIN NAME SECRET [VAULT_ID]
+
+\`\`\`
+
+Return _Vault_ of secret in diferents formats.
+
+Example:
+
+\`\`\`bash
+
+  $BIN login_password SuperSecret dev
+
+	## Playbook
+
+	login_password: !vault |
+						$ANSIBLE_VAULT;1.2;AES256;dev
+						32653064623734646632363264626637363734656465656234346163626362646230393865386164
+						6230613863346466376565386365306361643564396634640a323830313737323262356130336565
+						66643636373063623137663337316565643536306235303635343365353937643364343563346339
+						6666343533303061330a323033326432393462326336373730323632643033653765343135646635
+						3037
+
+	## Inventory YAML
+
+	login_password:
+		__ansible_vault: |
+						$ANSIBLE_VAULT;1.2;AES256;dev
+						32653064623734646632363264626637363734656465656234346163626362646230393865386164
+						6230613863346466376565386365306361643564396634640a323830313737323262356130336565
+						66643636373063623137663337316565643536306235303635343365353937643364343563346339
+						6666343533303061330a323033326432393462326336373730323632643033653765343135646635
+						3037
+
+	## Inventory AWX
+
+	login_password:
+		__ansible_vault: >
+			$ANSIBLE_VAULT;1.2;AES256;dev
+
+			32653064623734646632363264626637363734656465656234346163626362646230393865386164
+
+			6230613863346466376565386365306361643564396634640a323830313737323262356130336565
+
+			66643636373063623137663337316565643536306235303635343365353937643364343563346339
+
+			6666343533303061330a323033326432393462326336373730323632643033653765343135646635
+
+			3037
+
+\`\`\`
+
+EOF
+exit 0
+}
+
+[[ "$1" =~ ^[-]+(h|help) ]] && usage
+
+[[ -z "$1" ]] && die "EMPTY NAME"
+NAME="$1"
+[[ -z "$2" ]] && die "EMPTY SECRET"
+SECRET="$2"
 VAULT_ID='dev'
+[[ -z "$3" ]] || VAULT_ID="$3"
 
-[[ ! -z "$3" ]] && VAULT_ID="$3"
+VAULT="$(echo -n "$SECRET" | ansible-vault encrypt_string --encrypt-vault-id "$VAULT_ID" --stdin-name "$NAME")"
 
-echo -n "$2"                       \
-  | ansible-vault encrypt_string   \
-    --encrypt-vault-id "$VAULT_ID" \
-    --stdin-name "$1"
+ANSIBLE_VAULT="$(echo "$VAULT" | grep ANSIBLE_VAULT | tr -d ' ')"
+VAULT_DAT1="$(echo "$VAULT" | grep -vE '(!vault|ANSIBLE_VAULT)' | sed 's/$/\n/g')"
+#VAULT_DAT2="$(echo "$VAULT_DAT1" | sed 's/          /    /g')"
+VAULT_DAT2="${VAULT_DAT1//          /    }"
+
+VAULT_YML=$(cat << EOF
+$NAME:
+  __ansible_vault: |
+          $ANSIBLE_VAULT
+$VAULT_DAT1
+EOF
+)
+
+VAULT_AWX=$(cat << EOF
+$NAME:
+  __ansible_vault: >
+    $ANSIBLE_VAULT
+
+$VAULT_DAT2
+EOF
+)
+
+printf "\\n## Playbook\\n\\n%s\\n" "$VAULT"
+printf "\\n## Inventory YAML\\n\\n%s\\n" "$(echo "$VAULT_YML" | grep -v '^$')"
+printf "\\n## Inventory AWX\\n\\n%s\\n" "$VAULT_AWX"
