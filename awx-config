@@ -90,10 +90,11 @@ fi
 
 ENV="${1^^}"
 USR="${ENV}_USER"
+ENV_PASS="${ENV}_PASSWORD_STORE_DIR"
 
-if [[ ! -z "${ENV}_PASSWORD_STORE_DIR" ]]
+if [[ -n "$ENV_PASS" ]]
 then
-  AWX_PASS_DIR="${ENV}_PASSWORD_STORE_DIR"
+  AWX_PASS_DIR="$ENV_PASS"
   export PASSWORD_STORE_DIR="${!AWX_PASS_DIR}"
 fi
 
@@ -121,7 +122,7 @@ HTTP_CODE="$(curl -s -o /dev/null -w "%{http_code}" "$AWX_HOST")"
 
 SUPERUSER="$(awx-cli user get "$AWX_USER" -f json | jq '.is_superuser')"
 
-if [[ "$AWX_USER" = 'true' ]]
+if [[ "$SUPERUSER" = 'true' ]]
 then
   awx-setting-get-tower-url-base
   awx-setting-get-custom-login-info
