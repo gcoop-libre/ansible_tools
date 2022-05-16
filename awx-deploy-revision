@@ -1,0 +1,92 @@
+#!/bin/bash
+
+# This script comes with ABSOLUTELY NO WARRANTY, use at own risk
+# Copyright (C) 2022 Osiris Alejandro Gomez <osiris@gcoop.coop>
+# Copyright (C) 2022 Osiris Alejandro Gomez <osiux@osiux.com>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+
+# shellcheck disable=SC1090
+
+DIR_BIN=$(dirname "$0") && source "$DIR_BIN/awx-common"
+
+function usage()
+{
+cat << EOF
+Usage:
+
+\`\`\`bash
+
+  $BIN awx v0.1.0 [DEPLOY_TYPE|update]
+
+\`\`\`
+
+Checkout and deploy awx specific revision as tag, branch or commit.
+Send all resources (projects, job_templates, workflows) defined in file.
+
+Example:
+
+\`\`\`bash
+
+  $BIN awx v0.1.0 update
+
+\`\`\`
+
+EOF
+exit 0
+}
+
+[[ "$1" =~ ^[-]+(h|help) ]] && usage
+
+AWX_DIR="$1"
+REVISION="$2"
+DEPLOY_TYPE='update'
+
+[[ -z "$1"              ]] && die "EMPTY AWX DIR"
+[[ -z "$2"              ]] && die "EMPTY REVISION"
+[[ -z "$3"              ]] || DEPLOY_TYPE="$3"
+[[ -d "$AWX_DIR"        ]] || die "NOT FOUND AWX DIR"
+
+DEPLOY_DIR="deploy"
+DEPLOY_FILE="$DEPLOY_DIR/${DEPLOY_TYPE}.awx"
+
+cd "$AWX_DIR"              || die "FAILED TO CHANGE TO AWX DIR"
+[[ -d '.git'            ]] || die "NOT FOUND GIT REPOSITORY"
+CURRENT_BRANCH="$(git branch --no-color | grep '^\* ' | cut -d ' ' -f2)"
+
+git fetch                  || die "FAILED TO FECTH"
+
+if [[ "$CURRENT_BRANCH" != "$REVISION" ]]
+then
+  git checkout "$REVISION" || die "FAILED TO CHECKOUT $REVISION"
+fi
+
+git pull                   || die "FAILED TO PULL $REVISION"
+
+[[ -d "$DEPLOY_DIR"     ]] || die "NOT FOUND DIR $DEPLOY_DIR"
+[[ -e "$DEPLOY_FILE"    ]] || die "NOT FOUND FILE $DEPLOY_FILE"
+
+grep ^project "$DEPLOY_FILE" | sort | while read -r PROJECT
+do
+
+  awx-json-send-projects "$PROJECT"
+
+done
+
+grep ^job_template "$DEPLOY_FILE" | sort | while read -r JOB_TEMPLATE
+do
+
+  awx-json-send-job-templates "$JOB_TEMPLATE"
+
+done
