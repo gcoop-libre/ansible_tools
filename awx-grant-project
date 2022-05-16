@@ -24,9 +24,28 @@ function usage()
 {
 cat << EOF
 Usage:
-  $BIN
 
-Description
+\`\`\`bash
+
+  $BIN PROJECT_NAME [TEAM|defaut_team] [TYPE|use]
+
+\`\`\`
+
+Grant permissions to a _team_ for a _project_.
+Use default team defined in config and \`use\` as default permission.
+
+\`\`\`bash
+
+  $BIN ansible_wst_v1.0.0 devops
+
+  Resource changed.
+  ==== ==== ==== =======
+   id  team type project
+  ==== ==== ==== =======
+  3268    7 use      727
+  ==== ==== ==== =======
+
+\`\`\`
 
 EOF
 exit 0
@@ -34,14 +53,14 @@ exit 0
 
 [[ "$1" =~ ^[-]+(h|help) ]] && usage
 
-
 TEAM="$DEFAULT_TEAM"
 
-[[ -z "$1" ]] && die 'EMPTY NAME'
-NAME="$1"
+[[ -z "$1" ]] && die 'EMPTY PROJECT_NAME'
+PROJECT_NAME="$1"
+TYPE='use'
 
-[[ ! -z "$2" ]] && TEAM="$2"
-
+[[ -z "$2"    ]] || TEAM="$2"
+[[ -z "$3"    ]] || TYPE="$3"
 [[ -z "$TEAM" ]] && die "EMPTY TEAM"
 
-grant_project "$NAME" "$TEAM"
+grant_project "$PROJECT_NAME" "$TEAM" "$TYPE"
