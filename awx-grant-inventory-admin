@@ -52,6 +52,6 @@ TEAM="$DEFAULT_TEAM"
 [[   -z "$1" ]] && die "EMPTY INVENTORY"
 INVENTORY="$1"
 
-[[ ! -z "$2" ]] && TEAM="$2"
+[[   -z "$2" ]] || TEAM="$2"
 
 grant_inventory_admin "$INVENTORY" "$TEAM"
