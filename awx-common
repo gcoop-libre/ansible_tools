@@ -32,7 +32,7 @@ BIN=$(basename "$0")
 
 die ()
 {
-  printf "%s\\n" "${RED}[ERROR] $1 $NORMAL" && exit 1
+  printf "%s\\n" "${RED}[ERROR] $1 $NORMAL" && usage && exit 1
 }
 
 log ()
