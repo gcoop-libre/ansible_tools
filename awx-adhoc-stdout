@@ -18,22 +18,42 @@
 
 # shellcheck disable=SC1090
 
-DIR_BIN=$(dirname "$0") && source "$DIR_BIN/awx-common"
+DIR_BIN="$(dirname "$0")" && source "$DIR_BIN/awx-common"
 
 function usage()
 {
 cat << EOF
 Usage:
-  $BIN
 
-Description
+\`\`\`bash
+
+  $BIN JOB_ID
+
+\`\`\`
+
+Get \`stdout\` of _ad-hoc_ _job_.
+
+Example:
+
+\`\`\`bash
+
+  $BIN 1234
+
+	Enter passphrase for /tmp/awx_1234_l3bc_2qw/artifacts/1234/ssh_key_data:
+	Identity added: /tmp/awx_1234_l3bc_2qw/artifacts/1234/ssh_key_data (/tmp/awx_1234_l3bc_2qw/artifacts/1234/ssh_key_data)
+	sprn01dev | CHANGED | rc=0 >>
+	Restarting cups (via systemctl): cups.service.
+
+
+	OK. (changed: false)
+
+\`\`\`
 
 EOF
 exit 0
 }
 
 [[ "$1" =~ ^[-]+(h|help) ]] && usage
-
 
 [[ -z "$1" ]] && die "EMPTY JOB_ID"
 JOB_ID="$1"
