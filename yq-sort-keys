@@ -56,7 +56,7 @@ then
 
   TMPI="$(mktemp)"
 
-  > "$TMPI"
+  true > "$TMPI"
 
   while IFS= read -r PIPED_INPUT
   do
