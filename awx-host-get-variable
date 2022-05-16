@@ -27,7 +27,7 @@ Usage:
 
 \`\`\`bash
 
-  $BIN HOST [INVENTORY]
+  $BIN HOST [KEY|all] [INVENTORY|prefix-]
 
 \`\`\`
 
@@ -43,11 +43,19 @@ Example:
 
 \`\`\`
 
-  Explicit _host_ and _inventory_:
+  Get value of \`ansible_host\` from _host_:
 
 \`\`\`bash
 
-  $BIN dev01 pve
+  $BIN pve-dev01 ansible_host
+
+\`\`\`
+
+  Explicit _host_, all variables and _inventory_:
+
+\`\`\`bash
+
+  $BIN dev01 all pve
 
 \`\`\`
 
