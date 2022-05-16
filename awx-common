@@ -58,7 +58,7 @@ stderror ()
   echo >&2 "$1"
 }
 
-[[ ! -e "$AWX_CONFIG" ]] && die "NOT FOUND FILE: $AWX_CONFIG"
+[[ -e "$AWX_CONFIG" ]] || die "NOT FOUND FILE: $AWX_CONFIG"
 
 eval $(sed '/:/!d;/^ *#/d;s/:/ /;' < "$AWX_CONFIG" | while read -r k v
 do
@@ -113,7 +113,7 @@ get_file_list()
   DIR='.'
 
   [[ -z "$1" ]] && exit 1
-  [[ ! -z "$2" ]] && DIR="$2"
+  [[ -z "$2" ]] || DIR="$2"
 
   find -L "$DIR" -type f -iname "$1" | while read -r FILE
   do
@@ -155,8 +155,8 @@ filelist_send_all()
 {
   local FILE
 
-  [[   -z "$1" ]] && exit 1
-  [[ ! -e "$1" ]] && exit 1
+  [[   -z "$1" ]] && die "EMPTY FILE"
+  [[   -e "$1" ]] || die "NOT FOUND FILE"
 
   while read -r FILE
   do
@@ -190,7 +190,7 @@ grant_project()
 
   TYPE='use'
 
-  [[ ! -z "$3" ]] && TYPE="$3"
+  [[ -z "$3" ]] || TYPE="$3"
 
   echo awx-cli role grant \
     "$AWX_DEBUG"          \
@@ -215,7 +215,7 @@ grant_job_template()
 
   TYPE='execute'
 
-  [[ ! -z "$3" ]] && TYPE="$3"
+  [[ -z "$3" ]] || TYPE="$3"
 
   echo awx-cli role grant \
     "$AWX_DEBUG"          \
@@ -240,7 +240,7 @@ grant_workflow()
 
   TYPE='execute'
 
-  [[ ! -z "$3" ]] && TYPE="$3"
+  [[ -z "$3" ]] || TYPE="$3"
 
   echo awx-cli role grant \
     $AWX_DEBUG            \
@@ -309,7 +309,7 @@ host_disable()
 log_ansible_proxmox_kvm()
 {
 
-  [[ ! -e "$1" ]] && die "NOT FOUND FILE $1"
+  [[ -e "$1" ]] || die "NOT FOUND FILE $1"
 
   local DATE HOST VMID STATE
 
@@ -382,7 +382,7 @@ wait_seconds()
   local S
   S=5
 
-  [[ ! -z "$2" ]] && S="$2"
+  [[ -z "$2" ]] || S="$2"
 
   for i in $(seq "$S" -1 0)
   do
