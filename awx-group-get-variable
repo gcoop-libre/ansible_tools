@@ -28,7 +28,7 @@ Usage:
 
 \`\`\`bash
 
-  $BIN INVENTORY GROUP
+  $BIN INVENTORY GROUP [VARIABLE|all]
 
 \`\`\`
 
@@ -48,12 +48,14 @@ exit 0
 
 [[ "$1" =~ ^[-]+(h|help) ]] && usage
 
+VARIABLE='all'
+
 [[ -z "$1" ]] && die "EMPTY INVENTORY"
 [[ -z "$2" ]] && die "EMPTY GROUP"
+[[ -z "$3" ]] || VARIABLE="$3"
 
 INVENTORY="$1"
 GROUP="$2"
-VARIABLE="$3"
 
 JSON="$(mktemp --suffix .json)"
 
@@ -68,7 +70,7 @@ YAML="$(mktemp --suffix .yml)"
 
 jq -r ".variables" "$JSON" > "$YAML"
 
-if [[ -z "$VARIABLE" ]]
+if [[ "$VARIABLE" = 'all' ]]
 then
 
   printf "%s\\n\\n" '---'
