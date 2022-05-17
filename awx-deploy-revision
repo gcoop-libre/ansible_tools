@@ -1,4 +1,4 @@
-#!/bin/bash -x
+#!/bin/bash
 
 # This script comes with ABSOLUTELY NO WARRANTY, use at own risk
 # Copyright (C) 2022 Osiris Alejandro Gomez <osiris@gcoop.coop>
