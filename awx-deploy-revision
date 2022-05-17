@@ -79,7 +79,9 @@ git pull                   || die "FAILED TO PULL $REVISION"
 grep ^project "$DEPLOY_FILE" | sort | while read -r PROJECT
 do
 
-  echo "awx-cli send $AWX_DEBUG $PROJECT" | bash
+  JSON="$DIR_PROJECT/$PROJECT"
+  [[ -e "$JSON" ]] && die "NOT FOUND FILE $JSON"
+  echo "awx-cli send $AWX_DEBUG $JSON" | bash
 
 done
 
