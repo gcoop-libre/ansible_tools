@@ -34,9 +34,14 @@ BIN=$(basename "$0")
 
 die ()
 {
-  printf "%s\\n" "${RED}[ERROR] $1 $NORMAL"
-  printf "%s\\n" "${RED}[DEBUG] $1 $? ${BASH_LINENO[0]} ${FUNCNAME[1]}"
-  usage && exit 1
+  local D
+
+  D="${BASH_SOURCE[0]}:${FUNCNAME[0]}:${FUNCNAME[1]}:${BASH_LINENO[0]}"
+
+  printf "%s\\n" "${RED}[ERROR] $1 $NORMAL $D"
+
+  [[ "$?" -ne 0 ]] && usage
+  exit 1
 }
 
 log ()
