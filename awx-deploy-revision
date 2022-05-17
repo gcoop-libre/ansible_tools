@@ -78,7 +78,8 @@ git pull                   || die "FAILED TO PULL $REVISION"
 
 grep ^project "$DEPLOY_FILE" | sort | while read -r PROJECT
 do
-  pwd && ls -lht .
+  git log -1
+  pwd && ls -lht "$PROJECT"
   [[ -e "$PROJECT" ]] && die "NOT FOUND FILE $PROJECT"
   echo "awx-cli send $AWX_DEBUG $PROJECT" | bash
 
