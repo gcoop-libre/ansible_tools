@@ -80,7 +80,7 @@ grep ^project "$DEPLOY_FILE" | sort | while read -r PROJECT
 do
   AWX_DEBUG="-vv" && md5sum "$PROJECT" && cat "$PROJECT"
   [[ -e "$PROJECT" ]] || die "NOT FOUND FILE $PROJECT"
-  echo "awx-cli send $AWX_DEBUG $PROJECT" | bash
+  echo "awx-cli send -vv $PROJECT" | bash
 
 done
 
