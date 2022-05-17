@@ -50,14 +50,46 @@ Define enviroments in \`~/.awx-config\`:
 
 \`\`\`
 
+	AWX_DEBUG: -v
+	DEFAULT_AD_DOMAIN: example.com
+	DEFAULT_DOMAIN: ipa.example.com
+	DEFAULT_EMAIL_DOMAIN: example.com
+	DEFAULT_HOST_DOMAIN: example.com
+	DEFAULT_HOST_DOMAIN_PREFIX: ipa
+	DEFAULT_HOST_INVENTORY: hosts-pve
+	DEFAULT_HOST_PREFIX_REPLACE: pve
+	DEFAULT_HOST_PREFIX_SEARCH: pve01
+	DEFAULT_HOST_SUFFIX: n0
+	DEFAULT_IPA_DOMAIN: ipa.example.com
+	DEFAULT_LIMIT: lab
+	DEFAULT_ORGANIZATION: example
+	DEFAULT_PROJECT: inventory_v0.2.2
+	DEFAULT_SCM_CREDENTIAL: git_awx_dev
+	DEFAULT_SEP: ,
+	DEFAULT_SSH_CREDENTIAL: ssh_ansible_dev
+	DEFAULT_TEAM: devops
+	DEFAULT_VAULT_CREDENTIAL: vault_dev
 	DEVELOP: awx-dev
-	DEVELOP_USER: admin
 	DEVELOP_PASSWORD_STORE_DIR: ~/.password-store-awx-dev
+	DIR_INVENTORY: inventory
+	DIR_JOB_TEMPLATE: job_template
+	DIR_PROJECT: project
+	DIR_WORKFLOW: workflow
+	LAB: lab
+	LAB_USER: awx-cli
+	LO: loawx
+	LO_USER: admin
 	MASTER_PASSWORD_STORE_DIR: ~/.password-store-awx-prd
-	MASTER: awx-prd
-	MASTER_USER: admin
+	OUTPUT_STYLE: md
 	PASS_PREFIX: awx/
 	PASS_SUFFIX: /
+	PROJECT_PREFIX: ansible
+	SCM_URL_API: https://git.example.com/api/v4
+	SCM_URL_BASE: git@git.example.com:/ipa
+	SNMP_USER: public
+	STAGE: awx-stg
+	STAGE_USER: admin
+	WORKFLOW_PREFIX: wfw
 
 \`\`\`
 
