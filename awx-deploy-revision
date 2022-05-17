@@ -47,7 +47,6 @@ EOF
 exit 0
 }
 
-[[ "$1" =~ ^[-]+(h|help) ]] && usage
 
 AWX_DIR="$1"
 REVISION="$2"
