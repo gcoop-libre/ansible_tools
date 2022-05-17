@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -x
 
 # This script comes with ABSOLUTELY NO WARRANTY, use at own risk
 # Copyright (C) 2020 Osiris Alejandro Gomez <osiris@gcoop.coop>
@@ -24,16 +24,27 @@ function usage()
 {
 cat << EOF
 Usage:
-  $BIN
 
-Description
+\`\`\`bash
+
+  $BIN [JSON]
+
+\`\`\`
+
+Send one _project_ \`.json\` file or send all _projects_ in _projects_
+directory
+
+\`\`\`bash
+
+  $BIN projects/ansible_promox_v0.1.0.json
+
+\`\`\`
 
 EOF
 exit 0
 }
 
 [[ "$1" =~ ^[-]+(h|help) ]] && usage
-
 
 [[ -d "$DIR_PROJECT" ]] || die "NOT FOUND $PWD/$DIR_PROJECT"
 
