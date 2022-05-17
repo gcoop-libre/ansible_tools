@@ -44,7 +44,6 @@ EOF
 exit 0
 }
 
-[[ "$1" =~ ^[-]+(h|help) ]] && usage
 
 [[ -d "$DIR_PROJECT" ]] || die "NOT FOUND $PWD/$DIR_PROJECT"
 
