@@ -79,7 +79,7 @@ git pull                   || die "FAILED TO PULL $REVISION"
 grep ^project "$DEPLOY_FILE" | sort | while read -r PROJECT
 do
 
-  awx-json-send-projects "$PROJECT"
+  echo "awx-cli send $AWX_DEBUG $PROJECT" | bash
 
 done
 
