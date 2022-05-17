@@ -26,6 +26,15 @@ Add to ``~/.bashrc``:
 
 ```
 
+## dependencies
+
+```bash
+
+apt-get install coreutils gpg moreutils pass tree
+pip3 install requirements.txt
+
+```
+
 ## commands
 
 - [awx commands](awx-help.md)
