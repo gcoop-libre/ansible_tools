@@ -34,7 +34,9 @@ BIN=$(basename "$0")
 
 die ()
 {
-  printf "%s\\n" "${RED}[ERROR] $1 $NORMAL" && usage && exit 1
+  printf "%s\\n" "${RED}[ERROR] $1 $NORMAL"
+  printf "%s\\n" "${RED}[DEBUG] $1 $? ${BASH_LINENO[0]} ${FUNCNAME[1]}"
+  usage && exit 1
 }
 
 log ()
