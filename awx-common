@@ -31,7 +31,9 @@ NORMAL="$(tput sgr0)"
 DIR_REAL="$(realpath "$DIR_BIN")"
 DIR_BASE="$(dirname "$DIR_REAL")"
 AWX_CONFIG="$HOME/.awx-config"
+AWX_BACKUP="$HOME/.awx-config-$(date +%s).bak"
 BIN=$(basename "$0")
+AWX_CFG="$HOME/.tower_cli.cfg"
 
 die ()
 {
@@ -50,6 +52,7 @@ log ()
 log_send_file()
 {
   MAX_COLS="$(tput cols)"
+  awx_cfg_read
   echo "SEND $1 to $AWX_CFG_HOST *****"
 }
 
@@ -62,24 +65,6 @@ stderror ()
 {
   echo >&2 "$1"
 }
-
-[[ -e "$AWX_CONFIG" ]] || die "NOT FOUND FILE: $AWX_CONFIG"
-
-eval $(sed '/:/!d;/^ *#/d;s/:/ /;' < "$AWX_CONFIG" | while read -r k v
-do
-    str="$k='$v'"
-    echo "$str"
-done)
-
-[[ -z "$HTTP_PROXY" ]] || stderror "Using HTTP_PROXY=$HTTP_PROXY"
-
-# check dependencies
-
-for i in awx-cli jq yq
-do
-  command -v "$i" >/dev/null || die "try: pip install $i " \
-    | sed 's/awx-cli/ansibel-tower-cli/g'
-done
 
 markdown()
 {
@@ -379,7 +364,14 @@ awx_ad_hoc_shell_footer
 
 awx_cfg_get()
 {
-  grep "$1" "$HOME/.tower_cli.cfg" | cut -d= -f2 | tr -d ' '
+  grep "$1" "$AWX_CFG" | cut -d= -f2 | tr -d ' '
+}
+
+awx_cfg_read()
+{
+  AWX_CFG_HOST="$(awx_cfg_get 'host')"
+  AWX_CFG_PASS="$(awx_cfg_get 'pass')"
+  AWX_CFG_USER="$(awx_cfg_get 'user')"
 }
 
 wait_seconds()
@@ -507,6 +499,8 @@ function get_url()
   [[ "$1" = 'job_template' ]] && P='#/templates/job_template'
   [[ "$1" = 'workflow'     ]] && P='#/templates/workflow_job_template'
 
+  awx_cfg_read
+
   printf "%s/%s/%s" "$AWX_CFG_HOST" "$P" "$2"
 }
 
@@ -559,6 +553,57 @@ ssh_config()
 
 }
 
-AWX_CFG_HOST="$(awx_cfg_get 'host')"
-AWX_CFG_PASS="$(awx_cfg_get 'pass')"
-AWX_CFG_USER="$(awx_cfg_get 'user')"
+config_read()
+{
+
+  eval $(sed '/:/!d;/^ *#/d;s/:/ /;' < "$AWX_CONFIG" | while read -r k v
+  do
+      str="$k='$v'"
+      echo "$str"
+  done)
+
+  # use proxy
+  [[ -z "$HTTP_PROXY" ]] || stderror "Using HTTP_PROXY=$HTTP_PROXY"
+
+}
+
+dependencies_verify()
+{
+
+  for i in awx-cli jq yq
+  do
+    command -v "$i" >/dev/null || die "try: pip install $i " \
+      | sed 's/awx-cli/ansibel-tower-cli/g'
+  done
+
+}
+
+config_verify()
+{
+
+  if [[ ! -e "$AWX_CONFIG" ]]
+  then
+
+    if [[ ! "$1" =~ ^[-]+(c|config) ]]
+    then
+      echo "NOT FOUND FILE: $AWX_CONFIG TRY awx-config -c" && exit 1
+    fi
+
+    return 1
+
+  fi
+
+}
+
+main ()
+{
+
+  if config_verify "$1"
+  then
+    dependencies_verify
+    config_read
+  fi
+
+}
+
+main "$1"
