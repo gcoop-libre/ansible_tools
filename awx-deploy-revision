@@ -84,6 +84,14 @@ do
 
 done
 
+grep ^inventory "$DEPLOY_FILE" | sort | while read -r INVENTORY
+do
+
+  [[ -e "$INVENTORY" ]] || die "NOT FOUND FILE $INVENTORY"
+  awx-cli send "$INVENTORY"
+
+done
+
 grep ^job_template "$DEPLOY_FILE" | sort | while read -r JOB_TEMPLATE
 do
 
