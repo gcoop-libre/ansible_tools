@@ -57,8 +57,7 @@ DEPLOY_TYPE='update'
 [[ -z "$2"              ]] && die "EMPTY REVISION"
 [[ -z "$3"              ]] || DEPLOY_TYPE="$3"
 [[ -d "$AWX_DIR"        ]] || die "NOT FOUND AWX DIR"
-
-DEPLOY_DIR="deploy"
+[[ -z "$DEPLOY_DIR"     ]] && DEPLOY_DIR='deploy'
 DEPLOY_FILE="$DEPLOY_DIR/${DEPLOY_TYPE}.awx"
 
 cd "$AWX_DIR"              || die "FAILED TO CHANGE TO AWX DIR"
