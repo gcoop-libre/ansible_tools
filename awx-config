@@ -63,6 +63,8 @@ Define enviroments in \`~/.awx-config\`:
 
   AWX_DEBUG: -v
   DEFAULT_AD_DOMAIN: example.com
+  DEFAULT_CREDENTIAL_TYPE: Machine
+  DEFAULT_CREDENTIAL_USER: ansible
   DEFAULT_DOMAIN: ipa.example.com
   DEFAULT_EMAIL_DOMAIN: example.com
   DEFAULT_HOST_DOMAIN: example.com
