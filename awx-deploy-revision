@@ -78,8 +78,7 @@ git pull                   || die "FAILED TO PULL $REVISION"
 
 grep ^project "$DEPLOY_FILE" | sort | while read -r PROJECT
 do
-  cat "$PROJECT"
-  md5sum "$PROJECT"
+
   [[ -e "$PROJECT" ]] || die "NOT FOUND FILE $PROJECT"
   awx-cli send -vv "$PROJECT"
 
@@ -87,8 +86,7 @@ done
 
 grep ^job_template "$DEPLOY_FILE" | sort | while read -r JOB_TEMPLATE
 do
-  cat "$JOB_TEMPLATE"
-  md5sum "$JOB_TEMPLATE"
+
   [[ -e "$JOB_TEMPLATE" ]] || die "NOT FOUND FILE $JOB_TEMPLATE"
   awx-cli send -vv "$JOB_TEMPLATE"
 
