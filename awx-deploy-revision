@@ -81,7 +81,7 @@ grep ^project "$DEPLOY_FILE" | sort | while read -r PROJECT
 do
 
   [[ -e "$PROJECT" ]] || die "NOT FOUND FILE $PROJECT"
-  awx-cli send $AWX_DEBUG "$PROJECT"
+  awx-cli send "$PROJECT" $AWX_DEBUG
 
 done
 
@@ -89,6 +89,6 @@ grep ^job_template "$DEPLOY_FILE" | sort | while read -r JOB_TEMPLATE
 do
 
   [[ -e "$JOB_TEMPLATE" ]] || die "NOT FOUND FILE $JOB_TEMPLATE"
-  awx-cli send $AWX_DEBUG "$JOB_TEMPLATE"
+  awx-cli send "$JOB_TEMPLATE" $AWX_DEBUG
 
 done
