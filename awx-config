@@ -18,7 +18,7 @@
 
 # shellcheck disable=SC2116,SC1090
 
-DIR_BIN=$(dirname "$0") && source "$DIR_BIN/awx-common"
+DIR_BIN="$(dirname "$0")" && source "$DIR_BIN/awx-common"
 
 function usage()
 {
@@ -46,50 +46,63 @@ Example:
 
 \`\`\`
 
+Write example config:
+
+\`\`\`bash
+
+  $BIN -c
+
+  BACKUP CURRENT CONFIG IN /home/osiris/.awx-config-1653427782.bak
+  WRITE EXAMPLE CONFIG IN /home/osiris/.awx-config
+
+\`\`\`
+
 Define enviroments in \`~/.awx-config\`:
 
 \`\`\`
 
-	AWX_DEBUG: -v
-	DEFAULT_AD_DOMAIN: example.com
-	DEFAULT_DOMAIN: ipa.example.com
-	DEFAULT_EMAIL_DOMAIN: example.com
-	DEFAULT_HOST_DOMAIN: example.com
-	DEFAULT_HOST_DOMAIN_PREFIX: ipa
-	DEFAULT_HOST_INVENTORY: hosts-pve
-	DEFAULT_HOST_PREFIX_REPLACE: pve
-	DEFAULT_HOST_PREFIX_SEARCH: pve01
-	DEFAULT_HOST_SUFFIX: n0
-	DEFAULT_IPA_DOMAIN: ipa.example.com
-	DEFAULT_LIMIT: lab
-	DEFAULT_ORGANIZATION: example
-	DEFAULT_PROJECT: inventory_v0.2.2
-	DEFAULT_SCM_CREDENTIAL: git_awx_dev
-	DEFAULT_SEP: ,
-	DEFAULT_SSH_CREDENTIAL: ssh_ansible_dev
-	DEFAULT_TEAM: devops
-	DEFAULT_VAULT_CREDENTIAL: vault_dev
-	DEVELOP: awx-dev
-	DEVELOP_PASSWORD_STORE_DIR: ~/.password-store-awx-dev
-	DIR_INVENTORY: inventory
-	DIR_JOB_TEMPLATE: job_template
-	DIR_PROJECT: project
-	DIR_WORKFLOW: workflow
-	LAB: lab
-	LAB_USER: awx-cli
-	LO: loawx
-	LO_USER: admin
-	MASTER_PASSWORD_STORE_DIR: ~/.password-store-awx-prd
-	OUTPUT_STYLE: md
-	PASS_PREFIX: awx/
-	PASS_SUFFIX: /
-	PROJECT_PREFIX: ansible
-	SCM_URL_API: https://git.example.com/api/v4
-	SCM_URL_BASE: git@git.example.com:/ipa
-	SNMP_USER: public
-	STAGE: awx-stg
-	STAGE_USER: admin
-	WORKFLOW_PREFIX: wfw
+  AWX_DEBUG: -v
+  DEFAULT_AD_DOMAIN: example.com
+  DEFAULT_DOMAIN: ipa.example.com
+  DEFAULT_EMAIL_DOMAIN: example.com
+  DEFAULT_HOST_DOMAIN: example.com
+  DEFAULT_HOST_DOMAIN_PREFIX: ipa
+  DEFAULT_HOST_INVENTORY: hosts-pve
+  DEFAULT_HOST_PREFIX_REPLACE: pve
+  DEFAULT_HOST_PREFIX_SEARCH: pve01
+  DEFAULT_HOST_SUFFIX: n0
+  DEFAULT_IPA_DOMAIN: ipa.example.com
+  DEFAULT_LIMIT: lab
+  DEFAULT_ORGANIZATION: example
+  DEFAULT_PROJECT: inventory_v0.2.2
+  DEFAULT_SCM_CREDENTIAL: git_awx_dev
+  DEFAULT_SEP: ,
+  DEFAULT_SSH_CREDENTIAL: ssh_ansible_dev
+  DEFAULT_TEAM: devops
+  DEFAULT_VAULT_CREDENTIAL: vault_dev
+  DEVELOP: awx-dev
+  DEVELOP_PASSWORD_STORE_DIR: ~/.password-store-awx-dev
+  DEVELOP_USER: admin
+  DIR_INVENTORY: inventory
+  DIR_JOB_TEMPLATE: job_template
+  DIR_PROJECT: project
+  DIR_WORKFLOW: workflow
+  ERROR_SHOW_USAGE: 1
+  LAB: lab
+  LAB_USER: awx-cli
+  LO: loawx
+  LO_USER: admin
+  MASTER_PASSWORD_STORE_DIR: ~/.password-store-awx-prd
+  OUTPUT_STYLE: md
+  PASS_PREFIX: awx/
+  PASS_SUFFIX: /
+  PROJECT_PREFIX: ansible
+  SCM_URL_API: https://git.example.com/api/v4
+  SCM_URL_BASE: git@git.example.com:/ipa
+  SNMP_USER: public
+  STAGE: awx-stg
+  STAGE_USER: admin
+  WORKFLOW_PREFIX: wfw
 
 \`\`\`
 
@@ -98,12 +111,21 @@ Generate or insert credentials in multiple \`pass\` repositories:
 \`\`\`bash
 
   export PASSWORD_STORE_DIR=~/.password-store-awx-dev
-	pass awx/awx-dev/host
-	pass awx/awx-dev/admin_password
+  pass awx/awx-dev/host
+  pass awx/awx-dev/admin_password
 
   export PASSWORD_STORE_DIR=~/.password-store-awx-prd
-	pass awx/awx-prd/host
-	pass awx/awx-prd/admin_password
+  pass awx/awx-prd/host
+  pass awx/awx-prd/admin_password
+
+\`\`\`
+
+Config file variables can be overridden on the fly by using them as
+environment variables
+
+\`\`\`
+
+  AWX_HOST=awx-dev AWX_USER=admin AWX_PASS=secret awx-config DEVELOP
 
 \`\`\`
 
@@ -111,31 +133,52 @@ EOF
 exit 0
 }
 
-[[ "$1" =~ ^[-]+(h|help) ]] && usage
+config_example()
+{
 
-if [[ -n "$ANSIBLE_PASS_PASSWORD_STORE_DIR" ]]
+  if [[ -e "$AWX_CONFIG" ]]
+  then
+    cp "$AWX_CONFIG" "$AWX_BACKUP"
+    stderror "BACKUP CURRENT CONFIG IN $AWX_BACKUP"
+  fi
+
+  usage | grep -E '^  [A-Z_]+: ' | sed 's/^  //g' > "$AWX_CONFIG"
+  stderror "WRITE EXAMPLE CONFIG IN $AWX_CONFIG"
+  exit 0
+}
+
+[[ "$1" =~ ^[-]+(h|help)   ]] && usage
+[[ "$1" =~ ^[-]+(c|config) ]] && config_example
+
+[[ -z "$AWX_ENV" ]] && AWX_ENV="${1^^}"
+[[ -z "$AWX_ENV" ]] && die "EMPTY ENVIROMENT"
+
+# use value from environment
+export PASSWORD_STORE_DIR="$AWX_ENV_PASS"
+
+if [[ -z "$AWX_ENV_PASS" ]]
 then
-  export PASSWORD_STORE_DIR="$ANSIBLE_PASS_PASSWORD_STORE_DIR"
+  # use value from ~/.awx-config
+  AWX_CFG_PASS="${AWX_ENV}_PASSWORD_STORE_DIR"
+  AWX_ENV_PASS="${!AWX_CFG_PASS}"
+  export PASSWORD_STORE_DIR="${AWX_ENV_PASS}"
 fi
 
-[[ -z "$1" ]] && die "EMPTY ENVIROMENT"
+AWX_CFG_NAME="${!AWX_ENV}"
+AWX_CFG_USER="${AWX_ENV}_USER"
+[[ -z "$AWX_USER" ]] && AWX_USER="${!AWX_CFG_USER}"
+[[ -z "$AWX_USER" ]] && die "UNDEFINED AWX_USER or ${AWX_ENV}_USER in $AWX_CONFIG"
 
-ENV="${1^^}"
-USR="${ENV}_USER"
-ENV_PASS="${ENV}_PASSWORD_STORE_DIR"
+AWX_HOST_PASS="${PASS_PREFIX}${AWX_CFG_NAME}${PASS_SUFFIX}host"
+AWX_PASS_PASS="${PASS_PREFIX}${AWX_CFG_NAME}${PASS_SUFFIX}${AWX_USER}_password"
 
-if [[ -n "$ENV_PASS" ]]
-then
-  AWX_PASS_DIR="$ENV_PASS"
-  export PASSWORD_STORE_DIR="${!AWX_PASS_DIR}"
-fi
+[[ -z "$AWX_HOST" ]] && AWX_HOST="$(pass "$AWX_HOST_PASS")"
+[[ -z "$AWX_HOST" ]] && die "EMPTY OR UNDEFINED AWX_HOST TRY DEFINE VARIABLE OR INSERT IN PASS"
 
-AWX_ENV="$(echo "${!ENV}")"
-AWX_USER="$(echo "${!USR}")"
-AWX_HOST=$(pass "${PASS_PREFIX}${AWX_ENV}${PASS_SUFFIX}host")
-AWX_PASS=$(pass "${PASS_PREFIX}${AWX_ENV}${PASS_SUFFIX}${AWX_USER}_password")
+[[ -z "$AWX_PASS" ]] && AWX_PASS="$(pass "$AWX_PASS_PASS")"
+[[ -z "$AWX_PASS" ]] && die "EMPTY OR UNDEFINED AWX_PASS TRY DEFINE VARIABLE OR INSERT IN PASS"
 
-[[ -z "$AWX_PASS" ]] && die "EMPTY AWX_PASS"
+[[ -z "$PASSWORD_STORE_DIR" ]] && PASSWORD_STORE_DIR='none'
 
 CONFIG=$(cat << EOF
 host=$AWX_HOST
@@ -145,7 +188,6 @@ verify_ssl=false
 EOF
 )
 
-AWX_CFG="$HOME/.tower_cli.cfg"
 echo "$CONFIG" > "$AWX_CFG" && chmod 600 "$AWX_CFG"
 
 HTTP_CODE="$(curl -s -o /dev/null -w "%{http_code}" "$AWX_HOST")"
