@@ -50,6 +50,8 @@ awx-cli job get      \
 
 [[ -s "$JSON" ]] || die "EMPTY JSON"
 
+awx_cfg_read
+
 NAME="$(jq -r '.name' "$JSON")"
 STARTED="$(jq -r '.started' "$JSON")"
 FINISHED="$(jq -r '.finished' "$JSON")"
