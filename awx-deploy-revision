@@ -18,7 +18,6 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 # shellcheck disable=SC1090
-# shellcheck disable=SC2086
 
 DIR_BIN=$(dirname "$0") && source "$DIR_BIN/awx-common"
 
@@ -81,7 +80,7 @@ grep ^project "$DEPLOY_FILE" | sort | while read -r PROJECT
 do
 
   [[ -e "$PROJECT" ]] || die "NOT FOUND FILE $PROJECT"
-  awx-cli send "$PROJECT" $AWX_DEBUG
+  awx-cli send "$PROJECT"
 
 done
 
@@ -89,6 +88,6 @@ grep ^job_template "$DEPLOY_FILE" | sort | while read -r JOB_TEMPLATE
 do
 
   [[ -e "$JOB_TEMPLATE" ]] || die "NOT FOUND FILE $JOB_TEMPLATE"
-  awx-cli send "$JOB_TEMPLATE" $AWX_DEBUG
+  awx-cli send "$JOB_TEMPLATE"
 
 done
