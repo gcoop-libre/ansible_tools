@@ -91,6 +91,18 @@ do
 
   echo "SEND INVENTORY $INVENTORY"
   [[ -e "$INVENTORY" ]] || die "NOT FOUND FILE $INVENTORY"
+
+  INVENTORY_SOURCE="$(awx-json-inventory-get-inventory-source "$INVENTORY")"
+  PROJECT_SOURCE="project/$INVENTORY_SOURCE.json"
+
+  if [[ ! -e "$PROJECT_SOURCE" ]]
+  then
+    stderror "NOT FOUND FILE $PROJECT_SOURCE SKIP SEND $INVENTORY"
+    continue
+  fi
+
+  awx-cli send "$PROJECT_SOURCE"
+  awx-cli project update -n "$PROJECT_SOURCE"
   awx-cli send "$INVENTORY"
 
 done
