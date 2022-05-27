@@ -24,16 +24,30 @@ function usage()
 {
 cat << EOF
 Usage:
-  $BIN
 
-Description
+\`\`\`bash
+
+  $BIN JOB_ID
+
+\`\`\`
+
+Get summary of _job_template_ execution in format:
+
+ name duration date start finish url
+
+\`\`\`bash
+
+	$BIN 1234
+
+  vms_cin_v0.2.0 00:00  2022-05-17 17:47 17:47 http://awx-dev/#/jobs/playbook/1234
+
+\`\`
 
 EOF
 exit 0
 }
 
 [[ "$1" =~ ^[-]+(h|help) ]] && usage
-
 
 DURATION='00:00'
 END='00:00'
