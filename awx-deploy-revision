@@ -79,6 +79,7 @@ git pull                   || die "FAILED TO PULL $REVISION"
 grep ^project "$DEPLOY_FILE" | sort | while read -r PROJECT
 do
 
+  echo "SEND PROJECT $PROJECT"
   [[ -e "$PROJECT" ]] || die "NOT FOUND FILE $PROJECT"
   awx-cli send "$PROJECT" && awx-cli project update -n "$PROJECT"
 
@@ -87,6 +88,7 @@ done
 grep ^inventory "$DEPLOY_FILE" | sort | while read -r INVENTORY
 do
 
+  echo "SEND INVENTORY $INVENTORY"
   [[ -e "$INVENTORY" ]] || die "NOT FOUND FILE $INVENTORY"
   awx-cli send "$INVENTORY"
 
@@ -95,6 +97,7 @@ done
 grep ^job_template "$DEPLOY_FILE" | sort | while read -r JOB_TEMPLATE
 do
 
+  echo "SEND JOB_TEMPLATE $JOB_TEMPLATE"
   [[ -e "$JOB_TEMPLATE" ]] || die "NOT FOUND FILE $JOB_TEMPLATE"
   awx-cli send "$JOB_TEMPLATE"
 
