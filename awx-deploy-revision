@@ -80,7 +80,7 @@ grep ^project "$DEPLOY_FILE" | sort | while read -r PROJECT
 do
 
   [[ -e "$PROJECT" ]] || die "NOT FOUND FILE $PROJECT"
-  awx-cli send "$PROJECT"
+  awx-cli send "$PROJECT" && awx-cli project update -n "$PROJECT"
 
 done
 
