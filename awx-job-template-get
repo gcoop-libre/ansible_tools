@@ -56,7 +56,7 @@ END='00:00'
 
 JOB_ID="$1"
 
-JSON=$(mktemp --suffix .json)
+JSON="$(mktemp --suffix .json)"
 
 awx-cli job get      \
   --format json      \
@@ -72,7 +72,7 @@ FINISHED="$(jq -r '.finished' "$JSON")"
 START="$(date --date "$STARTED" '+%F %H:%M')"
 URL="$AWX_CFG_HOST/#/jobs/playbook/$JOB_ID"
 
-if [[ ! -z "$FINISHED" ]]
+if [[ -n "$FINISHED" ]]
 then
   END="$(date --date "$FINISHED" '+%H:%M')"
   DURATION="$(timediff "$END" "$(echo "$START" | cut -d' ' -f2)")"
