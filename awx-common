@@ -27,6 +27,7 @@
 
 RED="$(tput setaf 196)"
 GREEN="$(tput setaf 46)"
+NORMAL="$(tput sgr0)"
 DIR_REAL="$(realpath "$DIR_BIN")"
 DIR_BASE="$(dirname "$DIR_REAL")"
 AWX_CONFIG="$HOME/.awx-config"
@@ -34,13 +35,8 @@ BIN=$(basename "$0")
 
 die ()
 {
-  local D
-
-  D="${BASH_SOURCE[0]}:${FUNCNAME[0]}:${FUNCNAME[1]}:${BASH_LINENO[0]}"
-
-  printf "%s\\n" "${RED}[ERROR] $1 $NORMAL $D"
-
-  [[ "$?" -ne 0 ]] && usage
+  printf "%s\\n" "${RED}[ERROR] $1 $NORMAL"
+  [[ "$ERROR_SHOW_USAGE" -eq 1 ]] && usage
   exit 1
 }
 
