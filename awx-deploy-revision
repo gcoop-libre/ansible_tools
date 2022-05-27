@@ -47,6 +47,7 @@ EOF
 exit 0
 }
 
+[[ -e "$AWX_CFG" ]] || die "NOT FOUND .tower_cli.cfg TRY awx-config"
 
 AWX_DIR="$1"
 REVISION="$2"
