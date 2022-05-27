@@ -54,13 +54,13 @@ END='00:00'
 
 [[ -z "$1" ]] && die "EMPTY WORKFLOW JOB"
 
-WORKFLOW_JOB_ID="$1"
+JOB_ID="$1"
 
 JSON=$(mktemp --suffix .json)
 
 awx-cli job get      \
   --format json      \
-  "$WORKFLOW_JOB_ID" > "$JSON" 2>/dev/null
+  "$JOB_ID" > "$JSON" 2>/dev/null
 
 [[ -s "$JSON" ]] || die "EMPTY JSON"
 
@@ -70,7 +70,7 @@ NAME="$(jq -r '.name' "$JSON")"
 STARTED="$(jq -r '.started' "$JSON")"
 FINISHED="$(jq -r '.finished' "$JSON")"
 START="$(date --date "$STARTED" '+%F %H:%M')"
-URL="$AWX_CFG_HOST/#/workflows/$WORKFLOW_JOB_ID"
+URL="$AWX_CFG_HOST/#/jobs/playbook/$JOB_ID"
 
 if [[ ! -z "$FINISHED" ]]
 then
