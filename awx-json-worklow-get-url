@@ -44,6 +44,8 @@ else
   echo "$1"           > "$JSON_LIST"
 fi
 
+awx_cfg_read
+
 while read -r FILE
 do
   NAME="$(basename "$FILE" .json)"
