@@ -59,6 +59,8 @@ INVENTORY="${PREFIX,,}"
 
 HOST_ID="$(host_get_id "$INVENTORY" "$HOST")"
 
+awx_cfg_read
+
 [[ -z "$HOST_ID"      ]] && die "EMPTY HOST_ID"
 [[ -z "$AWX_CFG_USER" ]] && die "EMPTY AWX_CFG_USER"
 [[ -z "$AWX_CFG_PASS" ]] && die "EMPTY AWX_CFG_PASS"
