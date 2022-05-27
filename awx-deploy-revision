@@ -81,7 +81,8 @@ do
 
   echo "SEND PROJECT $PROJECT"
   [[ -e "$PROJECT" ]] || die "NOT FOUND FILE $PROJECT"
-  awx-cli send "$PROJECT" && awx-cli project update -n "$PROJECT"
+  awx-cli send "$PROJECT"
+  awx-cli project update -n "$PROJECT"
 
 done
 
