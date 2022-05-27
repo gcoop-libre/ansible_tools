@@ -24,22 +24,33 @@ function usage()
 {
 cat << EOF
 Usage:
-  $BIN
 
-Description
+\`\`\`bash
 
+  $BIN INVENTORY TEAM [TYPE]
+
+\`\`\`
+
+Grant (default \`use\`) permission to a _team_ for an _inventory_
+
+\`\`\`bash
+
+  $BIN pve devops
+
+\`\`\`
 EOF
 exit 0
 }
 
 [[ "$1" =~ ^[-]+(h|help) ]] && usage
 
-
 TEAM="$DEFAULT_TEAM"
 
 [[   -z "$1" ]] && die "EMPTY INVENTORY"
 INVENTORY="$1"
 
-[[   -z "$2" ]] || TEAM="$2"
+[[ -z "$2"    ]] || TEAM="$2"
+[[ -z "$3"    ]] || TYPE="$3"
+[[ -z "$TYPE" ]] && TYPE='use'
 
-grant_inventory "$INVENTORY" "$TEAM"
+grant_inventory_$TYPE "$INVENTORY" "$TEAM"
