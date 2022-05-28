@@ -79,10 +79,12 @@ git pull                   || die "FAILED TO PULL $REVISION"
 grep ^project "$DEPLOY_FILE" | sort | while read -r PROJECT
 do
 
-  echo "SEND PROJECT $PROJECT"
   [[ -e "$PROJECT" ]] || die "NOT FOUND FILE $PROJECT"
-  awx-cli send -v "$PROJECT"
-  awx-cli project update -n "$PROJECT"
+  PROJECT_NAME="$(basename "$PROJECT" .json)"
+  echo "SEND PROJECT $PROJECT_NAME"
+  awx-cli send "$PROJECT"
+  echo "UPDATE PROJECT $PROJECT_NAME"
+  awx-cli project update -n "$PROJECT_NAME"
 
 done
 
