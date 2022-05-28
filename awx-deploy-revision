@@ -19,7 +19,7 @@
 
 # shellcheck disable=SC1090
 
-DIR_BIN=$(dirname "$0") && source "$DIR_BIN/awx-common"
+DIR_BIN="$(dirname "$0")" && source "$DIR_BIN/awx-common"
 
 function usage()
 {
@@ -81,17 +81,18 @@ do
 
   [[ -e "$PROJECT" ]] || die "NOT FOUND FILE $PROJECT"
   PROJECT_NAME="$(basename "$PROJECT" .json)"
+
   echo "SEND PROJECT $PROJECT_NAME"
-  awx-cli send "$PROJECT"
+  echo "awx-cli send $PROJECT" | bash
+
   echo "UPDATE PROJECT $PROJECT_NAME"
-  awx-cli project update -n "$PROJECT_NAME"
+  echo "awx-cli project update -n $PROJECT_NAME" | bash
 
 done
 
 grep ^inventory "$DEPLOY_FILE" | sort | while read -r INVENTORY
 do
 
-  echo "SEND INVENTORY $INVENTORY"
   [[ -e "$INVENTORY" ]] || die "NOT FOUND FILE $INVENTORY"
 
   INVENTORY_SOURCE="$(awx-json-inventory-get-inventory-source "$INVENTORY")"
@@ -104,19 +105,22 @@ do
   fi
 
   echo "SEND PROJECT $INVENTORY_SOURCE"
-  awx-cli send "$PROJECT_SOURCE"
+  echo "awx-cli send $PROJECT_SOURCE" | bash
+
   echo "UPDATE PROJECT $INVENTORY_SOURCE"
-  awx-cli project update -n "$INVENTORY_SOURCE"
+  echo "awx-cli project update -n $INVENTORY_SOURCE" | bash
+
   echo "SEND INVENTORY $INVENTORY"
-  awx-cli send "$INVENTORY"
+  echo "awx-cli send $INVENTORY" | bash
 
 done
 
 grep ^job_template "$DEPLOY_FILE" | sort | while read -r JOB_TEMPLATE
 do
 
-  echo "SEND JOB_TEMPLATE $JOB_TEMPLATE"
   [[ -e "$JOB_TEMPLATE" ]] || die "NOT FOUND FILE $JOB_TEMPLATE"
-  awx-cli send "$JOB_TEMPLATE"
+
+  echo "SEND JOB_TEMPLATE $JOB_TEMPLATE"
+  echo "awx-cli send $JOB_TEMPLATE" | bash
 
 done
