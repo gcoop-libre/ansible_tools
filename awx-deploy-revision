@@ -101,8 +101,11 @@ do
     continue
   fi
 
+  echo "SEND PROJECT $INVENTORY_SOURCE"
   awx-cli send "$PROJECT_SOURCE"
-  awx-cli project update -n "$PROJECT_SOURCE"
+  echo "UPDATE PROJECT $INVENTORY_SOURCE"
+  awx-cli project update -n "$INVENTORY_SOURCE"
+  echo "SEND INVENTORY $INVENTORY"
   awx-cli send "$INVENTORY"
 
 done
