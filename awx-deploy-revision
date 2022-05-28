@@ -113,6 +113,10 @@ do
   echo "SEND INVENTORY $INVENTORY"
   echo "awx-cli send $INVENTORY" | bash
 
+  INVENTORY_SOURCE_NAME="$(awx-json-inventory-get-inventory-name "$INVENTORY")"
+  echo "UPDATE INVENTORY SOURCE $INVENTORY_SOURCE_NAME"
+  echo "awx-cli inventory_source update $INVENTORY_SOURCE_NAME"
+
 done
 
 grep ^job_template "$DEPLOY_FILE" | sort | while read -r JOB_TEMPLATE
