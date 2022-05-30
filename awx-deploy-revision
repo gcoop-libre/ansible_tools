@@ -83,10 +83,12 @@ do
   PROJECT_NAME="$(basename "$PROJECT" .json)"
 
   echo "SEND PROJECT $PROJECT_NAME"
-  echo "awx-cli send $PROJECT" | bash
+  echo "awx-cli send $PROJECT" | bash \
+    || die "FAILED SEND PROJECT $PROJECT_NAME"
 
   echo "UPDATE PROJECT $PROJECT_NAME"
-  echo "awx-cli project update -n $PROJECT_NAME" | bash
+  echo "awx-cli project update -n $PROJECT_NAME" | bash \
+    || die "FAILED UPDATE PROJECT $PROJECT_NAME"
 
 done
 
@@ -105,13 +107,16 @@ do
   fi
 
   echo "SEND PROJECT $INVENTORY_SOURCE"
-  echo "awx-cli send $PROJECT_SOURCE" | bash
+  echo "awx-cli send $PROJECT_SOURCE" | bash \
+    || die "FAILED SEND PROJECT $INVENTORY_SOURCE"
 
   echo "UPDATE PROJECT $INVENTORY_SOURCE"
-  echo "awx-cli project update -n $INVENTORY_SOURCE" | bash
+  echo "awx-cli project update -n $INVENTORY_SOURCE" | bash \
+    || die "FAILED UPDATE PROJECT $INVENTORY_SOURCE"
 
   echo "SEND INVENTORY $INVENTORY"
-  echo "awx-cli send $INVENTORY" | bash
+  echo "awx-cli send $INVENTORY" | bash \
+    || die "FAILED SEND INVENTORY $INVENTORY"
 
   INVENTORY_SOURCE_NAME="$(awx-json-inventory-get-inventory-name "$INVENTORY")"
   echo "UPDATE INVENTORY SOURCE $INVENTORY_SOURCE_NAME"
@@ -126,6 +131,7 @@ do
   [[ -e "$JOB_TEMPLATE" ]] || die "NOT FOUND FILE $JOB_TEMPLATE"
 
   echo "SEND JOB_TEMPLATE $JOB_TEMPLATE"
-  echo "awx-cli send $JOB_TEMPLATE" | bash
+  echo "awx-cli send $JOB_TEMPLATE" | bash \
+    || die "FAILED SEND JOB_TEMPLATE $JOB_TEMPLATE"
 
 done
