@@ -1,0 +1,95 @@
+#!/bin/bash
+
+# This script comes with ABSOLUTELY NO WARRANTY, use at own risk
+# Copyright (C) 2022 Osiris Alejandro Gomez <osiris@gcoop.coop>
+# Copyright (C) 2022 Osiris Alejandro Gomez <osiux@osiux.com>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+
+# shellcheck disable=SC1090
+# shellcheck disable=SC2002
+
+DIR_BIN="$(dirname "$0")" && source "$DIR_BIN/awx-common"
+
+function usage()
+{
+cat << EOF
+Usage:
+
+\`\`\`bash
+
+  $BIN awx v0.1.0 [DEPLOY_TYPE|update]
+
+\`\`\`
+
+Checkout and deploy awx specific revision as tag, branch or commit.
+Send all resources (projects, job_templates, workflows) defined in file.
+
+Example:
+
+\`\`\`bash
+
+  $BIN awx v0.1.0 update
+
+\`\`\`
+
+EOF
+exit 0
+}
+
+[[ -e "$AWX_CFG" ]] || die "NOT FOUND .tower_cli.cfg TRY awx-config"
+
+AWX_DIR="$1"
+REVISION="$2"
+DEPLOY_TYPE='update'
+
+[[ -z "$1"              ]] && die "EMPTY AWX DIR"
+[[ -z "$2"              ]] && die "EMPTY REVISION"
+[[ -z "$3"              ]] && die "EMPTY REVISION DIFF"
+DIFF="$3"
+[[ -d "$AWX_DIR"        ]] || die "NOT FOUND AWX DIR"
+[[ -z "$DEPLOY_DIR"     ]] && DEPLOY_DIR='deploy'
+
+cd "$AWX_DIR"              || die "FAILED TO CHANGE TO AWX DIR"
+[[ -d '.git'            ]] || die "NOT FOUND GIT REPOSITORY"
+CURRENT_BRANCH="$(git branch --no-color | grep '^\* ' | cut -d ' ' -f2)"
+
+git fetch                  || die "FAILED TO FECTH"
+
+if [[ "$CURRENT_BRANCH" != "$REVISION" ]]
+then
+  git checkout "$REVISION" || die "FAILED TO CHECKOUT $REVISION"
+fi
+
+git pull                   || die "FAILED TO PULL $REVISION"
+
+[[ -d "$DEPLOY_DIR"     ]] || die "NOT FOUND DIR $DEPLOY_DIR"
+
+# EXIT IMMEDIATELY IF A COMMAND EXITS WITH A NON-ZERO STATUS
+set -e
+
+TMP="$(mktemp)"
+OUT="$DEPLOY_DIR/$DEPLOY_TYPE"
+
+git diff -p --name-only "$REVISION" "$DIFF" | grep '\.json$' > "$TMP"
+
+stderror "WRITE DIFF BETWEEN $REVISION AND $DIFF IN $OUT"
+cat "$TMP" | while read -r FILE
+do
+
+  [[ -f "$FILE" ]] && echo "$FILE"
+
+done | tee "$OUT"
+
+rm -f "$TMP"
