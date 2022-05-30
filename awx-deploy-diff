@@ -29,18 +29,23 @@ Usage:
 
 \`\`\`bash
 
-  $BIN awx v0.1.0 [DEPLOY_TYPE|update]
+  $BIN DEPLOY_DIR DEPLOY_REVISION DEPLOY_DIFF
 
 \`\`\`
 
-Checkout and deploy awx specific revision as tag, branch or commit.
-Send all resources (projects, job_templates, workflows) defined in file.
+Get list of _JSONs_ files difference between two \`git\` revisions
+(_commits_, _branchs_ or _tags_) and generate \`deploy/update.awx\`.
 
 Example:
 
 \`\`\`bash
 
-  $BIN awx v0.1.0 update
+  $BIN awx v0.2.0 v0.1.0
+
+    credential/ssh_wst.json
+    project/ansible_wst_v0.2.0.json
+    inventory/wst.json
+    job_template/wst_wol_v0.2.0.json
 
 \`\`\`
 
