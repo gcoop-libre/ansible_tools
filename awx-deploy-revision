@@ -115,7 +115,8 @@ do
 
   INVENTORY_SOURCE_NAME="$(awx-json-inventory-get-inventory-name "$INVENTORY")"
   echo "UPDATE INVENTORY SOURCE $INVENTORY_SOURCE_NAME"
-  echo "awx-cli inventory_source update $INVENTORY_SOURCE_NAME"
+  echo "awx-cli inventory_source update $INVENTORY_SOURCE_NAME" | bash \
+    || die "FAILED UPDATE $INVENTORY_SOURCE_NAME"
 
 done
 
