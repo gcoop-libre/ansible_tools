@@ -76,6 +76,9 @@ git pull                   || die "FAILED TO PULL $REVISION"
 [[ -d "$DEPLOY_DIR"     ]] || die "NOT FOUND DIR $DEPLOY_DIR"
 [[ -e "$DEPLOY_FILE"    ]] || die "NOT FOUND FILE $DEPLOY_FILE"
 
+# EXIT IMMEDIATELY IF A COMMAND EXITS WITH A NON-ZERO STATUS
+set -e
+
 grep ^credential "$DEPLOY_FILE" | sort | while read -r CREDENTIAL
 do
 
