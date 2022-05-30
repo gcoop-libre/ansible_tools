@@ -76,6 +76,20 @@ git pull                   || die "FAILED TO PULL $REVISION"
 [[ -d "$DEPLOY_DIR"     ]] || die "NOT FOUND DIR $DEPLOY_DIR"
 [[ -e "$DEPLOY_FILE"    ]] || die "NOT FOUND FILE $DEPLOY_FILE"
 
+grep ^credential "$DEPLOY_FILE" | sort | while read -r CREDENTIAL
+do
+
+  [[ -e "$CREDENTIAL" ]] || die "NOT FOUND FILE $CREDENTIAL"
+	JQ='.[].name'
+  CREDENTIAL_NAME="$(jq -r "$JQ" "$CREDENTIAL")"
+  [[ -z "$CREDENTIAL_NAME" ]] && die "EMPTY NAME IN $CREDENTIAL"
+
+  echo "FIND CREDENTIAL $CREDENTIAL_NAME"
+  echo "awx-cli credential get -n '$CREDENTIAL_NAME'" | bash \
+    || die "FAILED FIND CREDENTIAL $CREDENTIAL_NAME"
+
+done
+
 grep ^project "$DEPLOY_FILE" | sort | while read -r PROJECT
 do
 
