@@ -97,7 +97,8 @@ do
 
   [[ -e "$INVENTORY" ]] || die "NOT FOUND FILE $INVENTORY"
 
-  INVENTORY_SOURCE="$(awx-json-inventory-get-inventory-source "$INVENTORY")"
+  JQ='.[].asset_relation.inventory_source[].source_project'
+  INVENTORY_SOURCE="$(jq -r "$JQ" "$INVENTORY")"
   PROJECT_SOURCE="project/$INVENTORY_SOURCE.json"
 
   if [[ ! -e "$PROJECT_SOURCE" ]]
@@ -118,7 +119,8 @@ do
   echo "awx-cli send $INVENTORY" | bash \
     || die "FAILED SEND INVENTORY $INVENTORY"
 
-  INVENTORY_SOURCE_NAME="$(awx-json-inventory-get-inventory-name "$INVENTORY")"
+  JQ='.[].asset_relation.inventory_source[].name'
+  INVENTORY_SOURCE_NAME="$(jq -r "$JQ" "$INVENTORY")"
   echo "UPDATE INVENTORY SOURCE $INVENTORY_SOURCE_NAME"
   echo "awx-cli inventory_source update $INVENTORY_SOURCE_NAME" | bash \
     || die "FAILED UPDATE $INVENTORY_SOURCE_NAME"
