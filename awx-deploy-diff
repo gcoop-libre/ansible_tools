@@ -77,7 +77,14 @@ then
   git checkout "$REVISION" || die "FAILED TO CHECKOUT $REVISION"
 fi
 
-git pull                   || die "FAILED TO PULL $REVISION"
+REVISION_TYPE="$(git cat-file -t "$REVISION")"
+
+if [[ "$REVISION_TYPE" != 'tag' ]]
+then
+
+  git pull                 || die "FAILED TO PULL $REVISION"
+
+fi
 
 [[ -d "$DEPLOY_DIR"     ]] || die "NOT FOUND DIR $DEPLOY_DIR"
 
