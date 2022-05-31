@@ -178,6 +178,17 @@ AWX_PASS_PASS="${PASS_PREFIX}${AWX_CFG_NAME}${PASS_SUFFIX}${AWX_USER}_password"
 [[ -z "$AWX_HOST" ]] && die "EMPTY OR UNDEFINED AWX_HOST TRY DEFINE VARIABLE OR INSERT IN PASS"
 
 [[ -z "$AWX_PASS" ]] && AWX_PASS="$(pass "$AWX_PASS_PASS")"
+
+if [[ -z "$AWX_PASS" ]]
+then
+  echo "Env: $AWX_ENV"
+  echo "Host: $AWX_HOST"
+  echo "User: $AWX_USER"
+  echo -n "Password: "
+  read -s AWX_PASS
+  echo
+fi
+
 [[ -z "$AWX_PASS" ]] && die "EMPTY OR UNDEFINED AWX_PASS TRY DEFINE VARIABLE OR INSERT IN PASS"
 
 [[ -z "$PASSWORD_STORE_DIR" ]] && PASSWORD_STORE_DIR='none'
