@@ -207,6 +207,7 @@ EOF
 )
 
 echo "$CONFIG" > "$AWX_CFG" && chmod 600 "$AWX_CFG"
+echo "Env: $AWX_ENV User: $AWX_USER Host: $AWX_HOST"
 
 HTTP_CODE="$(curl -s -o /dev/null -w "%{http_code}" "$AWX_HOST")"
 
