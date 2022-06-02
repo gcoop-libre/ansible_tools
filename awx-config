@@ -52,8 +52,8 @@ Write example config:
 
   $BIN -c
 
-  BACKUP CURRENT CONFIG IN /home/osiris/.awx-config-1653427782.bak
-  WRITE EXAMPLE CONFIG IN /home/osiris/.awx-config
+  BACKUP CURRENT CONFIG IN /home/awx/.awx-config-1653427782.bak
+  WRITE EXAMPLE CONFIG IN /home/awx/.awx-config
 
 \`\`\`
 
@@ -83,7 +83,7 @@ Define enviroments in \`~/.awx-config\`:
   DEFAULT_TEAM: devops
   DEFAULT_VAULT_CREDENTIAL: vault_dev
   DEVELOP: awx-dev
-  DEVELOP_PASSWORD_STORE_DIR: ~/.password-store-awx-dev
+  DEVELOP_PASSWORD_STORE_DIR: /home/awx/.password-store-awx-dev
   DEVELOP_USER: admin
   DIR_INVENTORY: inventory
   DIR_JOB_TEMPLATE: job_template
@@ -91,10 +91,13 @@ Define enviroments in \`~/.awx-config\`:
   DIR_WORKFLOW: workflow
   ERROR_SHOW_USAGE: 1
   LAB: lab
+  LAB_PASSWORD_STORE_DIR: /home/awx/.password-store-awx-lab
   LAB_USER: awx-cli
   LO: loawx
   LO_USER: admin
-  MASTER_PASSWORD_STORE_DIR: ~/.password-store-awx-prd
+  MASTER: awx-prd
+  MASTER_PASSWORD_STORE_DIR: /home/awx/.password-store-awx-prd
+  MASTER_USER: admin
   OUTPUT_STYLE: md
   PASS_PREFIX: awx/
   PASS_SUFFIX: /
@@ -103,6 +106,7 @@ Define enviroments in \`~/.awx-config\`:
   SCM_URL_BASE: git@git.example.com:/ipa
   SNMP_USER: public
   STAGE: awx-stg
+  STAGE_PASSWORD_STORE_DIR: /home/awx/.password-store-awx-stg
   STAGE_USER: admin
   WORKFLOW_PREFIX: wfw
 
