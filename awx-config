@@ -148,7 +148,11 @@ config_example()
     stderror "BACKUP CURRENT CONFIG IN $AWX_BACKUP"
   fi
 
-  usage | grep -E '^  [A-Z_]+: ' | sed 's/^  //g' > "$AWX_CONFIG"
+  usage                                   \
+    | grep -E '^  [A-Z_]+: '              \
+    | sed 's/^  //g'                      \
+    | sed "s/\/home\/awx/\/home\/$USER/g" > "$AWX_CONFIG"
+
   stderror "WRITE EXAMPLE CONFIG IN $AWX_CONFIG"
   exit 0
 }
