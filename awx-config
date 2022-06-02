@@ -178,6 +178,8 @@ if command -v pass
 then
   [[ -z "$AWX_HOST" ]] && AWX_HOST="$(pass "$AWX_HOST_PASS")"
   [[ -z "$AWX_PASS" ]] && AWX_PASS="$(pass "$AWX_PASS_PASS")"
+else
+  echo "NOT FOUND pass TRY apt install pass"
 fi
 
 [[ -z "$AWX_HOST" ]] && die "EMPTY OR UNDEFINED AWX_HOST TRY DEFINE VARIABLE OR INSERT IN PASS"
