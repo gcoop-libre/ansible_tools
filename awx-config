@@ -176,8 +176,11 @@ AWX_PASS_PASS="${PASS_PREFIX}${AWX_CFG_NAME}${PASS_SUFFIX}${AWX_USER}_password"
 
 if command -v pass
 then
-  [[ -z "$AWX_HOST" ]] && AWX_HOST="$(pass "$AWX_HOST_PASS")"
-  [[ -z "$AWX_PASS" ]] && AWX_PASS="$(pass "$AWX_PASS_PASS")"
+  if [[ -n "$PASSWORD_STORE_DIR" ]]
+  then
+    [[ -z "$AWX_HOST" ]] && AWX_HOST="$(pass "$AWX_HOST_PASS")"
+    [[ -z "$AWX_PASS" ]] && AWX_PASS="$(pass "$AWX_PASS_PASS")"
+  fi
 else
   echo "NOT FOUND pass TRY apt install pass"
 fi
