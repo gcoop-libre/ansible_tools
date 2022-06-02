@@ -201,7 +201,7 @@ then
   echo "Host: $AWX_HOST"
   echo "User: $AWX_USER"
   echo -n "Password: "
-  read -s AWX_PASS
+  read -r -s AWX_PASS
   echo
 fi
 
