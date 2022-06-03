@@ -81,10 +81,13 @@ then
 fi
 
 [[ -d "$DEPLOY_DIR"     ]] || die "NOT FOUND DIR $DEPLOY_DIR"
-[[ -e "$DEPLOY_FILE"    ]] || die "NOT FOUND FILE $DEPLOY_FILE"
+[[ -e "$DEPLOY_FILE"    ]] || echo "NOT FOUND FILE $DEPLOY_FILE"
 
 # EXIT IMMEDIATELY IF A COMMAND EXITS WITH A NON-ZERO STATUS
 set -e
+
+if [[ -e "$DEPLOY_FILE" ]]
+then
 
 grep ^credential "$DEPLOY_FILE" | sort | while read -r CREDENTIAL
 do
@@ -161,3 +164,5 @@ do
     || die "FAILED SEND JOB_TEMPLATE $JOB_TEMPLATE"
 
 done
+
+fi
