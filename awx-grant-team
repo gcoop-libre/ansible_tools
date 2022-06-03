@@ -1,0 +1,94 @@
+#!/bin/bash
+
+# This script comes with ABSOLUTELY NO WARRANTY, use at own risk
+# Copyright (C) 2022 Osiris Alejandro Gomez <osiris@gcoop.coop>
+# Copyright (C) 2022 Osiris Alejandro Gomez <osiux@osiux.com>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+
+# shellcheck disable=SC1090
+
+DIR_BIN=$(dirname "$0") && source "$DIR_BIN/awx-common"
+
+function usage()
+{
+cat << EOF
+Usage:
+
+\`\`\`bash
+
+  $BIN GRANT_FILE
+
+\`\`\`
+
+Generate awx-cli role grant from grant file
+
+Example file:
+
+\`\`\`
+RESOURCE_TYPE RESOURCE_NAME       TYPE     TEAM
+inventory     wst                 admin    devops
+project       ansible_wst_v1.6.0  use      devops
+job_template  wst_upd_v1.6.0      execute  devops
+workflow      wfw_pve_apt_v1.2.0  execute  devops
+\`\`\`
+
+Example:
+
+\`\`\`bash
+
+  $BIN role/devops.awx devops
+
+awx-cli role grant -v --team devops --type admin --inventory wst
+awx-cli role grant -v --team devops --type use --project ansible_wst_v1.6.0
+awx-cli role grant -v --team devops --type execute --job-template wst_upd_v1.6.0
+awx-cli role grant -v --team devops --type execute --workflow wfw_pve_apt_v1.2.0
+
+\`\`\`
+
+EOF
+exit 0
+}
+
+[[ "$1" =~ ^[-]+(h|help) ]] && usage
+
+[[ -z "$1" ]] && die "EMPTY GRANT FILE"
+[[ -e "$1" ]] || die "NOT FOUND FILE $1"
+
+TMP="$(mktemp)"
+GRANT_FILE="$1"
+CLI_PREFIX="awx-cli role grant --team"
+
+set -e
+
+for i in credential inventory project job_template workflow
+do
+
+  awk "/^$i/" "$GRANT_FILE" > "$TMP"
+
+  while read -r RESOURCE_TYPE RESOURCE_NAME TYPE TEAM
+  do
+
+    [[ -z "$TYPE" ]] && TYPE='use'
+    echo "GRANT $TYPE TO $RESOURCE_NAME FOR THE TEAM $TEAM"
+    TYPE="--type ${TYPE}"
+    RESOURCE_TYPE="--${RESOURCE_TYPE//job_template/job-template}"
+    CLI_CMD="$CLI_PREFIX $TEAM $TYPE $RESOURCE_TYPE $RESOURCE_NAME"
+    bash -c "$CLI_CMD"
+
+  done < "$TMP"
+
+done
+
+rm -f "$TMP"
