@@ -166,3 +166,14 @@ do
 done
 
 fi
+
+TEAM_ASSOCIATE="$DEPLOY_DIR/team-associate.awx"
+if [[ -e "$TEAM_ASSOCIATE" ]]
+then
+  while read -r USERNAME TEAM
+  do
+
+    awx-team-associate "$USERNAME" "$TEAM"
+
+  done < "$TEAM_ASSOCIATE"
+fi
