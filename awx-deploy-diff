@@ -92,7 +92,7 @@ fi
 set -e
 
 TMP="$(mktemp)"
-OUT="$DEPLOY_DIR/$DEPLOY_TYPE"
+OUT="$DEPLOY_DIR/$DEPLOY_TYPE.awx"
 
 git diff -p --name-only "$REVISION" "$DIFF" | grep '\.json$' > "$TMP"
 
