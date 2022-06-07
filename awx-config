@@ -183,7 +183,7 @@ AWX_CFG_USER="${AWX_ENV}_USER"
 AWX_HOST_PASS="${PASS_PREFIX}${AWX_CFG_NAME}${PASS_SUFFIX}host"
 AWX_PASS_PASS="${PASS_PREFIX}${AWX_CFG_NAME}${PASS_SUFFIX}${AWX_USER}_password"
 
-if command -v pass
+if command -v pass >/dev/null
 then
   if [[ -n "$PASSWORD_STORE_DIR" ]]
   then
