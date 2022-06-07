@@ -151,6 +151,7 @@ config_example()
   usage                                   \
     | grep -E '^  [A-Z_]+: '              \
     | sed 's/^  //g'                      \
+    | sed "s/admin/$USER/g"               \
     | sed "s/\/home\/awx/\/home\/$USER/g" > "$AWX_CONFIG"
 
   stderror "WRITE EXAMPLE CONFIG IN $AWX_CONFIG"
