@@ -90,6 +90,18 @@ set -e
 if [[ -e "$DEPLOY_FILE" ]]
 then
 
+grep ^team "$DEPLOY_FILE" | sort | while read -r JSON
+do
+
+  [[ -e "$JSON" ]] || die "NOT FOUND FILE $JSON"
+	JQ='.[].name'
+  TEAM="$(jq -r "$JQ" "$JSON")"
+
+  echo "SEND TEAM $TEAM"
+  bash -c "awx-cli send $JSON" || die "FAILED TO CREATE TEAM $TEAM"
+
+done
+
 grep ^credential "$DEPLOY_FILE" | sort | while read -r CREDENTIAL
 do
 
