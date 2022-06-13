@@ -1,0 +1,145 @@
+#!/bin/bash
+
+# This script comes with ABSOLUTELY NO WARRANTY, use at own risk
+# Copyright (C) 2022 Osiris Alejandro Gomez <osiris@gcoop.coop>
+# Copyright (C) 2022 Osiris Alejandro Gomez <osiux@osiux.com>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+
+# shellcheck disable=SC1090
+# shellcheck disable=SC2002
+# shellcheck disable=SC2034
+
+DIR_BIN="$(dirname "$0")" && source "$DIR_BIN/awx-common"
+
+function usage()
+{
+cat << EOF
+Usage:
+
+\`\`\`bash
+
+  $BIN DEPLOY_DIR [DEPLOY_REVISION] [DEPLOY_TYPE]
+
+\`\`\`
+
+Generate \`grant.awx\` with default permissions defined in ~/.awx-config
+
+Example:
+
+\`\`\`bash
+
+  $BIN awx v0.2.0
+
+    credential/ssh_wst.json
+    project/ansible_wst_v0.2.0.json
+    inventory/wst.json
+    job_template/wst_wol_v0.2.0.json
+
+\`\`\`
+
+EOF
+exit 0
+}
+
+[[ -e "$AWX_CFG" ]] || die "NOT FOUND .tower_cli.cfg TRY awx-config"
+
+DEPLOY_TYPE='update'
+
+[[ -z "$1"              ]] || AWX_DIR="$1"
+[[ -z "$2"              ]] || REVISION="$2"
+[[ -z "$3"              ]] || DEPLOY_TYPE="$3"
+[[ -z "$AWX_DIR"        ]] && AWX_DIR='.'
+[[ -d "$AWX_DIR"        ]] || die "NOT FOUND AWX DIR"
+[[ -z "$DEPLOY_DIR"     ]] && DEPLOY_DIR='deploy'
+
+cd "$AWX_DIR"              || die "FAILED TO CHANGE TO AWX DIR"
+[[ -d '.git'            ]] || die "NOT FOUND GIT REPOSITORY"
+CURRENT_BRANCH="$(git branch --no-color | grep '^\* ' | cut -d ' ' -f2)"
+[[ -z "$REVISION"       ]] && REVISION="$CURRENT_BRANCH"
+
+git fetch                  || die "FAILED TO FECTH"
+
+if [[ "$CURRENT_BRANCH" != "$REVISION" ]]
+then
+  git checkout "$REVISION" || die "FAILED TO CHECKOUT $REVISION"
+fi
+
+REVISION_TYPE="$(git cat-file -t "$REVISION")"
+
+if [[ "$REVISION_TYPE" != 'tag' ]]
+then
+
+  git pull                 || die "FAILED TO PULL $REVISION"
+
+fi
+
+[[ -d "$DEPLOY_DIR"     ]] || die "NOT FOUND DIR $DEPLOY_DIR"
+
+# EXIT IMMEDIATELY IF A COMMAND EXITS WITH A NON-ZERO STATUS
+set -e
+
+IN="$DEPLOY_DIR/$DEPLOY_TYPE.awx"
+TMP="$(mktemp)"
+OUT="$DEPLOY_DIR/grant.awx"
+awx-deploy-sort "$IN" > "$TMP"
+
+TOTF="$(awk -F '/' '{print $2}' "$IN" | sed s/.json//g | wc -L)"
+COLF="$((TOTF+1))"
+
+[[ -z "$DEFAULT_GRANT_CREDENTIAL"   ]] || GRANT_CREDENTIAL="$DEFAULT_GRANT_CREDENTIAL"
+[[ -z "$DEFAULT_GRANT_INVENTORY"    ]] || GRANT_INVENTORY="$DEFAULT_GRANT_INVENTORY"
+[[ -z "$DEFAULT_GRANT_JOB_TEMPLATE" ]] || GRANT_JOB_TEMPLATE="$DEFAULT_GRANT_JOB_TEMPLATE"
+[[ -z "$DEFAULT_GRANT_PROJECT"      ]] || GRANT_PROJECT="$DEFAULT_GRANT_PROJECT"
+[[ -z "$DEFAULT_GRANT_WORKFLOW"     ]] || GRANT_WORKFLOW="$DEFAULT_GRANT_WORKFLOW"
+[[ -z "$DEFAULT_TEAM_DEPLOY"        ]] && die "UNDEFINED TEAMS, TRY SET DEFAULT_TEAM_DEPLOY IN $AWX_CFG"
+
+echo "$DEFAULT_TEAM_DEPLOY" \
+  | tr ' ' '\n'             \
+  | while read -r TEAM
+  do
+
+    stderror "WRITE DEFAULT PERMISSIONS FOR TEAM $TEAM TO REVISION $REVISION IN $OUT"
+
+    ID="$(awx-cli team get -n "$TEAM" -f id)"
+    [[ -z "$ID" ]] && die "NOT FOUND TEAM $TEAM"
+
+    while IFS=/ read -r D F
+    do
+
+      FILE="$D/$F"
+      NAME="${F//.json/}"
+      [[ -f "$FILE" ]] || die "NOT FOUND FILE $FILE"
+
+			# use default grant permission defined in config
+      RESOURCE="GRANT_${D^^}"
+      TYPE="${!RESOURCE}"
+
+			# use team grant permission defined in config
+      TEAM_GRANT="${TEAM//-/}_GRANT_${D^^}"
+      TEAM_GRANT="${TEAM_GRANT^^}"
+      GRANT_TYPE="${!TEAM_GRANT}"
+			[[ -z "$GRANT_TYPE" ]] || TYPE="$GRANT_TYPE"
+
+      [[ -z "$TYPE"       ]] && die "UNDEFINED GRANT FOR RESOURCE $D IN $AWX_CFG"
+
+      printf "%-13s %-*s %-8s %-20s\\n"           \
+             "$D" "$COLF" "$NAME" "$TYPE" "$TEAM" | sed 's/ \+$//g'
+
+    done < "$TMP"
+
+  done | tee "$OUT"
+
+rm -f "$TMP"
+
