@@ -67,6 +67,11 @@ Define enviroments in \`~/.awx-config\`:
   DEFAULT_CREDENTIAL_USER: ansible
   DEFAULT_DOMAIN: ipa.example.com
   DEFAULT_EMAIL_DOMAIN: example.com
+  DEFAULT_GRANT_CREDENTIAL: use
+  DEFAULT_GRANT_INVENTORY: use
+  DEFAULT_GRANT_JOB_TEMPLATE: execute
+  DEFAULT_GRANT_PROJECT: use
+  DEFAULT_GRANT_WORKFLOW: execute
   DEFAULT_HOST_DOMAIN: example.com
   DEFAULT_HOST_DOMAIN_PREFIX: ipa
   DEFAULT_HOST_INVENTORY: hosts-pve
@@ -85,6 +90,7 @@ Define enviroments in \`~/.awx-config\`:
   DEVELOP: awx-dev
   DEVELOP_PASSWORD_STORE_DIR: /home/awx/.password-store-awx-dev
   DEVELOP_USER: admin
+  DEVOPS_GRANT_INVENTORY: admin
   DIR_INVENTORY: inventory
   DIR_JOB_TEMPLATE: job_template
   DIR_PROJECT: project
