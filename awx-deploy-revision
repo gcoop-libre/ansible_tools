@@ -155,6 +155,15 @@ do
   echo "awx-cli project update -n $INVENTORY_SOURCE" | bash \
     || die "FAILED UPDATE PROJECT $INVENTORY_SOURCE"
 
+  printf "\n"
+  echo "GET scm_revision AND scm_branch IN PROJECT $INVENTORY_SOURCE"
+  printf "\n"
+  JQ=".scm_revision,\" \",.scm_branch"
+  AWX_CMD="awx-cli project get -n $INVENTORY_SOURCE -f json"
+  echo "$AWX_CMD | jq -rj '$JQ'" | bash \
+    || die "FAILED TO GET scm_revision AND scm_branch"
+  printf "\n\n"
+
   echo "SEND INVENTORY $INVENTORY"
   echo "awx-cli send $INVENTORY" | bash \
     || die "FAILED SEND INVENTORY $INVENTORY"
