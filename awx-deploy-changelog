@@ -32,7 +32,7 @@ Usage:
 
 \`\`\`
 
-Checkout and deploy awx specific revision as tag, branch or commit.
+Checkout awx specific revision as tag, branch or commit.
 Generate markdown output details of the specific revision.
 
 Example:
@@ -47,29 +47,37 @@ EOF
 exit 0
 }
 
-[[ -e "$AWX_CFG" ]] || die "NOT FOUND .tower_cli.cfg TRY awx-config"
-
-AWX_DIR="$1"
-REVISION="$2"
 DEPLOY_TYPE='update'
 
-[[ -z "$1"              ]] && die "EMPTY AWX DIR"
-[[ -z "$2"              ]] && die "EMPTY REVISION"
-[[ -z "$3"              ]] || DEPLOY_TYPE="$3"
-[[ -d "$AWX_DIR"        ]] || die "NOT FOUND AWX DIR"
-[[ -z "$DEPLOY_DIR"     ]] && DEPLOY_DIR='deploy'
+[[ -e "$AWX_CFG"    ]] || die "NOT FOUND .tower_cli.cfg TRY awx-config"
+[[ -n "$AWX_DIR"    ]] || AWX_DIR='.'
+[[ -n "$DEPLOY_DIR" ]] || DEPLOY_DIR='deploy'
+[[ -z "$1"          ]] || AWX_DIR="$1"
+[[ -z "$2"          ]] || REVISION="$2"
+[[ -z "$3"          ]] || DEPLOY_TYPE="$3"
+[[ -d "$AWX_DIR"    ]] || die "NOT FOUND DIRECTORY $AWX_DIR"
+
 DEPLOY_FILE="$DEPLOY_DIR/${DEPLOY_TYPE}.awx"
 
-cd "$AWX_DIR"              || die "FAILED TO CHANGE TO AWX DIR"
-[[ -d '.git'            ]] || die "NOT FOUND GIT REPOSITORY"
-CURRENT_BRANCH="$(git branch --no-color | grep '^\* ' | cut -d ' ' -f2)"
+cd "$AWX_DIR"          || die "FAILED TO CHANGE TO $AWX_DIR"
+[[ -d '.git'        ]] || die "NOT FOUND GIT REPOSITORY"
 
-git fetch >/dev/null 2>/dev/null || die "FAILED TO FECTH"
+CURRENT_BRANCH="$(git branch --no-color \
+  | grep '^\* '                         \
+  | cut -d ' ' -f2-                     \
+  | sed 's/HEAD detached at //g'        \
+  | tr -d '() ')"
+
+[[ -n "$REVISION"   ]] || REVISION="$CURRENT_BRANCH"
 
 if [[ "$CURRENT_BRANCH" != "$REVISION" ]]
 then
+
+  git fetch >/dev/null 2>/dev/null || die "FAILED TO FECTH"
+
   git checkout "$REVISION" >/dev/null 2>/dev/null \
     || die "FAILED TO CHECKOUT $REVISION"
+
 fi
 
 REVISION_TYPE="$(git cat-file -t "$REVISION")"
@@ -82,7 +90,6 @@ then
 fi
 
 [[ -d "$DEPLOY_DIR"     ]] || die "NOT FOUND DIR $DEPLOY_DIR"
-[[ -e "$DEPLOY_FILE"    ]] || echo "NOT FOUND FILE $DEPLOY_FILE"
 
 # EXIT IMMEDIATELY IF A COMMAND EXITS WITH A NON-ZERO STATUS
 set -e
@@ -92,11 +99,11 @@ GIT_URL="$(git remote get-url --all origin | grep http | head -1 | sed 's/\.git$
 GIT_TAG="$GIT_URL/-/tags/$REVISION"
 COMMIT="$(git show-ref -s "$REVISION")"
 NOW="$(date +%F)"
-TITLE=""
+TITLE="$DIR_NAME $REVISION"
 
 HEAD=$(cat << EOF
 ---
-title: $DIR_NAME $REVISION
+title: $TITLE
 date: $NOW
 author: CC-BY-SA Osiris Alejandro Gomez osiris@gcoop.coop
 fontsize: 10pt
