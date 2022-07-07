@@ -102,6 +102,6 @@ do
 
   [[ -f "$FILE" ]] && echo "$FILE"
 
-done | tee "$OUT"
+done | awx-deploy-sort | tee "$OUT"
 
 rm -f "$TMP"
