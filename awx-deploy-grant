@@ -34,7 +34,8 @@ Usage:
 
 \`\`\`
 
-Generate \`grant.awx\` with default permissions defined in ~/.awx-config
+Generate \`grant.awx\` with default permissions defined in
+\`~/.awx-config\`
 
 Example:
 
@@ -46,6 +47,15 @@ Example:
     project/ansible_wst_v0.2.0.json
     inventory/wst.json
     job_template/wst_wol_v0.2.0.json
+
+Define default permissions in \`~/.awx-config\`:
+
+  DEFAULT_TEAM_DEPLOY: awx-test awx-dev devops
+  DEFAULT_GRANT_CREDENTIAL: use
+  DEFAULT_GRANT_INVENTORY: use
+  DEFAULT_GRANT_JOB_TEMPLATE: execute
+  DEFAULT_GRANT_PROJECT: use
+  DEFAULT_GRANT_WORKFLOW: execute
 
 \`\`\`
 
@@ -81,7 +91,12 @@ REVISION_TYPE="$(git cat-file -t "$REVISION")"
 if [[ "$REVISION_TYPE" != 'tag' ]]
 then
 
-  git pull                 || die "FAILED TO PULL $REVISION"
+  if [[ -n "$DONT_PULL" ]]
+  then
+
+    git pull               || die "FAILED TO PULL $REVISION"
+
+  fi
 
 fi
 
@@ -122,17 +137,17 @@ echo "$DEFAULT_TEAM_DEPLOY" \
       NAME="${F//.json/}"
       [[ -f "$FILE" ]] || die "NOT FOUND FILE $FILE"
 
-			# use default grant permission defined in config
+      # use default grant permission defined in config
       RESOURCE="GRANT_${D^^}"
       TYPE="${!RESOURCE}"
 
-			# use team grant permission defined in config
+      # use team grant permission defined in config
       TEAM_GRANT="${TEAM//-/}_GRANT_${D^^}"
       TEAM_GRANT="${TEAM_GRANT^^}"
       GRANT_TYPE="${!TEAM_GRANT}"
-			[[ -z "$GRANT_TYPE" ]] || TYPE="$GRANT_TYPE"
+      [[ -z "$GRANT_TYPE" ]] || TYPE="$GRANT_TYPE"
 
-      [[ -z "$TYPE"       ]] && die "UNDEFINED GRANT FOR RESOURCE $D IN $AWX_CFG"
+      [[ -z "$TYPE" ]] && die "UNDEFINED DEFAULT_$RESOURCE IN $AWX_CFG"
 
       printf "%-13s %-*s %-8s %-20s\\n"           \
              "$D" "$COLF" "$NAME" "$TYPE" "$TEAM" | sed 's/ \+$//g'
