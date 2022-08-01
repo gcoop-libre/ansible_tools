@@ -364,6 +364,9 @@ awx_ad_hoc_shell_footer
 
 awx_cfg_get()
 {
+  local TYPE
+  TYPE="$(file -b --mime-type "$AWX_CFG")"
+  [[ "$TYPE" != 'text/plain' ]] && die "INVALID $AWX_CFG"
   grep "$1" "$AWX_CFG" | cut -d= -f2 | tr -d ' '
 }
 
