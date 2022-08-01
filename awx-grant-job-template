@@ -24,9 +24,20 @@ function usage()
 {
 cat << EOF
 Usage:
-  $BIN
 
-Description
+\`\`\`bash
+
+  $BIN JOB_TEMPLATE [TEAM]
+
+\`\`\`
+
+Grant permission to a _team_ for a _job_template_.
+
+\`\`\`bash
+
+  $BIN wst_wol_v0.1.0 devops
+
+\`\`\
 
 EOF
 exit 0
@@ -34,14 +45,11 @@ exit 0
 
 [[ "$1" =~ ^[-]+(h|help) ]] && usage
 
-
 TEAM="$DEFAULT_TEAM"
 
-[[ -z "$1" ]] && die 'EMPTY NAME'
+[[ -z "$1"    ]] && die 'EMPTY NAME'
 NAME="$1"
-
-[[ ! -z "$2" ]] && TEAM="$2"
-
+[[ -z "$2"    ]] || TEAM="$2"
 [[ -z "$TEAM" ]] && die "EMPTY TEAM"
 
 grant_job_template "$NAME" "$TEAM"
