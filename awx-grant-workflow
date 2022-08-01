@@ -18,15 +18,26 @@
 
 # shellcheck disable=SC1090
 
-DIR_BIN=$(dirname "$0") && source "$DIR_BIN/awx-common"
+DIR_BIN="$(dirname "$0")" && source "$DIR_BIN/awx-common"
 
 function usage()
 {
 cat << EOF
 Usage:
+
+\`\`\`bash
+
   $BIN
 
-Description
+\`\`\`
+
+Grant permission to a _team_ for a _workflow_.
+
+\`\`\`bash
+
+  $BIN
+
+\`\`\`
 
 EOF
 exit 0
@@ -34,13 +45,11 @@ exit 0
 
 [[ "$1" =~ ^[-]+(h|help) ]] && usage
 
-
 TEAM="$DEFAULT_TEAM"
 
-[[ -z "$1" ]] && die 'EMPTY WORKFLOW NAME'
+[[ -z "$1"    ]] && die 'EMPTY WORKFLOW NAME'
 NAME="$1"
-
-[[ ! -z "$2" ]] && TEAM="$2"
+[[ -z "$2"    ]] || TEAM="$2"
 [[ -z "$TEAM" ]] && die "EMPTY TEAM"
 
 grant_workflow "$NAME" "$TEAM"
