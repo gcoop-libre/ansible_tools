@@ -82,5 +82,5 @@ fi
 
 for i in team credential project inventory job_template
 do
-  grep "^$i" "$TMPI" | sort
+  grep "^$i" "$TMPI" | sort | sed 's/ \+//g'
 done
