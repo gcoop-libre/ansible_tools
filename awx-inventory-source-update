@@ -24,9 +24,22 @@ function usage()
 {
 cat << EOF
 Usage:
-  $BIN
 
-Description
+\`\`\`bash
+
+  $BIN INVENTORY_SOURCE
+
+\`\`\`
+
+Update _inventory source_ of _inventory_
+
+Example:
+
+\`\`\`bash
+
+  $BIN inventory_pve
+
+\`\`\`
 
 EOF
 exit 0
