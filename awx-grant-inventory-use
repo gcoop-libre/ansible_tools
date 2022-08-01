@@ -18,7 +18,7 @@
 
 # shellcheck disable=SC1090
 
-DIR_BIN=$(dirname "$0") && source "$DIR_BIN/awx-common"
+DIR_BIN="$(dirname "$0")" && source "$DIR_BIN/awx-common"
 
 function usage()
 {
@@ -52,6 +52,6 @@ TEAM="$DEFAULT_TEAM"
 [[   -z "$1" ]] && die "EMPTY INVENTORY"
 INVENTORY="$1"
 
-[[ ! -z "$2" ]] && TEAM="$2"
+[[ -n "$2" ]] && TEAM="$2"
 
 grant_inventory_use "$INVENTORY" "$TEAM"
