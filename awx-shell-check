@@ -32,7 +32,18 @@ Usage:
 
 \`\`\`
 
-Check syntax using shellcheck.
+Check syntax using shellcheck. Group errors by code in result.
+
+Example:
+
+\`\`\`bash
+
+  $BIN
+
+awx-shell-check                               SC2034
+awx-team-create                               SC2034 SC2236
+
+\`\`\`
 
 EOF
 exit 0
@@ -40,12 +51,27 @@ exit 0
 
 [[ "$1" =~ ^[-]+(h|help) ]] && usage
 
-file --mime-type *     \
-  | grep shellscript   \
-  | tr -d ':'          \
-  | while read -r FILE _
-    do
-      shellcheck "$FILE" >/dev/null
-      echo "$? $FILE"
-    done \
-      | grep -v '^0'
+TMP="$(mktemp)"
+FILES="$(mktemp)"
+ERRORS=0
+
+file --mime-type * | grep shellscript | tr -d ':' > "$FILES"
+
+while read -r FILE _
+do
+
+if ! shellcheck "$FILE" > "$TMP"
+then
+
+  SC="$(grep -Eo 'SC[0-9]+' "$TMP" | sort -u | tr '\n' ' ')"
+  printf "%-45s %s\n" "$FILE" "$SC"
+  ERRORS="$((ERRORS+1))"
+
+fi
+
+done < "$FILES"
+
+rm -f "$TMP"
+rm -f "$FILES"
+
+exit "$ERRORS"
