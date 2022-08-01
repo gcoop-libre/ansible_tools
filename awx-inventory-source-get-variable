@@ -18,15 +18,27 @@
 
 # shellcheck disable=SC1090
 
-DIR_BIN=$(dirname "$0") && source "$DIR_BIN/awx-common"
+DIR_BIN="$(dirname "$0")" && source "$DIR_BIN/awx-common"
 
 function usage()
 {
 cat << EOF
 Usage:
-  $BIN
 
-Description
+\`\`\`bash
+
+  $BIN INVENTORY_SOURCE [KEY|all]
+
+\`\`\`
+
+Get variable from _inventory_source_.
+
+\`\`\`bash
+
+  $BIN inventory_pve source_path
+  hosts-pve
+
+\`\`\`
 
 EOF
 exit 0
@@ -34,26 +46,23 @@ exit 0
 
 [[ "$1" =~ ^[-]+(h|help) ]] && usage
 
-
-[[   -z "$1" ]] && die "EMPTY INVENTORY_SOURCE"
-[[ ! -z "$2" ]] && KEY="$2"
+[[ -n "$KEY" ]] && KEY='all'
+[[ -z "$1"   ]] && die "EMPTY INVENTORY_SOURCE"
+[[ -z "$2"   ]] || KEY="$2"
 
 INVENTORY_SOURCE="$1"
 
-JSON=$(mktemp --suffix .json)
+JSON="$(mktemp --suffix .json)"
 
 awx-cli inventory_source get  \
   --format json               \
   --name "$INVENTORY_SOURCE"  > "$JSON" 2>/dev/null
 
-[[ -s "$JSON" ]] || exit 1
+[[  -s "$JSON" ]] || die "EMPTY JSON $JSON"
 
-if [[ -z "$KEY" ]]
-then
-  jq -r . "$JSON"
-else
-  VALUE="$(jq -r ".$KEY" "$JSON" | grep -vi null)"
-  echo "$VALUE"
-fi
+JQ='.'
+[[ "$KEY" != 'all' ]] && JQ=".$KEY"
+
+jq -r "$JQ" "$JSON" | grep -vi null
 
 rm -f "$JSON"
