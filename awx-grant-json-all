@@ -24,9 +24,21 @@ function usage()
 {
 cat << EOF
 Usage:
-  $BIN
 
-Description
+\`\`\`bash
+
+  $BIN [TEAM]
+
+\`\`\`
+
+Grant default permissions to all _JSON_ files (in the current directory)
+to a specified _team_ (if not specified, the default team will be used)
+
+\`\`\`bash
+
+  $BIN devops
+
+\`\`\`
 
 EOF
 exit 0
@@ -34,23 +46,20 @@ exit 0
 
 [[ "$1" =~ ^[-]+(h|help) ]] && usage
 
-
 TEAM="$DEFAULT_TEAM"
 
-[[ ! -z "$1" ]] && TEAM="$1"
+[[ -z "$1" ]] || TEAM="$1"
 
 get_file_list '*.json' | while read -r FILE
 do
-  jq -r '.[] | "\(.project)"' "$FILE"
-done | sort -u | grep -v null | while read -r PROJECT
-do
-  grant_project "$PROJECT" "$TEAM"
-done
 
-get_file_list '*.json' | while read -r FILE
-do
   ASSET_TYPE="$(jq -r '.[] | "\(.asset_type)"' "$FILE")"
+  [[ -z "$ASSET_TYPE" ]] && continue
+
   NAME="$(jq -r '.[] | "\(.name)"' "$FILE")"
+  [[ -z "$NAME" ]] && continue
+
   GRANT="grant_${ASSET_TYPE}"
   $GRANT "$NAME" "$TEAM"
+
 done
