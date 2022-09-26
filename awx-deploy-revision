@@ -187,6 +187,17 @@ do
 
 done
 
+grep ^workflow "$DEPLOY_FILE" | sort | while read -r WORKFLOW
+do
+
+  [[ -e "$WORKFLOW" ]] || die "NOT FOUND FILE $WORKFLOW"
+
+  echo "SEND WORKFLOW $WORKFLOW"
+  echo "awx-cli send $WORKFLOW" | bash \
+    || die "FAILED SEND WORKFLOW $WORKFLOW"
+
+done
+
 fi
 
 TEAM_ASSOCIATE="$DEPLOY_DIR/team-associate.awx"
