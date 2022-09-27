@@ -74,7 +74,7 @@ START="$(date -d "$STARTED" +'%T')"
 
 JOB_TEMPLATE="$(jq -r .summary_fields.job_template.name "$JSON")"
 
-if [[ ! -z "$TOTAL" ]]
+if [[ -n "$TOTAL" ]]
 then
   PERCENT="$(echo "scale=2;($ELAPSED/$TOTAL)*100" | bc) %"
 fi
