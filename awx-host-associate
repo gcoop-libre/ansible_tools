@@ -18,7 +18,7 @@
 
 # shellcheck disable=SC1090
 
-DIR_BIN=$(dirname "$0") && source "$DIR_BIN/awx-common"
+DIR_BIN="$(dirname "$0")" && source "$DIR_BIN/awx-common"
 
 function usage()
 {
@@ -54,7 +54,7 @@ exit 0
 HOST="$1"
 PREFIX="${HOST//-*/}"
 INVENTORY="${PREFIX,,}"
-[[ ! -z "$3" ]] && INVENTORY="$3"
+[[ -z "$3" ]] || INVENTORY="$3"
 
 [[ -z "$2" ]] && die "EMPTY GROUP NAME"
 GROUP="$2"
