@@ -52,8 +52,8 @@ exit 0
 SUPERUSER='true'
 USERNAME="$1"
 
-[[   -z "$1" ]] && die "EMPTY USERNAME"
-[[ ! -z "$2" ]] && SUPERUSER="$2"
+[[ -z "$1" ]] && die "EMPTY USERNAME"
+[[ -z "$2" ]] || SUPERUSER="$2"
 
 awx-cli user modify           \
   --is-superuser "$SUPERUSER" \
