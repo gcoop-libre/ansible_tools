@@ -87,6 +87,10 @@ then
 
   git pull >/dev/null 2>/dev/null || die "FAILED TO PULL $REVISION"
 
+else
+
+  git checkout "$REVISION" || die "FAILED TO PULL $REVISION"
+
 fi
 
 [[ -d "$DEPLOY_DIR"     ]] || die "NOT FOUND DIR $DEPLOY_DIR"
