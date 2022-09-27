@@ -18,6 +18,7 @@
 
 # shellcheck disable=SC1090
 # shellcheck disable=SC2001
+# shellcheck disable=SC1003
 
 DIR_BIN="$(dirname "$0")" && source "$DIR_BIN/awx-common"
 
@@ -51,8 +52,8 @@ exit 0
 
 [[ "$1" =~ ^[-]+(h|help) ]] && usage
 
-[[ -z "$1" ]] && exit 1
-[[ -e "$1" ]] || exit 1
+[[ -z "$1" ]] && die "EMPTY FILENAME"
+[[ -e "$1" ]] || die "NOT FOUND FILE $1"
 
 LOG="$1"
 
