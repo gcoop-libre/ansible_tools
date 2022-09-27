@@ -24,9 +24,20 @@ function usage()
 {
 cat << EOF
 Usage:
-  $BIN
 
-Description
+\`\`\`bash
+
+  $BIN INVENTORY DESCRIPTION ORGANIZATION
+
+\`\`\`bash
+
+Create _inventory_
+
+\`\`\`bash
+
+  $BIN pve Proxmox
+
+\`\`\`
 
 EOF
 exit 0
@@ -34,17 +45,16 @@ exit 0
 
 [[ "$1" =~ ^[-]+(h|help) ]] && usage
 
-
 [[ -z "$1" ]] && die "EMPTY INVENTORY"
 INVENTORY="$1"
 
 DESCRIPTION=''
-[[ ! -z "$2" ]] && DESCRIPTION="$2"
-[[ ! -z "$3" ]] && ORGANIZATION="$3"
+[[ -z "$2" ]] || DESCRIPTION="$2"
+[[ -z "$3" ]] || ORGANIZATION="$3"
 
 [[ -z "$ORGANIZATION" ]] && ORGANIZATION="$DEFAULT_ORGANIZATION"
 
 awx-cli inventory create         \
-  --name          "$INVENTORY"   \
+  --name         "$INVENTORY"    \
   --description  "$DESCRIPTION"  \
-  --organization "$ORGANIZATION" \
+  --organization "$ORGANIZATION"
