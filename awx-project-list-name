@@ -35,7 +35,7 @@ exit 0
 [[ "$1" =~ ^[-]+(h|help) ]] && usage
 
 REGEX='.*'
-[[ ! -z "$1" ]] && REGEX="$1"
+[[ -z "$1" ]] || REGEX="$1"
 
 JSON=$(mktemp --suffix .json)
 
