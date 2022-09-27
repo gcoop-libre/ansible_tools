@@ -82,7 +82,12 @@ REVISION_TYPE="$(git cat-file -t "$REVISION")"
 if [[ "$REVISION_TYPE" != 'tag' ]]
 then
 
-  git pull                 || die "FAILED TO PULL $REVISION"
+  if [[ -n "$DONT_PULL" ]]
+  then
+
+    git pull               || die "FAILED TO PULL $REVISION"
+
+  fi
 
 fi
 
