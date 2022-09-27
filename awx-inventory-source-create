@@ -24,16 +24,26 @@ function usage()
 {
 cat << EOF
 Usage:
-  $BIN
 
-Description
+\`\`\`bash
+
+  $BIN INVENTORY PROJECT
+
+\`\`\`bash
+
+Create _inventory_source_
+
+\`\`\`bash
+
+  $BIN pve inventory_v0.1.0
+
+\`\`\`
 
 EOF
 exit 0
 }
 
 [[ "$1" =~ ^[-]+(h|help) ]] && usage
-
 
 [[ -z "$1" ]] && die "EMPTY INVENTORY"
 
@@ -42,7 +52,7 @@ NAME="inventory_${INVENTORY}"
 HOSTS="hosts-$INVENTORY"
 PROJECT="$DEFAULT_PROJECT"
 
-[[ ! -z "$2" ]] && PROJECT="$2"
+[[ -z "$2"       ]] || PROJECT="$2"
 [[ -z "$PROJECT" ]] && die "EMPTY PROJECT"
 
 awx-cli inventory_source   create       \
