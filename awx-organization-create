@@ -24,9 +24,20 @@ function usage()
 {
 cat << EOF
 Usage:
-  $BIN
 
-Description
+\`\`\`bash
+
+  $BIN NAME [DESCRITION]
+
+\`\`\`bash
+
+Create _organization_
+
+\`\`\`bash
+
+  $BIN example
+
+\`\`\`
 
 EOF
 exit 0
@@ -34,12 +45,10 @@ exit 0
 
 [[ "$1" =~ ^[-]+(h|help) ]] && usage
 
-
 [[ -z "$1" ]] && die "EMPTY NAME"
 NAME="$1"
-[[ ! -z "$2" ]] && DESCRITION="$2"
+[[ -z "$2" ]] || DESCRITION="$2"
 
-# FIXME EMAIL="$1@$DEFAULT_EMAIL_DOMAIN"
 
 awx-cli organization create   \
   --name "$NAME"              \
