@@ -174,6 +174,11 @@ grant_inventory_use()
     --inventory "$1"
 }
 
+grant_inventory()
+{
+  grant_inventory_use "$1" "$2"
+}
+
 grant_project()
 {
   local TYPE
