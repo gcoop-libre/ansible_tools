@@ -58,7 +58,7 @@ FINISHED="$(jq -r '.finished' "$JSON" | grep -v null)"
 START="$(date --date "$STARTED" '+%F %H:%M')"
 URL="$AWX_CFG_HOST/#/workflows/$WORKFLOW_JOB_ID"
 
-if [[ ! -z "$FINISHED" ]]
+if [[ -n "$FINISHED" ]]
 then
   END="$(date --date "$FINISHED" '+%H:%M')"
   DURATION="$(timediff "$END" "$(echo "$START" | cut -d' ' -f2)")"
