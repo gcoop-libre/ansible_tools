@@ -24,9 +24,20 @@ function usage()
 {
 cat << EOF
 Usage:
+
+\`\`\`bash
+
   $BIN
 
+\`\`\`
+
 Description
+
+\`\`\`bash
+
+  $BIN
+
+\`\`\`
 
 EOF
 exit 0
@@ -41,11 +52,11 @@ HOST="$1"
 PREFIX="${HOST//-*/}"
 INVENTORY="${PREFIX,,}"
 
-[[ ! -z "$2" ]] && INVENTORY="$2"
+[[ -z "$2" ]] || INVENTORY="$2"
 
 [[ -z "$INVENTORY" ]] && die "EMPTY INVENTORY"
 
-JSON=$(mktemp --suffix .json)
+JSON="$(mktemp --suffix .json)"
 
 awx-cli host get           \
   --inventory "$INVENTORY" \
