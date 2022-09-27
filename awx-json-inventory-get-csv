@@ -65,11 +65,11 @@ INVENTORY="$(jq -r '.[] | .name' "$INVENTORY_JSON")"
 
 json_is_inventory "$INVENTORY_JSON" || die "INVALID ASSET TYPE"
 
-GROUPS="$(mktemp)"
+TMP="$(mktemp)"
 
 awx-json-inventory-get-groups "$INVENTORY_JSON" \
   | grep -E "$REGEX"                            \
-  | sort                                        > "$GROUPS"
+  | sort                                        > "$TMP"
 
 while read -r GROUP
 do
@@ -82,6 +82,6 @@ do
 
       done | sort -k2
 
-done < "$GROUPS"
+done < "$TMP"
 
-rm -f "$GROUPS"
+rm -f "$TMP"
