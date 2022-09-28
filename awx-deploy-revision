@@ -66,6 +66,9 @@ CURRENT_BRANCH="$(git branch --no-color | grep '^\* ' | cut -d ' ' -f2)"
 
 git fetch                  || die "FAILED TO FECTH"
 
+# FIXME fatal: refusing to merge unrelated histories
+git reset --hard origin/$REVISION
+
 if [[ "$CURRENT_BRANCH" != "$REVISION" ]]
 then
   git checkout "$REVISION" || die "FAILED TO CHECKOUT $REVISION"
