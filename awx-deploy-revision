@@ -64,7 +64,7 @@ cd "$AWX_DIR"              || die "FAILED TO CHANGE TO AWX DIR"
 [[ -d '.git'            ]] || die "NOT FOUND GIT REPOSITORY"
 CURRENT_BRANCH="$(git branch --no-color | grep '^\* ' | cut -d ' ' -f2)"
 
-git fetch                  || die "FAILED TO FECTH"
+git fetch --all            || die "FAILED TO FECTH"
 
 if [[ "$CURRENT_BRANCH" != "$REVISION" ]]
 then
