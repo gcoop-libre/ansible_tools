@@ -71,6 +71,12 @@ then
   git checkout "$REVISION" || die "FAILED TO CHECKOUT $REVISION"
 fi
 
+if [[ -n "$GIT_RESET_HARD_REVISION" ]]
+then
+  git reset --hard "origin/$REVISION" \
+    || die "FAILED TO HARD RESET $REVISION"
+fi
+
 REVISION_TYPE="$(git cat-file -t "$REVISION")"
 
 if [[ "$REVISION_TYPE" != 'tag' ]]
