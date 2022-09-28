@@ -66,9 +66,6 @@ CURRENT_BRANCH="$(git branch --no-color | grep '^\* ' | cut -d ' ' -f2)"
 
 git fetch                  || die "FAILED TO FECTH"
 
-# FIXME fatal: refusing to merge unrelated histories
-git reset --hard origin/$REVISION
-
 if [[ "$CURRENT_BRANCH" != "$REVISION" ]]
 then
   git checkout "$REVISION" || die "FAILED TO CHECKOUT $REVISION"
@@ -79,7 +76,9 @@ REVISION_TYPE="$(git cat-file -t "$REVISION")"
 if [[ "$REVISION_TYPE" != 'tag' ]]
 then
 
-  git pull                 || die "FAILED TO PULL $REVISION"
+  # FIXME fatal: refusing to merge unrelated histories
+  git pull --allow-unrelated-histories origin "$REVISION" \
+    || die "FAILED TO PULL $REVISION"
 
 fi
 
