@@ -109,6 +109,9 @@ COMMIT="$(git show-ref -s "$REVISION")"
 NOW="$(date +%F)"
 TITLE="$DIR_NAME $REVISION"
 
+function changelog_generate()
+{
+
 HEAD=$(cat << EOF
 ---
 title: $TITLE
@@ -273,3 +276,7 @@ do
 done
 
 fi
+
+}
+
+changelog_generate > "$CHANGELOG" && echo "GENERATE $CHANGELOG"
