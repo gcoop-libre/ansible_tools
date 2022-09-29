@@ -52,6 +52,7 @@ exit 0
 AWX_DIR="$1"
 REVISION="$2"
 DEPLOY_TYPE='update'
+[[ -n "$REGEX_VERSION"  ]] || REGEX_VERSION='v[0-9]+\.[0-9]+\.[0-9]+'
 [[ -n "$REGEX_REVISION" ]] || REGEX_REVISION='(master|release|hotfix|tag)'
 
 [[ -z "$1"              ]] && die "EMPTY AWX DIR"
@@ -131,13 +132,19 @@ do
 
   [[ -e "$PROJECT" ]] || die "NOT FOUND FILE $PROJECT"
   PROJECT_NAME="$(basename "$PROJECT" .json)"
+  PROJECT_VERSION="$(echo "$PROJECT_NAME" | grep -Eo "$REGEX_VERSION")"
   JQ_NAME="$(jq -r '.[].name' "$PROJECT")"
+  JQ_BRANCH="$(jq -r '.[].scm_branch' "$PROJECT")"
 
   if [[ "$REVISION_BRANCH" =~ $REGEX_REVISION ]]
   then
 
   [[ "$JQ_NAME" = "$PROJECT_NAME" ]] \
     || die "PROJECT $PROJECT_NAME NOT MATCH name: $JQ_NAME"
+
+  [[ "$JQ_BRANCH" = "$PROJECT_VERSION" ]] \
+    || die "PROJECT $PROJECT_NAME NOT MATCH version: $PROJECT_VERSION \
+WITH scm_branch: $JQ_BRANCH"
 
   fi
 
