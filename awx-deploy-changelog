@@ -280,3 +280,9 @@ fi
 }
 
 changelog_generate > "$CHANGELOG" && echo "GENERATE $CHANGELOG"
+
+mv "$CHANGELOG" "$TMP"
+git checkout "$CURRENT_BRANCH" >/dev/null 2>/dev/null
+[[ -e "$CHANGELOG" ]] && SHOW_DIFF=1
+mv -f "$TMP" "$CHANGELOG"
+[[ "$SHOW_DIFF" -eq 1 ]] && git diff
