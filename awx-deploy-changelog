@@ -101,8 +101,8 @@ fi
 # EXIT IMMEDIATELY IF A COMMAND EXITS WITH A NON-ZERO STATUS
 set -e
 
-DIR_NAME="$(echo "$PWD" | rev | cut -d/ -f1 | rev)"
 GIT_URL="$(git remote get-url --all origin | grep http | head -1 | sed 's/\.git$//g')"
+[[ -n "$DIR_NAME"   ]] || DIR_NAME="$(echo "$PWD" | rev | cut -d/ -f1 | rev)"
 GIT_TAG="$GIT_URL/-/tags/$REVISION"
 COMMIT="$(git show-ref -s "$REVISION")"
 NOW="$(date +%F)"
