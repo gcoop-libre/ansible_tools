@@ -30,12 +30,18 @@ Usage:
 
 \`\`\`bash
 
-  $BIN awx v0.1.0 [DEPLOY_TYPE|update]
+  $BIN [AWX_DIR] [REVISION] [DEPLOY_TYPE|update]
 
 \`\`\`
 
 Checkout awx specific revision as tag, branch or commit.
 Generate markdown output details of the specific revision.
+
+| variable  | default value     |
+|-----------|-------------------|
+| AWX_DIR   | current directory |
+| REVISION  | last tag          |
+| CHANGELOG | \`awx-v0.1.0.md\` |
 
 Example:
 
