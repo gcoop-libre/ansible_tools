@@ -52,6 +52,7 @@ exit 0
 AWX_DIR="$1"
 REVISION="$2"
 DEPLOY_TYPE='update'
+[[ -n "$REGEX_REVISION" ]] || REGEX_REVISION='(master|release|hotfix|tag)'
 
 [[ -z "$1"              ]] && die "EMPTY AWX DIR"
 [[ -z "$2"              ]] && die "EMPTY REVISION"
@@ -78,6 +79,7 @@ then
 fi
 
 REVISION_TYPE="$(git cat-file -t "$REVISION")"
+REVISION_BRANCH="${REVISION%%/*}"
 
 if [[ "$REVISION_TYPE" != 'tag' ]]
 then
@@ -129,6 +131,15 @@ do
 
   [[ -e "$PROJECT" ]] || die "NOT FOUND FILE $PROJECT"
   PROJECT_NAME="$(basename "$PROJECT" .json)"
+  JQ_NAME="$(jq -r '.[].name' "$PROJECT")"
+
+  if [[ "$REVISION_BRANCH" =~ $REGEX_REVISION ]]
+  then
+
+  [[ "$JQ_NAME" = "$PROJECT_NAME" ]] \
+    || die "PROJECT $PROJECT_NAME NOT MATCH name: $JQ_NAME"
+
+  fi
 
   echo "SEND PROJECT $PROJECT_NAME"
   echo "awx-cli send $PROJECT" | bash \
