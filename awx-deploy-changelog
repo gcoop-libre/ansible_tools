@@ -212,6 +212,18 @@ do
 
 done
 
+grep ^workflow "$DEPLOY_FILE" | sort | while read -r JSON
+do
+
+  [[ -e "$JSON" ]] || continue
+  WORKFLOW="$(basename "$JSON" .json)"
+  JQ='.[].description'
+  DESCRIPTION="$(jq -r "$JQ" "$JSON")"
+  printf "| %-20s | \`%-38s\` | %-65s |\n" \
+         '_workflow_' "$WORKFLOW" "$DESCRIPTION"
+
+done
+
 fi
 
 TEAM_ASSOCIATE="$DEPLOY_DIR/team-associate.awx"
