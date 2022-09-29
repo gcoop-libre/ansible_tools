@@ -77,7 +77,7 @@ fi
 
 if [[ -n "$GIT_RESET_HARD_REVISION" ]]
 then
-  git reset --hard "origin/$REVISION" \
+  git reset --hard "$ORIGIN/$REVISION" \
     || die "FAILED TO HARD RESET $REVISION"
 fi
 
