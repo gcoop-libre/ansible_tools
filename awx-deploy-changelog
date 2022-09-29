@@ -70,7 +70,8 @@ CURRENT_BRANCH="$(git branch --no-color \
   | sed 's/HEAD detached at //g'        \
   | tr -d '() ')"
 
-[[ -n "$REVISION"   ]] || REVISION="$CURRENT_BRANCH"
+[[ -n "$LAST_TAG"   ]] || LAST_TAG="$(git tag | sort -Vr | head -1)"
+[[ -n "$REVISION"   ]] || REVISION="$LAST_TAG"
 
 if [[ "$CURRENT_BRANCH" != "$REVISION" ]]
 then
