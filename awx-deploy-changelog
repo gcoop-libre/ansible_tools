@@ -101,9 +101,9 @@ fi
 # EXIT IMMEDIATELY IF A COMMAND EXITS WITH A NON-ZERO STATUS
 set -e
 
-GIT_URL="$(git remote get-url --all origin | grep http | head -1 | sed 's/\.git$//g')"
 [[ -n "$DIR_NAME"   ]] || DIR_NAME="$(echo "$PWD" | rev | cut -d/ -f1 | rev)"
 [[ -n "$CHANGELOG"  ]] || CHANGELOG="${DIR_NAME}-${REVISION}.md"
+GIT_URL="$(git remote get-url --all origin | sed 's/[a-z\-]\+:[a-zA-Z0-9_\-]\+@//g' | grep http | head -1 | sed 's/\.git$//g')"
 GIT_TAG="$GIT_URL/-/tags/$REVISION"
 COMMIT="$(git show-ref -s "$REVISION")"
 NOW="$(date +%F)"
