@@ -92,7 +92,7 @@ then
 
 else
 
-  git checkout "$REVISION" || die "FAILED TO PULL $REVISION"
+  git checkout "$REVISION" >/dev/null || die "FAILED TO PULL $REVISION"
 
 fi
 
