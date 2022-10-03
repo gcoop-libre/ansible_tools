@@ -51,7 +51,7 @@ awx-cli project get         \
   --format json             \
   --name "$PROJECT"         > "$JSON" 2>/dev/null
 
-[[ -s "$JSON" ]] || die "NOT FOUND FILE $JSON"
+[[ -s "$JSON" ]] || die "NOT FOUND PROJECT $PROJECT"
 
 if [[ -z "$2" ]]
 then
