@@ -10,6 +10,64 @@ classoption: landscape
 ## `awx adhoc` commands
 
 
+### `awx-adhoc-get-stdout`
+
+Usage:
+
+```bash
+
+  awx-adhoc-get-stdout ADHOC_JOB_ID
+
+```
+
+Get `stdout` of _adhoc_ _job_
+
+Example
+
+```bash
+
+  awx-adhoc-get-stdout 1234
+
+```
+
+### `awx-adhoc-shell`
+
+Usage:
+
+```bash
+
+  awx-adhoc-shell INVENTORY LIMIT MODULE_ARGS
+
+```
+
+Execute commands using `shell` module in `ad-hoc` of _AWX_
+
+Example:
+
+```bash
+
+  awx-adhoc-shell pve dev uptime
+
+```
+
+
+### `awx-adhoc-shell-awx-jobs-history`
+
+Usage:
+
+```bash
+
+  awx-adhoc-shell-awx-jobs-history INVENTORY LIMIT
+
+```
+
+Show _AWX_ deploy history in `/etc/awx-history/jobs-history.json`
+
+Example:
+
+  awx-adhoc-shell-awx-jobs-history wst dev
+
+
 ### `awx-adhoc-shell-braa`
 
 Usage:
@@ -107,6 +165,27 @@ Example:
 ```bash
 
   awx-adhoc-shell-ping-ip wst dev 10.1.0.1
+
+```
+
+
+### `awx-adhoc-shell-product-serial`
+
+Usage:
+
+```bash
+
+  awx-adhoc-shell-product-serial INVENTORY LIMIT
+
+```
+
+Show `product_serial` from `dmi`.
+
+Example:
+
+```bash
+
+  awx-adhoc-shell-product-serial wst dev
 
 ```
 
@@ -231,72 +310,6 @@ Usage:
 Description
 
 
-### `awx-adhoc-stdout`
-
-Usage:
-  awx-adhoc-stdout
-
-Description
-
-
-### `awx-adhoc-shell`
-
-Usage:
-
-```bash
-
-  awx-adhoc-shell INVENTORY LIMIT MODULE_ARGS
-
-```
-
-Execute commands using `shell` module in `ad-hoc` of _AWX_
-
-Example:
-
-```bash
-
-  awx-adhoc-shell pve dev uptime
-
-```
-
-
-### `awx-adhoc-shell-awx-jobs-history`
-
-Usage:
-
-```bash
-
-  awx-adhoc-shell-awx-jobs-history INVENTORY LIMIT
-
-```
-
-Show _AWX_ deploy history in `/etc/awx-history/jobs-history.json`
-
-Example:
-
-  awx-adhoc-shell-awx-jobs-history wst dev
-
-
-### `awx-adhoc-get-stdout`
-
-Usage:
-
-```bash
-
-  awx-adhoc-get-stdout ADHOC_JOB_ID
-
-```
-
-Get `stdout` of _adhoc_ _job_
-
-Example
-
-```bash
-
-  awx-adhoc-get-stdout 1234
-
-```
-
 ### `awx-adhoc-shell-wol`
 
 Usage:
@@ -318,23 +331,31 @@ Example:
 ```
 
 
-### `awx-adhoc-shell-product-serial`
+### `awx-adhoc-stdout`
 
 Usage:
 
 ```bash
 
-  awx-adhoc-shell-product-serial INVENTORY LIMIT
+  awx-adhoc-stdout JOB_ID
 
 ```
 
-Show `product_serial` from `dmi`.
+Get `stdout` of _ad-hoc_ _job_.
 
 Example:
 
 ```bash
 
-  awx-adhoc-shell-product-serial wst dev
+  awx-adhoc-stdout 1234
+
+	Enter passphrase for /tmp/awx_1234_l3bc_2qw/artifacts/1234/ssh_key_data:
+	Identity added: /tmp/awx_1234_l3bc_2qw/artifacts/1234/ssh_key_data (/tmp/awx_1234_l3bc_2qw/artifacts/1234/ssh_key_data)
+	sprn01dev | CHANGED | rc=0 >>
+	Restarting cups (via systemctl): cups.service.
+
+
+	OK. (changed: false)
 
 ```
 
@@ -343,6 +364,15 @@ Example:
 
 
 ### `awx-common`
+
+
+### `awx-common.bak`
+
+
+## `awx common.bak` commands
+
+
+### `awx-common.bak`
 
 
 ## `awx config` commands
@@ -373,18 +403,75 @@ Example:
 
 ```
 
+Write example config:
+
+```bash
+
+  awx-config -c
+
+  BACKUP CURRENT CONFIG IN /home/awx/.awx-config-1653427782.bak
+  WRITE EXAMPLE CONFIG IN /home/awx/.awx-config
+
+```
+
 Define enviroments in `~/.awx-config`:
 
 ```
 
-	DEVELOP: awx-dev
-	DEVELOP_USER: admin
-	DEVELOP_PASSWORD_STORE_DIR: ~/.password-store-awx-dev
-	MASTER_PASSWORD_STORE_DIR: ~/.password-store-awx-prd
-	MASTER: awx-prd
-	MASTER_USER: admin
-	PASS_PREFIX: awx/
-	PASS_SUFFIX: /
+  AWX_DEBUG: -v
+  DEFAULT_AD_DOMAIN: example.com
+  DEFAULT_CREDENTIAL_TYPE: Machine
+  DEFAULT_CREDENTIAL_USER: ansible
+  DEFAULT_DOMAIN: ipa.example.com
+  DEFAULT_EMAIL_DOMAIN: example.com
+  DEFAULT_GRANT_CREDENTIAL: use
+  DEFAULT_GRANT_INVENTORY: use
+  DEFAULT_GRANT_JOB_TEMPLATE: execute
+  DEFAULT_GRANT_PROJECT: use
+  DEFAULT_GRANT_WORKFLOW: execute
+  DEFAULT_HOST_DOMAIN: example.com
+  DEFAULT_HOST_DOMAIN_PREFIX: ipa
+  DEFAULT_HOST_INVENTORY: hosts-pve
+  DEFAULT_HOST_PREFIX_REPLACE: pve
+  DEFAULT_HOST_PREFIX_SEARCH: pve01
+  DEFAULT_HOST_SUFFIX: n0
+  DEFAULT_IPA_DOMAIN: ipa.example.com
+  DEFAULT_LIMIT: lab
+  DEFAULT_ORGANIZATION: example
+  DEFAULT_PROJECT: inventory_v0.2.2
+  DEFAULT_SCM_CREDENTIAL: git_awx_dev
+  DEFAULT_SEP: ,
+  DEFAULT_SSH_CREDENTIAL: ssh_ansible_dev
+  DEFAULT_TEAM: devops
+  DEFAULT_VAULT_CREDENTIAL: vault_dev
+  DEVELOP: awx-dev
+  DEVELOP_PASSWORD_STORE_DIR: /home/awx/.password-store-awx-dev
+  DEVELOP_USER: admin
+  DEVOPS_GRANT_INVENTORY: admin
+  DIR_INVENTORY: inventory
+  DIR_JOB_TEMPLATE: job_template
+  DIR_PROJECT: project
+  DIR_WORKFLOW: workflow
+  ERROR_SHOW_USAGE: 1
+  LAB: lab
+  LAB_PASSWORD_STORE_DIR: /home/awx/.password-store-awx-lab
+  LAB_USER: awx-cli
+  LO: loawx
+  LO_USER: admin
+  MASTER: awx-prd
+  MASTER_PASSWORD_STORE_DIR: /home/awx/.password-store-awx-prd
+  MASTER_USER: admin
+  OUTPUT_STYLE: md
+  PASS_PREFIX: awx/
+  PASS_SUFFIX: /
+  PROJECT_PREFIX: ansible
+  SCM_URL_API: https://git.example.com/api/v4
+  SCM_URL_BASE: git@git.example.com:/ipa
+  SNMP_USER: public
+  STAGE: awx-stg
+  STAGE_PASSWORD_STORE_DIR: /home/awx/.password-store-awx-stg
+  STAGE_USER: admin
+  WORKFLOW_PREFIX: wfw
 
 ```
 
@@ -393,14 +480,157 @@ Generate or insert credentials in multiple `pass` repositories:
 ```bash
 
   export PASSWORD_STORE_DIR=~/.password-store-awx-dev
-	pass awx/awx-dev/host
-	pass awx/awx-dev/admin_password
+  pass awx/awx-dev/host
+  pass awx/awx-dev/admin_password
 
   export PASSWORD_STORE_DIR=~/.password-store-awx-prd
-	pass awx/awx-prd/host
-	pass awx/awx-prd/admin_password
+  pass awx/awx-prd/host
+  pass awx/awx-prd/admin_password
 
 ```
+
+Config file variables can be overridden on the fly by using them as
+environment variables
+
+```
+
+  AWX_HOST=awx-dev AWX_USER=admin AWX_PASS=secret awx-config DEVELOP
+
+```
+
+
+### `awx-config-clean`
+
+Usage:
+
+```bash
+
+  awx-config-clean
+
+```
+
+Remove `~/.tower_cli.cfg` to prevent unauthorized access.
+
+Example:
+
+```bash
+
+  awx-config-clean
+
+```
+
+DELETE /home/osiris/.tower_cli.cfg
+
+## `awx credential` commands
+
+
+### `awx-credential-delete`
+
+Usage:
+
+```bash
+
+  awx-credential-delete CREDENTIAL_NAME
+
+```
+
+Delete _credential_ by name.
+
+```bash
+
+  awx-credential-delete ssh_wst
+
+```
+
+
+### `awx-credential-create`
+
+Usage:
+
+```bash
+
+  awx-credential-create CREDENTIAL_NAME [SSH_KEY_DATA] [SSH_KEY_UNLOCK]
+
+```
+
+Create a _credential_ as _Machine_ type by default.
+
+Examples:
+
+  Get _ssh private key_ and _passphrase_ from `pass`:
+
+  ```bash
+
+    PASSWORD_STORE_DIR=~/.password-store-awx awx-credential-create ansible_test
+
+    == ============ ===============
+    id    name      credential_type
+    == ============ ===============
+    26 ansible_test               1
+    == ============ ===============
+
+  ```
+
+  Get _ssh private key_ without _passphrase_ from file:
+
+  ```bash
+
+    awx-credential-create ansible_test ~/.ssh/ansible_test
+
+  ```
+
+  Get _ssh private key_ from file and _passphrase_ as argument:
+
+  ```bash
+
+    awx-credential-create ansible_test ~/.ssh/ansible_test 'super mega secret'
+
+  ```
+
+
+### `awx-credential-modify`
+
+Usage:
+
+```bash
+
+  awx-credential-modify CREDENTIAL_NAME [SSH_KEY_DATA] [SSH_KEY_UNLOCK]
+
+```
+
+Modify a _credential_ as _Machine_ type by default.
+
+Examples:
+
+  Get _ssh private key_ and _passphrase_ from `pass`:
+
+  ```bash
+
+    awx-credential-modify ansible_test
+
+    == ============ ===============
+    id    name      credential_type
+    == ============ ===============
+    26 ansible_test               1
+    == ============ ===============
+
+  ```
+
+  Get _ssh private key_ without _passphrase_ from file:
+
+  ```bash
+
+    awx-credential-modify ansible_test ~/.ssh/ansible_test
+
+  ```
+
+  Get _ssh private key_ from file and _passphrase_ as argument:
+
+  ```bash
+
+    awx-credential-modify ansible_test ~/.ssh/ansible_test 'super mega secret'
+
+  ```
 
 
 ## `awx csv` commands
@@ -490,58 +720,61 @@ Example:
 ```
 
 
+## `awx deploy` commands
+
+
+### `awx-deploy-sort`
+
+
+Usage:
+
+```bash
+
+  awx-deploy-sort FILE
+
+```bash
+
+Order lines that ensure that the dependencies are first on the list.
+
+```
+
+Example:
+
+```bash
+
+  cat deploy/update.awx
+
+    job_template/wst_wol_v0.1.0.json
+    project/ansible_wst_v0.1.0.json
+    inventory/wst.json
+    credential/ssh_wst.json
+
+  awx-deploy-sort deploy/update.awx
+
+    credential/ssh_wst.json
+    project/ansible_wst_v0.1.0.json
+    inventory/wst.json
+    job_template/wst_wol_v0.1.0.json
+
+```
+
+### `awx-deploy-grant`
+
+
+### `awx-deploy-delete`
+
+
+### `awx-deploy-changelog`
+
+
+### `awx-deploy-revision`
+
+[38;5;196m[ERROR] NOT FOUND .tower_cli.cfg TRY awx-config [m
+
+### `awx-deploy-diff`
+
+
 ## `awx grant` commands
-
-
-### `awx-grant-inventory`
-
-Usage:
-  awx-grant-inventory
-
-Description
-
-
-### `awx-grant-job-template`
-
-Usage:
-  awx-grant-job-template
-
-Description
-
-
-### `awx-grant-json-all`
-
-Usage:
-  awx-grant-json-all
-
-Description
-
-
-### `awx-grant-project`
-
-Usage:
-  awx-grant-project
-
-Description
-
-
-### `awx-grant-job-template-execute`
-
-Usage:
-
-```bash
-
-  awx-grant-job-template-execute JOB_TEMPLATE_NAME [TEAM]
-
-```
-
-Grant with execute permission a _job template_ to _team_.
-
-```bash
-
- awx-grant-job-template-execute pve_vms_kvm devops
-
-```
 
 
 ### `awx-grant-project-use`
@@ -563,66 +796,6 @@ Grant with use permission a _project_ to _team_.
 ```
 
 
-### `awx-grant-version`
-
-Usage:
-
-```bash
-
-  awx-grant-version VERSION_FILE [TEAM]
-
-```
-
-Grant use and execute permissions to a _project_, _job template_ and
-_workflow_ defined in version file to _team_.
-
-```bash
-
- awx-grant-version wfw_pve_v0.1.0.version devops
-
-```
-
-
-### `awx-grant-workflow-execute`
-
-Usage:
-
-```bash
-
-  awx-grant-workflow-execute
-
-```
-
-Grant with execute permission a _workflow_ to _team_.
-
-Example:
-
-```bash
-
-  awx-grant-workflow-execute wfw_pve_kvm_v0.1.0 devops
-
-```
-
-
-### `awx-grant-project-admin`
-
-Usage:
-
-```bash
-
-  awx-grant-project-admin JOB_PROJECT_NAME [TEAM]
-
-```
-
-Grant with admin permission a _project_ to _team_.
-
-```bash
-
- awx-grant-project-admin ansible_pve_v0.1.0 sysadmins
-
-```
-
-
 ### `awx-grant-filter`
 
 Usage:
@@ -635,14 +808,58 @@ Usage:
 
 Filter grants from ROLE_FILE and generate awx-cli role grant
 
+Example CSV:
+
+```
+RESOURCE_TYPE RESOURCE_NAME       TYPE
+inventory     wst                 admin
+project       ansible_wst_v1.6.0  use
+job_template  wst_upd_v1.6.0      execute
+workflow      wfw_pve_apt_v1.2.0  execute
+```
+
 Example:
 
 ```bash
 
   awx-grant-filter role/devops.csv support
 
+	## inventory
+
+	awx-cli role grant -v --team support --type  admin      --inventory     wst
+
+	## project
+
+	awx-cli role grant -v --team support --type  use        --project       ansible_wst_v1.6.0
+
+	## job_template
+
+	awx-cli role grant -v --team support --type  execute    --job-template  wst_upd_v1.6.0
+
+	## workflow
+
+	awx-cli role grant -v --team support --type  execute    --workflow      wfw_pve_apt_v1.2.0
+
 ```
 
+
+### `awx-grant-inventory`
+
+Usage:
+
+```bash
+
+  awx-grant-inventory INVENTORY TEAM [TYPE]
+
+```
+
+Grant (default `use`) permission to a _team_ for an _inventory_
+
+```bash
+
+  awx-grant-inventory pve devops
+
+```
 
 ### `awx-grant-inventory-admin`
 
@@ -686,12 +903,108 @@ Example:
 ```
 
 
+### `awx-grant-job-template`
+
+Usage:
+
+```bash
+
+  awx-grant-job-template JOB_TEMPLATE [TEAM]
+
+```
+
+Grant permission to a _team_ for a _job_template_.
+
+```bash
+
+  awx-grant-job-template wst_wol_v0.1.0 devops
+
+``
+
+### `awx-grant-json-all`
+
+Usage:
+
+```bash
+
+  awx-grant-json-all [TEAM]
+
+```
+
+Grant default permissions to all _JSON_ files (in the current directory)
+to a specified _team_ (if not specified, the default team will be used)
+
+```bash
+
+  awx-grant-json-all devops
+
+```
+
+
+### `awx-grant-project`
+
+Usage:
+
+```bash
+
+  awx-grant-project PROJECT_NAME [TEAM|defaut_team] [TYPE|use]
+
+```
+
+Grant permissions to a _team_ for a _project_.
+Use default team defined in config and `use` as default permission.
+
+```bash
+
+  awx-grant-project ansible_wst_v1.0.0 devops
+
+  Resource changed.
+  ==== ==== ==== =======
+   id  team type project
+  ==== ==== ==== =======
+  3268    7 use      727
+  ==== ==== ==== =======
+
+```
+
+
 ### `awx-grant-workflow`
 
 Usage:
+
+```bash
+
   awx-grant-workflow
 
-Description
+```
+
+Grant permission to a _team_ for a _workflow_.
+
+```bash
+
+  awx-grant-workflow
+
+```
+
+
+### `awx-grant-version`
+
+Usage:
+
+```bash
+
+  awx-grant-version VERSION_FILE [TEAM]
+
+```
+
+Grant use and execute permissions to a _project_, _job template_ and
+_workflow_ defined in version file to _team_.
+
+```bash
+
+ awx-grant-version wfw_pve_v0.1.0.version devops
+
+```
 
 
 ### `awx-grant-job-template-admin`
@@ -713,6 +1026,101 @@ Grant with admin permission a _job template_ to _team_.
 ```
 
 
+### `awx-grant-workflow-execute`
+
+Usage:
+
+```bash
+
+  awx-grant-workflow-execute
+
+```
+
+Grant with execute permission a _workflow_ to _team_.
+
+Example:
+
+```bash
+
+  awx-grant-workflow-execute wfw_pve_kvm_v0.1.0 devops
+
+```
+
+
+### `awx-grant-job-template-execute`
+
+Usage:
+
+```bash
+
+  awx-grant-job-template-execute JOB_TEMPLATE_NAME [TEAM]
+
+```
+
+Grant with execute permission a _job template_ to _team_.
+
+```bash
+
+ awx-grant-job-template-execute pve_vms_kvm devops
+
+```
+
+
+### `awx-grant-project-admin`
+
+Usage:
+
+```bash
+
+  awx-grant-project-admin JOB_PROJECT_NAME [TEAM]
+
+```
+
+Grant with admin permission a _project_ to _team_.
+
+```bash
+
+ awx-grant-project-admin ansible_pve_v0.1.0 sysadmins
+
+```
+
+
+### `awx-grant-team`
+
+Usage:
+
+```bash
+
+  awx-grant-team GRANT_FILE
+
+```
+
+Generate awx-cli role grant from grant file
+
+Example file:
+
+```
+RESOURCE_TYPE RESOURCE_NAME       TYPE     TEAM
+inventory     wst                 admin    devops
+project       ansible_wst_v1.6.0  use      devops
+job_template  wst_upd_v1.6.0      execute  devops
+workflow      wfw_pve_apt_v1.2.0  execute  devops
+```
+
+Example:
+
+```bash
+
+  awx-grant-team role/devops.awx devops
+
+awx-cli role grant -v --team devops --type admin --inventory wst
+awx-cli role grant -v --team devops --type use --project ansible_wst_v1.6.0
+awx-cli role grant -v --team devops --type execute --job-template wst_upd_v1.6.0
+awx-cli role grant -v --team devops --type execute --workflow wfw_pve_apt_v1.2.0
+
+```
+
+
 ## `awx group` commands
 
 
@@ -723,7 +1131,7 @@ Usage:
 
 ```bash
 
-  awx-group-get-variable INVENTORY GROUP
+  awx-group-get-variable INVENTORY GROUP [VARIABLE|all]
 
 ```
 
@@ -790,10 +1198,63 @@ Generate a markdown output for usage of each command script
 
 ### `awx-host-associate`
 
-Usage:
-  awx-host-associate
 
-Description
+Usage:
+
+```bash
+
+  awx-host-associate HOST GROUP_NAME [INVENTORY]
+
+```bash
+
+Associate _host_ to _group_.
+Use PREFIX-HOST as INVENTORY.
+
+```bash
+
+  awx-host-associate wst-dev01 dev
+
+  awx-host-associate wstdev01 dev wst
+
+```
+
+### `awx-host-get-variable`
+
+Usage:
+
+```bash
+
+  awx-host-get-variable HOST [KEY|all] [INVENTORY|prefix-]
+
+```
+
+Get _host_ variables from _inventory_
+
+Example:
+
+  Implicit _inventory_ from _host_:
+
+```bash
+
+  awx-host-get-variable pve-dev01
+
+```
+
+  Get value of `ansible_host` from _host_:
+
+```bash
+
+  awx-host-get-variable pve-dev01 ansible_host
+
+```
+
+  Explicit _host_, all variables and _inventory_:
+
+```bash
+
+  awx-host-get-variable dev01 all pve
+
+```
 
 
 ### `awx-host-associate-host-vars`
@@ -822,6 +1283,28 @@ Example:
   awx-host-associate-host-vars pve REGEXP dev
 
 
+
+```
+
+### `awx-host-create`
+
+Usage:
+
+```bash
+
+  awx-host-create INVENTORY_HOSTNAME [INVENTORY]
+
+```
+
+Create _host_ in _inventory_.
+
+Example:
+
+```bash
+
+  awx-host-create wst-dev01
+
+  awx-host-create wstdev001 wst
 
 ```
 
@@ -935,9 +1418,25 @@ Description
 ### `awx-host-get-by-description`
 
 Usage:
-  awx-host-get-by-description
 
-Description
+```bash
+
+  awx-host-get-by-description DESCRIPTION [INVENTORY]
+
+```
+
+Get _host_ by `description`.
+
+Return: `id name enabled ansible_host primary_macaddress`
+
+Example:
+
+```bash
+
+  awx-host-get-by-description wst050f0247 wst
+  12345 wst-ACDCFAFAFA true 10.10.1.22 ca:fe:ac:dc:fa:fa
+
+```
 
 
 ### `awx-host-get-ip`
@@ -958,38 +1457,18 @@ Example:
 ### `awx-host-get-recent-jobs`
 
 Usage:
+
+```bash
+
   awx-host-get-recent-jobs
+
+```
 
 Description
 
-
-### `awx-host-get-variable`
-
-Usage:
-
 ```bash
 
-  awx-host-get-variable HOST [INVENTORY]
-
-```
-
-Get _host_ variables from _inventory_
-
-Example:
-
-  Implicit _inventory_ from _host_:
-
-```bash
-
-  awx-host-get-variable pve-dev01
-
-```
-
-  Explicit _host_ and _inventory_:
-
-```bash
-
-  awx-host-get-variable dev01 pve
+  awx-host-get-recent-jobs
 
 ```
 
@@ -1032,6 +1511,66 @@ Usage:
   awx-host-modify-variable
 
 Description
+
+
+### `awx-host-vars2ssh-config`
+
+Usage:
+
+```bash
+
+  awx-host-vars2ssh-config HOST_VARS_YAML
+
+```
+
+Generate _SSH_ host config from host_vars _YAML_ file.
+
+Example:
+
+```bash
+
+  awx-host-vars2ssh-config host_vars/wstdev01.yml
+
+```
+
+
+### `awx-host-get-description`
+
+Usage:
+
+```bash
+
+  awx-host-get-description HOST [INVENTORY]
+
+```
+
+Get _host_ description from _AWX_ _inventory_.
+
+Example:
+
+  Implicit _inventory_ from _host_:
+
+```bash
+
+  awx-host-get-description pve-dev01
+
+  Proxmox develop server
+
+```
+
+  Explicit _host_ and _inventory_:
+
+```bash
+
+  awx-host-get-description dev01 pve
+
+  Proxmox develop server
+
+```
+
+
+
+```
 
 
 ### `awx-host-get-last-job-summary`
@@ -1079,67 +1618,6 @@ Example:
 
   'wst01dev01','imported','192.168.1.11','ca:fe:ca:fe:00:3d','S12345678'
   'wst01dev02','imported','192.168.1.12','fa:fa:fa:02:ac:dc','S12345679'
-
-```
-
-
-### `awx-host-create`
-
-Usage:
-
-```bash
-
-  awx-host-create INVENTORY_HOSTNAME [INVENTORY]
-
-```
-
-Create _host_ in _inventory_.
-
-Example:
-
-```bash
-
-  awx-host-create wst-dev01
-
-  awx-host-create wstdev001 wst
-
-```
-
-### `awx-host-get-description`
-
-Usage:
-
-```bash
-
-  awx-host-get-description HOST [INVENTORY]
-
-```
-
-Get _host_ description from _AWX_ _inventory_.
-
-Example:
-
-  Implicit _inventory_ from _host_:
-
-```bash
-
-  awx-host-get-description pve-dev01
-
-  Proxmox develop server
-
-```
-
-  Explicit _host_ and _inventory_:
-
-```bash
-
-  awx-host-get-description dev01 pve
-
-  Proxmox develop server
-
-```
-
-
 
 ```
 
@@ -1229,28 +1707,119 @@ Example:
 ```
 
 
-### `awx-host-vars2ssh-config`
+### `awx-host-list`
+
 
 Usage:
 
 ```bash
 
-  awx-host-vars2ssh-config HOST_VARS_YAML
+  awx-host-list INVENTORY
 
 ```
 
-Generate _SSH_ host config from host_vars _YAML_ file.
+Get all _hosts_ in _inventory_.
 
 Example:
 
 ```bash
 
-  awx-host-vars2ssh-config host_vars/wstdev01.yml
+  awx-host-list wst
+
+  id  name     enabled
+  150 wstdev01 true
+  151 wstdev02 false
+  152 wstdev03 true
+  153 wstdev04 true
 
 ```
 
 
+## `awx install` commands
+
+
+### `awx-install-apt`
+
+
+Usage:
+
+```bash
+
+  awx-install-apt
+
+```
+
+Install dependencies using apt on Debian based distros
+
+```bash
+
+  awx-install-apt
+
+```
+
 ## `awx inventory` commands
+
+
+### `awx-inventory-source-update`
+
+Usage:
+
+```bash
+
+  awx-inventory-source-update INVENTORY_SOURCE
+
+```
+
+Update _inventory source_ of _inventory_
+
+Example:
+
+```bash
+
+  awx-inventory-source-update inventory_pve
+
+```
+
+
+### `awx-inventory-get-variable`
+
+Usage:
+
+```bash
+
+  awx-inventory-get-variable INVENTORY VARIABLE
+
+```
+
+Get variable value from _inventory_.
+
+Example:
+
+```bash
+
+  awx-inventory-get-variable pve subnet
+
+```
+
+
+### `awx-inventory-source-get-variable`
+
+Usage:
+
+```bash
+
+  awx-inventory-source-get-variable INVENTORY_SOURCE [KEY|all]
+
+```
+
+Get variable from _inventory_source_.
+
+```bash
+
+  awx-inventory-source-get-variable inventory_pve source_path
+  hosts-pve
+
+```
 
 
 ### `awx-inventory-batch-update`
@@ -1264,9 +1833,20 @@ Description
 ### `awx-inventory-create`
 
 Usage:
-  awx-inventory-create
 
-Description
+```bash
+
+  awx-inventory-create INVENTORY DESCRIPTION ORGANIZATION
+
+```bash
+
+Create _inventory_
+
+```bash
+
+  awx-inventory-create pve Proxmox
+
+```
 
 
 ### `awx-inventory-get-id`
@@ -1294,23 +1874,25 @@ Example:
 ```
 
 
-### `awx-inventory-get-variable`
+### `awx-inventory-group-get-hosts`
 
 Usage:
 
 ```bash
 
-  awx-inventory-get-variable INVENTORY VARIABLE
+  awx-inventory-group-get-hosts INVENTORY GROUP
 
 ```
 
-Get variable value from _inventory_.
+Get hosts from group of inventory
 
 Example:
 
 ```bash
 
-  awx-inventory-get-variable pve subnet
+  awx-inventory-group-get-hosts pve dev
+
+    spve01dev
 
 ```
 
@@ -1349,23 +1931,26 @@ Description
 ### `awx-inventory-source-create`
 
 Usage:
-  awx-inventory-source-create
 
-Description
+```bash
+
+  awx-inventory-source-create INVENTORY PROJECT
+
+```bash
+
+Create _inventory_source_
+
+```bash
+
+  awx-inventory-source-create pve inventory_v0.1.0
+
+```
 
 
 ### `awx-inventory-source-get-project`
 
 Usage:
   awx-inventory-source-get-project
-
-Description
-
-
-### `awx-inventory-source-get-variable`
-
-Usage:
-  awx-inventory-source-get-variable
 
 Description
 
@@ -1386,38 +1971,49 @@ Usage:
 Description
 
 
-### `awx-inventory-source-update`
-
-Usage:
-  awx-inventory-source-update
-
-Description
-
-
-### `awx-inventory-group-get-hosts`
+### `awx-inventory-delete`
 
 Usage:
 
 ```bash
 
-  awx-inventory-group-get-hosts INVENTORY GROUP
+  awx-inventory-delete INVENTORY_NAME
 
 ```
 
-Get hosts from group of inventory
-
-Example:
+Delete _inventory_ by name.
 
 ```bash
 
-  awx-inventory-group-get-hosts pve dev
-
-    spve01dev
+  awx-inventory-delete wst
 
 ```
 
 
 ## `awx job` commands
+
+
+### `awx-job-template-get`
+
+Usage:
+
+```bash
+
+  awx-job-template-get JOB_ID
+
+```
+
+Get summary of _job_template_ execution in format:
+
+ name duration date start finish url
+
+```bash
+
+	awx-job-template-get 1234
+
+  vms_cin_v0.2.0 00:00  2022-05-17 17:47 17:47 http://awx-dev/#/jobs/playbook/1234
+
+``
 
 
 ### `awx-job-template-create`
@@ -1426,19 +2022,44 @@ Usage:
 
 ```bash
 
-  awx-job-template-create JOB_TEMPLATE PROJECT_NAME PLAYBOOK_FILE [YAML]
-
-
+  awx-job-template-create JOB_TEMPLATE PROJECT_NAME PLAYBOOK_FILE [EXTRA_VARS_YAML]
 
 ```
 
 Create _job template_ and associate default credentials in _AWX_.
 
+```bash
 
-### `awx-job-template-get`
+  awx-job-template-create wst_wol_v0.1.0 ansible_wst_v0.1.0 wst-wol.yml wst_extra_vars.yml
+
+```
+
+
+### `awx-job-list-running`
 
 Usage:
-  awx-job-template-get
+
+```bash
+
+  awx-job-list-running
+
+```
+
+List current running _jobs_
+
+
+### `awx-job-stdout`
+
+Usage:
+  awx-job-stdout
+
+Description
+
+
+### `awx-job-template-get-last-failed-jobs`
+
+Usage:
+  awx-job-template-get-last-failed-jobs
 
 Description
 
@@ -1471,83 +2092,6 @@ Description
 
 Usage:
   awx-job-template-get-variable
-
-Description
-
-
-### `awx-job-overview`
-
-Usage:
-
-```bash
-
-  awx-job-overview JOB_ID
-
-```
-
-Get overview of _job_ execution.
-
-Example:
-
-```bash
-
-  awx-job-overview 1234
-
-  | 1234 | wst_ap_v1.1.0 | failed | 43.514 |     | 2021-05-10 | 17:04:32 | 17:05:15 | 00:00:43 | test |
-
-```
-
-
-### `awx-job-status`
-
-
-Usage:
-
-```bash
-
-  awx-job-status JOB_ID
-
-```
-
-Show status of _job_
-
-```bash
-
-  awx-job-status 678
-
-  ========== ====== =======
-    status   failed elapsed
-  ========== ====== =======
-  successful  false 379.13
-  ========== ====== =======
-
-```
-
-### `awx-job-template-get-last-failed-jobs`
-
-Usage:
-  awx-job-template-get-last-failed-jobs
-
-Description
-
-
-### `awx-job-list-running`
-
-Usage:
-
-```bash
-
-  awx-job-list-running
-
-```
-
-List current running _jobs_
-
-
-### `awx-job-stdout`
-
-Usage:
-  awx-job-stdout
 
 Description
 
@@ -1585,7 +2129,146 @@ Example:
 ```
 
 
+### `awx-job-status`
+
+
+Usage:
+
+```bash
+
+  awx-job-status JOB_ID
+
+```
+
+Show status of _job_
+
+```bash
+
+  awx-job-status 678
+
+  ========== ====== =======
+    status   failed elapsed
+  ========== ====== =======
+  successful  false 379.13
+  ========== ====== =======
+
+```
+
+### `awx-job-overview`
+
+Usage:
+
+```bash
+
+  awx-job-overview JOB_ID
+
+```
+
+Get overview of _job_ execution.
+
+Example:
+
+```bash
+
+  awx-job-overview 1234
+
+  | 1234 | wst_ap_v1.1.0 | failed | 43.514 |     | 2021-05-10 | 17:04:32 | 17:05:15 | 00:00:43 | test |
+
+```
+
+
+### `awx-job-template-delete`
+
+Usage:
+
+```bash
+
+  awx-job-template-delete JOB_TEMPLATE
+
+```
+
+Delete _job template_.
+
+```bash
+
+  awx-job-template-delete wst_wol_v0.1.0
+
+```
+
+
+### `awx-job-launch`
+
+Usage:
+
+```bash
+
+  awx-job-launch JOB_NAME [JOB_LIMIT]
+
+```
+
+Launch job template with limit.
+
+Example:
+
+```bash
+
+  awx-job-launch wst_wlp_v1.0.0 dev
+
+```
+
+
 ## `awx json` commands
+
+
+### `awx-json-send-projects`
+
+
+### `awx-json-inventory-group-get-hosts`
+
+Usage:
+
+```bash
+
+  awx-json-inventory-group-get-hosts INVENTORY.json GROUP
+
+```
+
+Get hosts from group of inventory `.json` file
+
+Example:
+
+```bash
+
+  awx-json-inventory-group-get-hosts inventory/pve.json dev
+
+    spve01dev
+
+```
+
+
+### `awx-json-inventory-get-variables`
+
+Usage:
+
+```bash
+
+  awx-json-inventory-get-variables [INVENTORY]
+
+```
+
+Get variables of inventory `.json` file
+
+Example:
+
+```bash
+
+  awx-json-inventory-get-variables inventory/pve.json
+
+  remote_user: ansible
+  http_proxy_host: 10.0.0.1
+  http_proxy_port: 3128
+
+```
 
 
 ### `awx-json-bump-version`
@@ -1661,6 +2344,29 @@ Usage:
 Description
 
 
+### `awx-json-inventory-group-subgroup-get-hosts`
+
+Usage:
+
+```bash
+
+  awx-json-inventory-group-subgroup-get-hosts INVENTORY.json GROUP SUBGROUP
+
+```
+
+Get hosts from subgroup of group of inventory `.json` file
+
+Example:
+
+```bash
+
+  awx-json-inventory-group-subgroup-get-hosts inventory/pve.json dev lab
+
+    spve01dev
+
+```
+
+
 ### `awx-json-get-project`
 
 Usage:
@@ -1701,25 +2407,67 @@ Example:
 ```
 
 
-### `awx-json-inventory-group-get-hosts`
+### `awx-json-inventory2all`
 
 Usage:
 
 ```bash
 
-  awx-json-inventory-group-get-hosts INVENTORY.json GROUP
+  awx-json-inventory2all [INVENTORY_JSON] GROUP
 
 ```
 
-Get hosts from group of inventory `.json` file
+Generate hosts inventory file and ssh config from inventory `.json`
 
 Example:
 
 ```bash
 
-  awx-json-inventory-group-get-hosts inventory/pve.json dev
+  awx-json-inventory2all inventory/pve.json
 
+  inventory hosts:
+
+    [pve]
     spve01dev
+    spve01prd
+
+    [dev]
+    spve01dev
+
+    [prd]
+    spve01prd
+
+  ssh config:
+
+    Host spve01dev
+         Hostname spve01dev.example.com
+
+    Host spve01dev
+         Hostname spve01dev.example.com
+
+```
+
+
+### `awx-json-inventory-get-subgroups`
+
+Usage:
+
+```bash
+
+  awx-json-inventory-get-subgroups [INVENTORY_JSON] GROUP
+
+```
+
+Get groups of inventory `.json` file
+
+Example:
+
+```bash
+
+  awx-json-inventory-get-subgroups inventory/pve.json
+
+    dev
+    prd
 
 ```
 
@@ -1743,6 +2491,78 @@ Example:
   awx-json-inventory-group-get-variables inventory/pve.json dev
 
     spve01dev
+
+```
+
+
+### `awx-json-inventory-group-host-verify`
+
+Usage:
+
+```bash
+
+  awx-json-inventory-group-host-verify GROUP_HOST_FILE INVENTORY_JSON
+
+```
+
+Get _hosts_ from _group_ of _inventory_ `json` file.
+
+Example:
+
+```bash
+
+  awx-json-inventory-group-host-verify pve-deploy pve.json
+
+    spve01dev
+
+```
+
+
+### `awx-json-inventory-group-hosts`
+
+Usage:
+
+```bash
+
+  awx-json-inventory-group-hosts GROUPS_FILE INVENTORY_JSON
+
+```
+
+Get _hosts_ from _group_ file of _inventory_.
+
+Example:
+
+```bash
+
+  awx-json-inventory-group-hosts pvedeploy pve.json
+
+    dev pve-dev-01
+    prd pve-prd-01
+    prd pve-prd-02
+
+```
+
+
+### `awx-json-get-extra-vars`
+
+
+Usage:
+
+```bash
+
+  awx-json-get-extra-vars JSON
+
+```
+
+Get extra_vars from `.json`.
+
+```bash
+
+  awx-json-get-extra-vars job_template/ipa_sss_syn_v0.1.0.json
+
+	---
+	sssd_cache_script_path: /opt/freeipa-sssd-tools/ipa-sss-syn
+	sssd_cache_rt_path: /opt/freeipa-sssd-tools
 
 ```
 
@@ -1799,6 +2619,27 @@ Example:
 
 ```
 
+### `awx-json-role-team-list`
+
+Usage:
+
+```bash
+
+  awx-json-role-team-list ROLE_TEAM.json
+
+```
+
+Get grants from unique TEAM ROLE in `.json` file
+
+Example:
+
+```bash
+
+  awx-json-role-team-list role/ROLE_TEAM.json
+
+```
+
+
 ### `awx-json-send-all`
 
 Usage:
@@ -1825,14 +2666,6 @@ Description
 
 Usage:
   awx-json-send-job-templates
-
-Description
-
-
-### `awx-json-send-projects`
-
-Usage:
-  awx-json-send-projects
 
 Description
 
@@ -1869,233 +2702,23 @@ Example:
 
 ```
 
-### `awx-json-worklow-get-url`
-
-Usage:
-  awx-json-worklow-get-url
-
-Description
-
-
-### `awx-json-inventory-group-hosts`
+### `awx-json-get-playbook`
 
 Usage:
 
 ```bash
 
-  awx-json-inventory-group-hosts GROUPS_FILE INVENTORY_JSON
+  awx-json-get-playbook [JSON_LIST]
 
 ```
 
-Get _hosts_ from _group_ file of _inventory_.
-
-Example:
+Get _playbook_ from one or more _job template_ `.json` file.
 
 ```bash
 
-  awx-json-inventory-group-hosts pvedeploy pve.json
+  awx-json-get-playbook job_template/wst_apt_v1.1.0.json
 
-    dev pve-dev-01
-    prd pve-prd-01
-    prd pve-prd-02
-
-```
-
-
-### `awx-json-inventory-get-variables`
-
-Usage:
-
-```bash
-
-  awx-json-inventory-get-variables [INVENTORY]
-
-```
-
-Get variables of inventory `.json` file
-
-Example:
-
-```bash
-
-  awx-json-inventory-get-variables inventory/pve.json
-
-  remote_user: ansible
-  http_proxy_host: 10.0.0.1
-  http_proxy_port: 3128
-
-```
-
-
-### `awx-json-get-limit`
-
-Usage:
-
-```bash
-
-  awx-json-get-limit JSON
-
-```
-
-Get _limit_ of _job_template_ or _workflow_ `.json`.
-
-Example:
-
-```bash
-
-  awx-json-get-limit job_template/ipa_sss_syn_v0.1.0.json
-
-  ipa
-
-```
-
-
-### `awx-json-get-extra-vars`
-
-
-Usage:
-
-```bash
-
-  awx-json-get-extra-vars JSON
-
-```
-
-Get extra_vars from `.json`.
-
-```bash
-
-  awx-json-get-extra-vars job_template/ipa_sss_syn_v0.1.0.json
-
-	---
-	sssd_cache_script_path: /opt/freeipa-sssd-tools/ipa-sss-syn
-	sssd_cache_rt_path: /opt/freeipa-sssd-tools
-
-```
-
-
-### `awx-json-rename.bak`
-
-Usage:
-
-```bash
-
-  awx-json-rename.bak JSON NEW_NAME
-
-```
-
-Rename `.json` file and replace internal `name`.
-
-```bash
-
-  awx-json-rename.bak pve_kvm.json pve_vms_kvm
-
-```
-
-### `awx-json-inventory-get-subgroups`
-
-Usage:
-
-```bash
-
-  awx-json-inventory-get-subgroups [INVENTORY_JSON] GROUP
-
-```
-
-Get groups of inventory `.json` file
-
-Example:
-
-```bash
-
-  awx-json-inventory-get-subgroups inventory/pve.json
-
-    dev
-    prd
-
-```
-
-
-### `awx-json-inventory-group-host-verify`
-
-Usage:
-
-```bash
-
-  awx-json-inventory-group-host-verify GROUP_HOST_FILE INVENTORY_JSON
-
-```
-
-Get _hosts_ from _group_ of _inventory_ `json` file.
-
-Example:
-
-```bash
-
-  awx-json-inventory-group-host-verify pve-deploy pve.json
-
-    spve01dev
-
-```
-
-
-### `awx-json-role-team-list`
-
-Usage:
-
-```bash
-
-  awx-json-role-team-list ROLE_TEAM.json
-
-```
-
-Get grants from unique TEAM ROLE in `.json` file
-
-Example:
-
-```bash
-
-  awx-json-role-team-list role/ROLE_TEAM.json
-
-```
-
-
-### `awx-json-workflow-add-suffix`
-
-
-Usage:
-
-```bash
-
-  awx-json-workflow-add-suffix WORKFLOW_JSON
-
-```
-
-Add suffix to workflow with dependencies and show diff
-
-Example:
-
-```bash
-
-  awx-json-workflow-add-suffix workflow/wfw_pve_v0.2.0.json hotfix
-
-RENAME FROM workflow/wfw_pve_v0.2.0.json TO workflow/wfw_pve_v0.2.0-hotfix.json
-
-  "name": "wfw_pve_v0.2.0"               |  "name": "wfw_pve_v0.2.0-hotfix"
-
-  REPLACE wfw_ftp_v0.2.0 WITH wfw_ftp_v0.2.0-hotfix
-  REPLACE wfw_git_v0.1.0 WITH wfw_git_v0.1.0-hotfix
-  REPLACE wfw_cdn_v0.2.0 WITH wfw_cdn_v0.2.0-hotfix
-  REPLACE wfw_apt_v1.1.3 WITH wfw_apt_v1.1.3-hotfix
-
-  DIFF workflow/wfw_pve_v0.2.0.json WITH workflow/wfw_pve_v0.2.0-hotfix.json
-
-  "unified_job_name": "wfw_ftp_v0.2.0",  |  "unified_job_name": "wfw_ftp_v0.2.0-hotfix",
-  "unified_job_name": "wfw_git_v0.1.0",  |  "unified_job_name": "wfw_git_v0.1.0-hotfix",
-  "unified_job_name": "wfw_cdn_v0.2.0",  |  "unified_job_name": "wfw_cdn_v0.2.0-hotfix",
-  "unified_job_name": "wfw_apt_v1.1.3",  |  "unified_job_name": "wfw_apt_v1.1.3-hotfix",
-
-  "name": "wfw_pve_v0.2.0"               |  "name": "wfw_pve_v0.2.0-hotfix"
+  main.yml
 
 ```
 
@@ -2131,27 +2754,6 @@ Example:
 			"name": "wst_wol_v0.1.0",                 |     "name": "wst_wol_v0.1.0-hotfix",
 			"project": "ansible_wst_v1.0.0",          |     "project": "ansible_wst_v1.0.0-hotfix",
 
-
-```
-
-
-### `awx-json-get-playbook`
-
-Usage:
-
-```bash
-
-  awx-json-get-playbook [JSON_LIST]
-
-```
-
-Get _playbook_ from one or more _job template_ `.json` file.
-
-```bash
-
-  awx-json-get-playbook job_template/wst_apt_v1.1.0.json
-
-  main.yml
 
 ```
 
@@ -2204,66 +2806,211 @@ Modify verbosity in `.json` _file_.
 
 ```
 
-### `awx-json-inventory-group-subgroup-get-hosts`
+### `awx-json-get-limit`
 
 Usage:
 
 ```bash
 
-  awx-json-inventory-group-subgroup-get-hosts INVENTORY.json GROUP SUBGROUP
+  awx-json-get-limit JSON
 
 ```
 
-Get hosts from subgroup of group of inventory `.json` file
+Get _limit_ of _job_template_ or _workflow_ `.json`.
 
 Example:
 
 ```bash
 
-  awx-json-inventory-group-subgroup-get-hosts inventory/pve.json dev lab
+  awx-json-get-limit job_template/ipa_sss_syn_v0.1.0.json
 
-    spve01dev
+  ipa
 
 ```
 
 
-### `awx-json-inventory2all`
+### `awx-json-workflow-add-suffix`
+
 
 Usage:
 
 ```bash
 
-  awx-json-inventory2all [INVENTORY_JSON] GROUP
+  awx-json-workflow-add-suffix WORKFLOW_JSON
 
 ```
 
-Generate hosts inventory file and ssh config from inventory `.json`
+Add suffix to workflow with dependencies and show diff
 
 Example:
 
 ```bash
 
-  awx-json-inventory2all inventory/pve.json
+  awx-json-workflow-add-suffix workflow/wfw_pve_v0.2.0.json hotfix
 
-  inventory hosts:
+RENAME FROM workflow/wfw_pve_v0.2.0.json TO workflow/wfw_pve_v0.2.0-hotfix.json
 
-    [pve]
-    spve01dev
-    spve01prd
+  "name": "wfw_pve_v0.2.0"               |  "name": "wfw_pve_v0.2.0-hotfix"
 
-    [dev]
-    spve01dev
+  REPLACE wfw_ftp_v0.2.0 WITH wfw_ftp_v0.2.0-hotfix
+  REPLACE wfw_git_v0.1.0 WITH wfw_git_v0.1.0-hotfix
+  REPLACE wfw_cdn_v0.2.0 WITH wfw_cdn_v0.2.0-hotfix
+  REPLACE wfw_apt_v1.1.3 WITH wfw_apt_v1.1.3-hotfix
 
-    [prd]
-    spve01prd
+  DIFF workflow/wfw_pve_v0.2.0.json WITH workflow/wfw_pve_v0.2.0-hotfix.json
 
-  ssh config:
+  "unified_job_name": "wfw_ftp_v0.2.0",  |  "unified_job_name": "wfw_ftp_v0.2.0-hotfix",
+  "unified_job_name": "wfw_git_v0.1.0",  |  "unified_job_name": "wfw_git_v0.1.0-hotfix",
+  "unified_job_name": "wfw_cdn_v0.2.0",  |  "unified_job_name": "wfw_cdn_v0.2.0-hotfix",
+  "unified_job_name": "wfw_apt_v1.1.3",  |  "unified_job_name": "wfw_apt_v1.1.3-hotfix",
 
-    Host spve01dev
-         Hostname spve01dev.example.com
+  "name": "wfw_pve_v0.2.0"               |  "name": "wfw_pve_v0.2.0-hotfix"
 
-    Host spve01dev
-         Hostname spve01dev.example.com
+```
+
+
+### `awx-json-get-description`
+
+Usage:
+
+```bash
+
+  awx-json-get-description JSON
+
+```
+
+Get _description_ of _job_template_ or _workflow_ `.json`.
+
+Example:
+
+```bash
+
+  awx-json-get-description job_template/ipa_sss_tol_v0.2.4.json
+
+  Install and configure FreeIPA Tools with API Queue Syn
+
+```
+
+
+### `awx-json-rename.bak`
+
+Usage:
+
+```bash
+
+  awx-json-rename.bak JSON NEW_NAME
+
+```
+
+Rename `.json` file and replace internal `name`.
+
+```bash
+
+  awx-json-rename.bak pve_kvm.json pve_vms_kvm
+
+```
+
+### `awx-json-receive-credential`
+
+Usage:
+
+```bash
+
+  awx-json-receive-credential CREDENTIAL_NAME
+
+```
+
+Get _credential_ from _AWX_ and save in `.json` file.
+
+```bash
+
+  awx-json-receive-credential ssh_ansible
+
+```
+
+
+### `awx-json-workflow-get-url`
+
+Usage:
+  awx-json-workflow-get-url
+
+Description
+
+
+### `awx-json-inventory-get-inventory-name`
+
+Usage:
+
+```bash
+
+  awx-json-inventory-get-inventory-name [INVENTORY_JSON]
+
+```
+
+Get name of _inventory_source_ from inventory `.json` file.
+
+Example:
+
+```bash
+
+  awx-json-inventory-get-inventory-name inventory/pve.json
+
+  inventory_pve
+
+```
+
+
+### `awx-json-inventory-get-inventory-source`
+
+Usage:
+
+```bash
+
+  awx-json-inventory-get-inventory-source [INVENTORY_JSON]
+
+```
+
+Get _inventory_source_ from inventory `.json` file.
+
+Example:
+
+```bash
+
+  awx-json-inventory-get-inventory-source inventory/pve.json
+
+  inventory_v0.1.0
+
+```
+
+
+### `awx-json-workflow-nodes`
+
+
+Usage:
+
+```bash
+
+  awx-json-workflow-nodes SRC_YML AWX_YML
+
+```
+
+Show _workflow_ nodes grouped by common nodes
+
+Example:
+
+```bash
+
+	awx-json-workflow-nodes workflow/wfw_pve_vms_v0.2.2.json
+
+	wfw_vms_ans_v0.2.4  apt_set_v0.1.1 vms_acs_v0.1.0 vms_cin_v0.2.0 vms_ans_v0.2.2
+	wfw_vms_ftp_v0.2.2  apt_set_v0.1.1 vms_acs_v0.1.0 vms_cin_v0.2.0 vms_ftp_v0.2.0
+	wfw_vms_pxe_v0.5.2  apt_set_v0.1.1 vms_acs_v0.1.0 vms_cin_v0.2.0 vms_pxe_v0.5.0
+	wfw_vms_log_v0.1.2  apt_set_v0.1.1 vms_acs_v0.1.0 vms_cin_v0.2.0 vms_log_v0.1.0
+	wfw_vms_git_v0.1.2  apt_set_v0.1.1 vms_acs_v0.1.0 vms_cin_v0.2.0 vms_git_v0.3.1
+	wfw_vms_prn_v0.1.2  apt_set_v0.1.1 vms_acs_v0.1.0 vms_cin_v0.2.0 vms_prn_v0.1.0
+	wfw_vms_cdn_v0.2.2  apt_set_v0.1.1 vms_acs_v0.1.0 vms_cin_v0.2.0 vms_cdn_v0.2.0
+	wfw_vms_apt_v1.10.4 apt_set_v0.1.1 vms_acs_v0.1.0 vms_cin_v0.2.0 vms_apt_v1.10.2
+	wfw_vms_rep_v0.1.1  apt_set_v0.1.1 vms_acs_v0.1.0 vms_cin_v0.2.0 vms_rep_v0.1.0
 
 ```
 
@@ -2346,9 +3093,20 @@ Example:
 ### `awx-organization-create`
 
 Usage:
-  awx-organization-create
 
-Description
+```bash
+
+  awx-organization-create NAME [DESCRITION]
+
+```bash
+
+Create _organization_
+
+```bash
+
+  awx-organization-create example
+
+```
 
 
 ## `awx pass` commands
@@ -2378,7 +3136,7 @@ Example:
 ## `awx plot` commands
 
 
-### `awx-plot-host-versions.bak`
+### `awx-plot-host-versions`
 
 Usage: gnuplot [OPTION] ... [FILE]
 for X11 options see 'help X11->command-line-options'
@@ -2391,7 +3149,7 @@ for X11 options see 'help X11->command-line-options'
   -e  "command1; command2; ..."
 gnuplot 5.4 patchlevel 1
 
-### `awx-plot-host-versions`
+### `awx-plot-host-versions.bak`
 
 Usage: gnuplot [OPTION] ... [FILE]
 for X11 options see 'help X11->command-line-options'
@@ -2413,6 +3171,28 @@ Usage:
   awx-project-create
 
 Description
+
+
+### `awx-project-disable-scm-clean`
+
+Usage:
+
+```bash
+
+  awx-project-disable-scm-clean PROJECT_NAME
+
+```
+
+Set `scm_clean = False` in _project_ attributes to disable update
+repository when _job_template_ launch.
+
+Example:
+
+```bash
+
+  awx-project-disable-scm-clean myproject
+
+```
 
 
 ### `awx-project-get-last-job`
@@ -2444,6 +3224,14 @@ Usage:
 Get variable value from _project_.
 
 
+### `awx-project-list-name`
+
+Usage:
+  awx-project-list-name
+
+List all projects
+
+
 ### `awx-project-modify-scm-branch`
 
 Usage:
@@ -2460,34 +3248,72 @@ Usage:
 Description
 
 
-### `awx-project-disable-scm-clean`
+### `awx-project-delete`
 
 Usage:
 
 ```bash
 
-  awx-project-disable-scm-clean PROJECT_NAME
+  awx-project-delete PROJECT_NAME
 
 ```
 
-Set `scm_clean = False` in _project_ attributes to disable update
-repository when _job_template_ launch.
+Delete _project_ by name.
+
+```bash
+
+  awx-project-delete ansible_wst_v0.1.0
+
+```
+
+
+### `awx-project-sync`
+
+Usage:
+
+```bash
+
+  awx-project-sync PROJECT_NAME
+
+```
+
+Update _project_ when `scm_revision` don't match with last _commit_ of current _branch_
 
 Example:
 
 ```bash
 
-  awx-project-disable-scm-clean myproject
+  awx-project-sync ansible_freeipa_sssd_tools_v0.4.0
+
+    GET SCM_REVISION FROM PROJECT ansible_freeipa_sssd_tools_v0.4.0
+    PROJECT ansible_freeipa_sssd_tools_v0.4.0 OK LAST_COMMIT (ce779df11eda84e977c1926bf2ce34bfedcf6327) = SCM_REVISION (ce779df11eda84e977c1926bf2ce34bfedcf6327)
+
+  NEXT_TAG=v0.2.2 awx-project-sync
+
+    GET SCM_REVISION FROM PROJECT ansible_freeipa_sssd_tools_v0.2.2
+    BRANCH feature/start-restart-services LAST COMMIT (ce779df1) != PROJECT SCM REVISION (ddcb8feb)
+    UPDATE PROJECT ansible_freeipa_sssd_tools_v0.2.2
+    Resource changed.
+    ===== ==== ======== ======= ==========
+     id   name scm_type scm_url local_path
+    ===== ==== ======== ======= ==========
+    24546 N/A  N/A      N/A     N/A
+    ===== ==== ======== ======= ==========
+    WAITING UPDATE ...
+    GET SCM_REVISION FROM PROJECT ansible_freeipa_sssd_tools_v0.2.2
+    BRANCH feature/start-restart-services LAST COMMIT (ce779df1) != PROJECT SCM REVISION (ddcb8feb)
+    UPDATE PROJECT ansible_freeipa_sssd_tools_v0.2.2
+    Resource changed.
+    ===== ==== ======== ======= ==========
+     id   name scm_type scm_url local_path
+    ===== ==== ======== ======= ==========
+    24547 N/A  N/A      N/A     N/A
+    ===== ==== ======== ======= ==========
+    WAITING UPDATE ...
+    GET SCM_REVISION FROM PROJECT ansible_freeipa_sssd_tools_v0.2.2
+    [ERROR] TOO MANY UPDATES, CANCEL SYNC
 
 ```
-
-
-### `awx-project-list-name`
-
-Usage:
-  awx-project-list-name
-
-List all projects
 
 
 ## `awx role` commands
@@ -2517,32 +3343,6 @@ Example:
 ## `awx setting` commands
 
 
-### `awx-setting-get-tower-url-base`
-
-Usage:
-
-```bash
-
-  awx-setting-get-tower-url-base
-
-
-
-```
-
-Get `TOWER_URL_BASE` from _AWX_ settings.
-
-Return:
-
-
-
-```
-
-  https://awx.local/
-
-
-
-```
-
 ### `awx-setting-get-custom-login-info`
 
 Usage:
@@ -2564,6 +3364,32 @@ Return:
 ```
 
   DEVELOP
+
+
+
+```
+
+### `awx-setting-get-tower-url-base`
+
+Usage:
+
+```bash
+
+  awx-setting-get-tower-url-base
+
+
+
+```
+
+Get `TOWER_URL_BASE` from _AWX_ settings.
+
+Return:
+
+
+
+```
+
+  https://awx.local/
 
 
 
@@ -2595,10 +3421,42 @@ Usage:
 
 ```
 
-Check syntax using shellcheck.
+Check syntax using shellcheck. Group errors by code in result.
+
+Example:
+
+```bash
+
+  awx-shell-check
+
+awx-shell-check                               SC2034
+awx-team-create                               SC2034 SC2236
+
+```
 
 
 ## `awx team` commands
+
+
+### `awx-team-associate-from-csv`
+
+Usage:
+
+```bash
+
+  awx-team-associate-from-csv CSV
+
+```
+
+Associate _user_ to _team_ specified in `.csv` file.
+
+Example:
+
+```bash
+
+  awx-team-associate-from-csv awx-users.csv
+
+```bash
 
 
 ### `awx-team-associate`
@@ -2630,52 +3488,30 @@ Usage:
 Description
 
 
-### `awx-team-associate-from-csv`
-
-Usage:
-
-```bash
-
-  awx-team-associate-from-csv CSV
-
-```
-
-Associate _user_ to _team_ specified in `.csv` file.
-
-Example:
-
-```bash
-
-  awx-team-associate-from-csv awx-users.csv
-
-```bash
-
-
 ## `awx user` commands
-
-
-### `awx-user-create`
-
-Usage:
-  awx-user-create
-
-Description
-
-
-### `awx-user-delete`
-
-Usage:
-  awx-user-delete
-
-Description
 
 
 ### `awx-user-modify-is-superuser`
 
 Usage:
-  awx-user-modify-is-superuser
 
-Description
+```bash
+
+  awx-user-modify-is-superuser USERNAME [SUPERUSER]
+
+```
+
+Modify user type as SysAdmin
+
+Example:
+
+```bash
+
+  awx-user-modify-is-superuser elliot
+
+  awx-user-modify-is-superuser dom false
+
+```
 
 
 ### `awx-user-get`
@@ -2705,6 +3541,22 @@ awx-user-get admin
 ```
 
 
+### `awx-user-create`
+
+Usage:
+  awx-user-create
+
+Description
+
+
+### `awx-user-delete`
+
+Usage:
+  awx-user-delete
+
+Description
+
+
 ### `awx-user-list`
 
 Usage:
@@ -2716,6 +3568,97 @@ Usage:
 ```
 
 List all _users_.
+
+
+## `awx vault` commands
+
+
+### `awx-vault-check`
+
+
+Usage:
+
+```bash
+
+  awx-vault-check YAML
+
+```
+
+Check if the _AWX vaults_ are unbalanced in the _YAML_ file and exit
+with 0 when balanced or exit with error showing unbalanced pattern
+totals.
+
+Expected format:
+
+```
+
+variable_name:
+  __ansible_vault: |
+          $ANSIBLE_VAULT;1.2;AES256;dev
+          31415926535897932384626433832795028841971693993751058209749445923078164062862089
+          98628034825342117067982148086513282306647093844609550582231725359408128481117450
+          28410270193852110555964462294895493038196442881097566593344612847564823378678316
+          52712019091456485669234603486104543266482133936072602491412737245870066063155881
+          7488
+
+```
+
+Example:
+
+```bash
+
+  awx-vault-check group_vars/all.yml
+
+  [ERROR] UNBALANCED (3) __ansible_vault VS (4) $ANSIBLE_VAULT;[0-9.]+;AES256;[a-z]+$
+
+```
+
+
+### `awx-vault2yml`
+
+
+Usage:
+
+```bash
+
+  awx-vault2yml YAML
+
+```
+
+Convert _AWX vault_ format to _YAML_ format.
+
+Example:
+
+```bash
+
+  awx-vault2yml host_vars/spvedev01.yml
+
+```
+
+
+## `awx vault2yml` commands
+
+
+### `awx-vault2yml`
+
+
+Usage:
+
+```bash
+
+  awx-vault2yml YAML
+
+```
+
+Convert _AWX vault_ format to _YAML_ format.
+
+Example:
+
+```bash
+
+  awx-vault2yml host_vars/spvedev01.yml
+
+```
 
 
 ## `awx version` commands
@@ -2761,14 +3704,6 @@ Usage:
 Description
 
 
-### `awx-version-tar-dependencies`
-
-Usage:
-  awx-version-tar-dependencies
-
-Description
-
-
 ### `awx-version-send`
 
 Usage:
@@ -2777,23 +3712,15 @@ Usage:
 Description
 
 
+### `awx-version-tar-dependencies`
+
+Usage:
+  awx-version-tar-dependencies
+
+Description
+
+
 ## `awx workflow` commands
-
-
-### `awx-workflow-get-last-job`
-
-Usage:
-  awx-workflow-get-last-job
-
-Description
-
-
-### `awx-workflow-get-variable`
-
-Usage:
-  awx-workflow-get-variable
-
-Description
 
 
 ### `awx-workflow-job-get`
@@ -2837,46 +3764,6 @@ Example:
 ```
 
 
-### `awx-workflow-job-launch`
-
-Usage:
-
-```bash
-
-  awx-workflow-job-launch WORKFLOW
-
-
-
-```
-
-Launch _workflow_
-
-Example:
-
-```bash
-
-  awx-workflow-job-launch wfw_pve
-
-
-
-```
-
-
-### `awx-workflow-list`
-
-Usage:
-
-```bash
-
-  awx-workflow-list
-
-
-
-```
-
-List all _workflows_.
-
-
 ### `awx-workflow-job-get-hosts`
 
 
@@ -2901,6 +3788,30 @@ Example:
   dev wstdev03
   lab wstlab01
   lab wstlab02
+
+```
+
+
+### `awx-workflow-job-get-limit`
+
+Usage:
+
+```bash
+
+  awx-workflow-job-get-limit WORKFLOW_JOB_ID
+
+```
+
+Get limit of workflow_job.
+
+Example:
+
+```bash
+
+  awx-workflow-job-get-limit 123
+
+  dev
+  lab
 
 ```
 
@@ -2958,26 +3869,111 @@ Show status of _workflow job_
 
 ```
 
-### `awx-workflow-job-get-limit`
+### `awx-workflow-get-last-job`
+
+Usage:
+  awx-workflow-get-last-job
+
+Description
+
+
+### `awx-workflow-get-variable`
+
+Usage:
+  awx-workflow-get-variable
+
+Description
+
+
+### `awx-workflow-job-launch`
 
 Usage:
 
 ```bash
 
-  awx-workflow-job-get-limit WORKFLOW_JOB_ID
+  awx-workflow-job-launch WORKFLOW
+
+
 
 ```
 
-Get limit of workflow_job.
+Launch _workflow_
 
 Example:
 
 ```bash
 
-  awx-workflow-job-get-limit 123
+  awx-workflow-job-launch wfw_pve
 
-  dev
-  lab
+
+
+```
+
+
+### `awx-workflow-list`
+
+Usage:
+
+```bash
+
+  awx-workflow-list
+
+
+
+```
+
+List all _workflows_.
+
+
+### `awx-workflow-delete`
+
+Usage:
+
+```bash
+
+  awx-workflow-delete WORKFLOW
+
+```
+
+Delete _workflow_.
+
+```bash
+
+  awx-workflow-delete wfw_pve_pvs_v0.2.2
+
+```
+
+
+## `awx yml` commands
+
+
+### `awx-yml-diff`
+
+
+Usage:
+
+```bash
+
+  awx-yml-diff SRC_YML AWX_YML
+
+```
+
+Compare and merge AWX group variables with local YAML group file.
+
+Example:
+
+```bash
+
+  awx-yml-diff group_vars/prn.yml group_vars/ftp.yml
+
+  | `key                      ` |   `group_vars/prn.yml  `   |   ` group_vars/ftp.yml  `   |
+  |-----------------------------|----------------------------|-----------------------------|
+  | `             ansible_host` |   `       {{ sprn_ip }}`   | **`        {{ sftp_ip }}`** |
+  | `          apt_setup_proxy` |   `                true`   |   `                 true`   |
+  | `       apt_setup_proxy_ip` |   `      {{ subnet }}.1`   |   `       {{ subnet }}.1`   |
+  | `         apt_setup_source` |   `                true`   |   `                 true`   |
+  | `       cups_lpadmin_users` |   `            ["root"]`   | **`                 null`** |
+  | `   sftp_client_local_user` |   `                null`   | **`{{ sftp_local_user }}`** |
 
 ```
 
