@@ -37,7 +37,7 @@ AWX_CFG="$HOME/.tower_cli.cfg"
 
 die ()
 {
-  printf "%s\\n" "${RED}[ERROR] $1 $NORMAL"
+  stderror "${RED}[ERROR] $1 $NORMAL"
   [[ "$ERROR_SHOW_USAGE" -eq 1 ]] && usage
   exit 1
 }
