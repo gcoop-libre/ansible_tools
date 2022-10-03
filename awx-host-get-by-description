@@ -24,9 +24,25 @@ function usage()
 {
 cat << EOF
 Usage:
-  $BIN
 
-Description
+\`\`\`bash
+
+  $BIN DESCRIPTION [INVENTORY]
+
+\`\`\`
+
+Get _host_ by \`description\`.
+
+Return: \`id name enabled ansible_host primary_macaddress\`
+
+Example:
+
+\`\`\`bash
+
+  $BIN wst050f0247 wst
+  12345 wst-ACDCFAFAFA true 10.10.1.22 ca:fe:ac:dc:fa:fa
+
+\`\`\`
 
 EOF
 exit 0
@@ -34,17 +50,16 @@ exit 0
 
 [[ "$1" =~ ^[-]+(h|help) ]] && usage
 
-
 [[ -z "$1" ]] && die 'EMPTY DESCRIPTION'
 
 DESCRIPTION="$1"
 PREFIX="${DESCRIPTION//-*/}"
 INVENTORY="${PREFIX,,}"
 
-[[ ! -z "$2" ]] && INVENTORY="$2"
+[[ -z "$2" ]] || INVENTORY="$2"
 
-JSON=$(mktemp --suffix .json)
-YAML=$(mktemp --suffix .yml)
+JSON="$(mktemp --suffix .json)"
+YAML="$(mktemp --suffix .yml)"
 
 awx-cli host get               \
   --inventory "$INVENTORY"     \
