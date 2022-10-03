@@ -1,0 +1,107 @@
+#!/bin/bash
+
+# This script comes with ABSOLUTELY NO WARRANTY, use at own risk
+# Copyright (C) 2021 Osiris Alejandro Gomez <osiris@gcoop.coop>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+
+# shellcheck disable=SC1090
+# shellcheck disable=SC2001
+# shellcheck disable=SC2016
+
+DIR_BIN=$(dirname "$0") && source "$DIR_BIN/awx-common"
+
+function usage()
+{
+cat << EOF
+
+Usage:
+
+\`\`\`bash
+
+  $BIN YAML
+
+\`\`\`
+
+Check if the _AWX vaults_ are unbalanced in the _YAML_ file and exit
+with 0 when balanced or exit with error showing unbalanced pattern
+totals.
+
+Expected format:
+
+\`\`\`
+
+variable_name:
+  __ansible_vault: |
+          \$ANSIBLE_VAULT;1.2;AES256;dev
+          31415926535897932384626433832795028841971693993751058209749445923078164062862089
+          98628034825342117067982148086513282306647093844609550582231725359408128481117450
+          28410270193852110555964462294895493038196442881097566593344612847564823378678316
+          52712019091456485669234603486104543266482133936072602491412737245870066063155881
+          7488
+
+\`\`\`
+
+Example:
+
+\`\`\`bash
+
+  $BIN group_vars/all.yml
+
+  [ERROR] UNBALANCED (3) __ansible_vault VS (4) \$ANSIBLE_VAULT;[0-9.]+;AES256;[a-z]+$
+
+\`\`\`
+
+EOF
+exit 0
+}
+
+[[ "$1" =~ ^[-]+(h|help) ]] && usage
+
+TMPI='NONE'
+
+if [[ ! -t 0 ]]
+then
+
+  TMPI="$(mktemp)"
+
+  true > "$TMPI"
+
+  while IFS= read -r PIPED_INPUT
+  do
+    echo "$PIPED_INPUT" >> "$TMPI"
+  done
+
+fi
+
+[[ -z "$1"    ]] || FILE="$1"
+[[ -e "$TMPI" ]] && FILE="$TMPI"
+[[ -e "$FILE" ]] || die "NOT FOUND FILE: $FILE"
+
+VAULT_VAR='__ansible_vault'
+VAULT_AES='\$ANSIBLE_VAULT;[0-9.]+;AES256;[a-z]+$'
+
+TOTAL_VAR="$(grep -Ec "$VAULT_VAR" "$FILE")"
+TOTAL_AES="$(grep -Ec "$VAULT_AES" "$FILE")"
+
+SUM="$((TOTAL_VAR+TOTAL_AES))"
+MOD="$((SUM%2))"
+
+if [[ "$MOD" -ne 0 ]]
+then
+  die "UNBALANCED ($TOTAL_VAR) $VAULT_VAR VS ($TOTAL_AES) $VAULT_AES"
+fi
+
+rm -f "$TMPI"
+exit 0
