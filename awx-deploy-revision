@@ -18,6 +18,8 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 # shellcheck disable=SC1090
+# shellcheck disable=SC1091
+# shellcheck source=/dev/null
 # shellcheck disable=SC2001
 
 [[ -n "$BASH_DEBUG" ]] && set -x
@@ -276,7 +278,7 @@ do
   [[ -e "$JOB_TEMPLATE" ]] || die "NOT FOUND FILE $JOB_TEMPLATE"
 
   JOB_NAME="$(basename "$JOB_TEMPLATE" .json)"
-  JOB_GROUP="/${JOB_NAME%%$DOC_SPLIT*}"
+  JOB_GROUP="/${JOB_NAME%%"$DOC_SPLIT"*}"
   JOB_SHORT="$(echo "$JOB_NAME" | sed 's/_v[0-9]\+.[0-9]\+.[0-9]\+//g')"
   DOC_NAME="$JOB_NAME"
 

@@ -19,6 +19,8 @@
 # based on https://gist.githubusercontent.com/siddharthkrish/32072e6f97d7743b1a7c47d76d2cb06c/raw/0228b9288b0ea7290d32e66189c7b7729e5e0f14/version.sh
 
 # shellcheck disable=SC1090
+# shellcheck disable=SC1091
+# shellcheck source=/dev/null
 
 DIR_BIN=$(dirname "$0") && source "$DIR_BIN/awx-common"
 
