@@ -41,10 +41,10 @@ Example:
   $BIN wst
 
   id  name     enabled
-	150 wstdev01 true
-	151 wstdev02 false
-	152 wstdev03 true
-	153 wstdev04 true
+  150 wstdev01 true
+  151 wstdev02 false
+  152 wstdev03 true
+  153 wstdev04 true
 
 \`\`\`
 
