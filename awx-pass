@@ -16,7 +16,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-# shellcheck disable=SC2116,SC1090
+# shellcheck disable=SC2116
+# shellcheck disable=SC1090
+# shellcheck disable=SC1091
+# shellcheck source=/dev/null
 
 DIR_BIN=$(dirname "$0") && source "$DIR_BIN/awx-common"
 
@@ -47,8 +50,7 @@ exit 0
 
 [[ "$1" =~ ^[-]+(h|help) ]] && usage
 
-
-if [[ ! -z "$ANSIBLE_PASS_PASSWORD_STORE_DIR" ]]
+if [[ -n "$ANSIBLE_PASS_PASSWORD_STORE_DIR" ]]
 then
   export PASSWORD_STORE_DIR="$ANSIBLE_PASS_PASSWORD_STORE_DIR"
 fi
@@ -57,8 +59,9 @@ fi
 
 ENV="${1^^}"
 USR="${ENV}_USER"
+ENV_DIR="${ENV}_PASSWORD_STORE_DIR"
 
-if [[ ! -z "${ENV}_PASSWORD_STORE_DIR" ]]
+if [[ -n "${!ENV_DIR}" ]]
 then
   AWX_PASS_DIR="${ENV}_PASSWORD_STORE_DIR"
   export PASSWORD_STORE_DIR="${!AWX_PASS_DIR}"
@@ -66,7 +69,7 @@ fi
 
 AWX_ENV="$(echo "${!ENV}")"
 AWX_USER="$(echo "${!USR}")"
-AWX_PASS=$(pass "${PASS_PREFIX}${AWX_ENV}${PASS_SUFFIX}${AWX_USER}_password")
+AWX_PASS="$(pass "${PASS_PREFIX}${AWX_ENV}${PASS_SUFFIX}${AWX_USER}_password")"
 
 [[ -z "$AWX_PASS" ]] && die "EMPTY AWX_PASS"
 echo "$AWX_PASS" | xclip -sel clip

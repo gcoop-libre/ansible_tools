@@ -17,9 +17,11 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 # shellcheck disable=SC1090
+# shellcheck disable=SC1091
+# shellcheck source=/dev/null
 # shellcheck disable=SC2086
 
-DIR_BIN=$(dirname "$0") && source "$DIR_BIN/awx-common"
+DIR_BIN="$(dirname "$0")" && source "$DIR_BIN/awx-common"
 
 function usage()
 {
@@ -28,18 +30,23 @@ Usage:
 
 \`\`\`bash
 
-  $BIN JOB_TEMPLATE PROJECT_NAME PLAYBOOK_FILE [YAML]
+  $BIN JOB_TEMPLATE PROJECT_NAME PLAYBOOK_FILE [EXTRA_VARS_YAML]
 
-$(code)
+\`\`\`
 
 Create _job template_ and associate default credentials in _AWX_.
+
+\`\`\`bash
+
+  $BIN wst_wol_v0.1.0 ansible_wst_v0.1.0 wst-wol.yml wst_extra_vars.yml
+
+\`\`\`
 
 EOF
 exit 0
 }
 
 [[ "$1" =~ ^[-]+(h|help) ]] && usage
-
 
 [[ -z "$1" ]] && die "EMPTY JOB_TEMPLATE NAME"
 [[ -z "$2" ]] && die "EMPTY PROJECT NAME"
@@ -50,11 +57,9 @@ PROJECT="$2"
 PLAYBOOK="$3"
 VARIABLES=''
 
-if [[ ! -z "$4" ]]
-then
-  [[ -e "$4" ]] && VARIABLES="--extra-vars @$4"
-fi
+[[ -e "$4" ]] && VARIABLES="--extra-vars @$4"
 
+echo "CREATE JOB_TEMPLATE $NAME"
 awx-cli job_template create       \
   --name "$NAME"                  \
   --job-type run                  \
@@ -64,10 +69,22 @@ awx-cli job_template create       \
   --ask-inventory-on-launch true  \
   --ask-limit-on-launch true $VARIABLES $AWX_DEBUG
 
+if [[ -n "$DEFAULT_SSH_CREDENTIAL" ]]
+then
+
+echo "ASSOCIATE CREDENTIAL $DEFAULT_SSH_CREDENTIAL TO A JOB_TEMPLATE"
 awx-cli job_template associate_credential \
   --job-template "$NAME"                  \
   --credential "$DEFAULT_SSH_CREDENTIAL" $AWX_DEBUG
 
+fi
+
+if [[ -n "$DEFAULT_VAULT_CREDENTIAL" ]]
+then
+
+echo "ASSOCIATE CREDENTIAL $DEFAULT_VAULT_CREDENTIAL TO A JOB_TEMPLATE"
 awx-cli job_template associate_credential \
   --job-template "$NAME"                  \
   --credential "$DEFAULT_VAULT_CREDENTIAL" $AWX_DEBUG
+
+fi

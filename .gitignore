@@ -3,6 +3,7 @@
 *.log
 *.pdf
 *.tar.gz
+awx
 bak/*
 inventory
 job_template

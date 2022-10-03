@@ -1,0 +1,296 @@
+#!/bin/bash
+
+# This script comes with ABSOLUTELY NO WARRANTY, use at own risk
+# Copyright (C) 2022 Osiris Alejandro Gomez <osiris@gcoop.coop>
+# Copyright (C) 2022 Osiris Alejandro Gomez <osiux@osiux.com>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+
+# shellcheck disable=SC1090
+# shellcheck disable=SC1091
+# shellcheck source=/dev/null
+
+[[ -n "$BASH_DEBUG" ]] && set -x
+
+DIR_BIN="$(dirname "$0")" && source "$DIR_BIN/awx-common"
+
+function usage()
+{
+cat << EOF
+Usage:
+
+\`\`\`bash
+
+  $BIN [AWX_DIR] [REVISION] [DEPLOY_TYPE|update]
+
+\`\`\`
+
+Checkout awx specific revision as tag, branch or commit.
+Generate markdown output details of the specific revision.
+
+| variable  | default value     |
+|-----------|-------------------|
+| AWX_DIR   | current directory |
+| REVISION  | last tag          |
+| CHANGELOG | \`awx-v0.1.0.md\` |
+
+Example:
+
+\`\`\`bash
+
+  $BIN awx v0.1.0 update
+
+\`\`\`
+
+EOF
+exit 0
+}
+
+DEPLOY_TYPE='update'
+
+[[ -e "$AWX_CFG"    ]] || die "NOT FOUND .tower_cli.cfg TRY awx-config"
+[[ -n "$AWX_DIR"    ]] || AWX_DIR='.'
+[[ -n "$DEPLOY_DIR" ]] || DEPLOY_DIR='deploy'
+[[ -z "$1"          ]] || AWX_DIR="$1"
+[[ -z "$2"          ]] || REVISION="$2"
+[[ -z "$3"          ]] || DEPLOY_TYPE="$3"
+[[ -d "$AWX_DIR"    ]] || die "NOT FOUND DIRECTORY $AWX_DIR"
+
+DEPLOY_FILE="$DEPLOY_DIR/${DEPLOY_TYPE}.awx"
+
+cd "$AWX_DIR"          || die "FAILED TO CHANGE TO $AWX_DIR"
+[[ -d '.git'        ]] || die "NOT FOUND GIT REPOSITORY"
+
+CURRENT_BRANCH="$(git branch --no-color \
+  | grep '^\* '                         \
+  | cut -d ' ' -f2-                     \
+  | sed 's/HEAD detached at //g'        \
+  | tr -d '() ')"
+
+[[ -n "$LAST_TAG"   ]] || LAST_TAG="$(git tag | sort -Vr | head -1)"
+[[ -n "$REVISION"   ]] || REVISION="$LAST_TAG"
+
+if [[ "$CURRENT_BRANCH" != "$REVISION" ]]
+then
+
+  git fetch >/dev/null 2>/dev/null || die "FAILED TO FECTH"
+
+  git checkout "$REVISION" >/dev/null 2>/dev/null \
+    || die "FAILED TO CHECKOUT $REVISION"
+
+fi
+
+REVISION_TYPE="$(git cat-file -t "$REVISION")"
+
+if [[ "$REVISION_TYPE" != 'tag' ]]
+then
+
+  git pull >/dev/null 2>/dev/null || die "FAILED TO PULL $REVISION"
+
+else
+
+  git checkout "$REVISION" >/dev/null || die "FAILED TO PULL $REVISION"
+
+fi
+
+[[ -d "$DEPLOY_DIR"     ]] || die "NOT FOUND DIR $DEPLOY_DIR"
+
+# EXIT IMMEDIATELY IF A COMMAND EXITS WITH A NON-ZERO STATUS
+set -e
+
+[[ -n "$DIR_NAME"   ]] || DIR_NAME="$(echo "$PWD" | rev | cut -d/ -f1 | rev)"
+[[ -n "$CHANGELOG"  ]] || CHANGELOG="${DIR_NAME}-${REVISION}.md"
+GIT_URL="$(git remote get-url --all origin | sed 's/[a-z\-]\+:[a-zA-Z0-9_\-]\+@//g' | grep http | head -1 | sed 's/\.git$//g')"
+GIT_TAG="$GIT_URL/-/tags/$REVISION"
+COMMIT="$(git show-ref -s "$REVISION")"
+NOW="$(date +%F)"
+TITLE="$DIR_NAME $REVISION"
+
+function changelog_generate()
+{
+
+HEAD=$(cat << EOF
+---
+title: $TITLE
+date: $NOW
+author: CC-BY-SA Osiris Alejandro Gomez osiris@gcoop.coop
+fontsize: 10pt
+---
+
+EOF
+)
+
+printf "%s\n\n" "$HEAD"
+
+printf "## [\`%s\`](%s) [\`%s\`](%s)\n\n" \
+       "$DIR_NAME" \
+       "$GIT_URL"  \
+       "$REVISION" \
+       "$GIT_TAG"
+
+printf " - revision: %s\n" "$GIT_TAG"
+printf " - commit: %s\n" "$COMMIT"
+printf "\n"
+
+printf "\`\`\`\n\n"
+git show --name-only "$REVISION"
+printf "\`\`\`\n\n"
+
+printf "### %s\n\n" 'resources'
+
+printf "| %-20s | %-40s | %-65s |\n"   \
+        'resource_type' \
+        'resource_name' \
+        'description'
+
+printf "| %-20s | %-40s | %-65s |\n"   \
+       ' ' ' ' ' ' | sed 's/ /-/g'
+
+if [[ -e "$DEPLOY_FILE" ]]
+then
+
+grep ^credential "$DEPLOY_FILE" | sort | while read -r JSON
+do
+
+  [[ -e "$JSON" ]] || continue
+	JQ='.[].name'
+  CREDENTIAL="$(jq -r "$JQ" "$JSON")"
+  JQ='.[].description'
+  DESCRIPTION="$(jq -r "$JQ" "$JSON")"
+  [[ -z "$CREDENTIAL" ]] && continue
+
+  printf "| %-20s | %-40s | %-65s |\n" \
+          'credential' "$CREDENTIAL" "$DESCRIPTION"
+
+done
+
+grep ^project "$DEPLOY_FILE" | sort | while read -r JSON
+do
+
+  [[ -e "$JSON" ]] || continue
+  PROJECT="$(basename "$JSON" .json)"
+  JQ='.[].description'
+  DESCRIPTION="$(jq -r "$JQ" "$JSON" | sed 's/null//g')"
+
+  printf "| %-20s | \`%-38s\` | %-65s |\n" \
+          '_project_' "$PROJECT" "$DESCRIPTION"
+
+done | sort -u
+
+grep ^inventory "$DEPLOY_FILE" | sort | while read -r JSON
+do
+
+  [[ -e "$JSON" ]] || continue
+
+  JQ='.[].asset_relation.inventory_source[].source_project'
+  INVENTORY_SOURCE="$(jq -r "$JQ" "$JSON")"
+  PROJECT_SOURCE="project/$INVENTORY_SOURCE.json"
+  INVENTORY="$(basename "$JSON" .json)"
+  [[ -e "$PROJECT_SOURCE" ]] || continue
+
+  printf "| %-20s | \`%-38s\` | %-65s |\n" \
+          '_inventory_' "$INVENTORY" ' '
+
+  JQ='.[].asset_relation.inventory_source[].name'
+  INVENTORY_SOURCE_NAME="$(jq -r "$JQ" "$JSON")"
+  JQ='.[].description'
+  DESCRIPTION="$(jq -r "$JQ" "$JSON")"
+  printf "| %-20s | \`%-38s\` | %-65s |\n" \
+          '_inventory_source_' "$INVENTORY_SOURCE_NAME" "$DESCRIPTION"
+
+done
+
+grep ^job_template "$DEPLOY_FILE" | sort | while read -r JSON
+do
+
+  [[ -e "$JSON" ]] || continue
+  JOB_TEMPLATE="$(basename "$JSON" .json)"
+  JQ='.[].description'
+  DESCRIPTION="$(jq -r "$JQ" "$JSON")"
+  printf "| %-20s | \`%-38s\` | %-65s |\n" \
+         '_job_template_' "$JOB_TEMPLATE" "$DESCRIPTION"
+
+done
+
+grep ^workflow "$DEPLOY_FILE" | sort | while read -r JSON
+do
+
+  [[ -e "$JSON" ]] || continue
+  WORKFLOW="$(basename "$JSON" .json)"
+  JQ='.[].description'
+  DESCRIPTION="$(jq -r "$JQ" "$JSON")"
+  printf "| %-20s | \`%-38s\` | %-65s |\n" \
+         '_workflow_' "$WORKFLOW" "$DESCRIPTION"
+
+done
+
+fi
+
+TEAM_ASSOCIATE="$DEPLOY_DIR/team-associate.awx"
+if [[ -e "$TEAM_ASSOCIATE" ]]
+then
+  while read -r USERNAME TEAM
+  do
+
+    printf "| %-20s | \`%-38s\` | %-65s |\n" \
+            '_team_user_' "$TEAM $USERNAME" '-'
+
+  done < "$TEAM_ASSOCIATE"
+fi
+
+TMP="$(mktemp)"
+GRANT_FILE="$DEPLOY_DIR/grant.awx"
+
+if [[ -e "$GRANT_FILE" ]]
+then
+
+printf "\n"
+printf "### %s\n\n" 'permissions'
+
+    printf "| %-20s | %-40s | %-10s | %-20s |\n"   \
+            'resource_type' \
+            'resource_name' \
+            'type' \
+            'team'
+    printf "| %-20s | %-40s | %-10s | %-20s |\n"   \
+            ' ' ' ' ' ' ' ' | sed 's/ /-/g'
+
+for i in credential inventory project job_template workflow
+do
+
+  awk "/^$i/" "$GRANT_FILE" > "$TMP"
+
+  while read -r RESOURCE_TYPE RESOURCE_NAME TYPE TEAM
+  do
+    printf "| %-20s | \`%-38s\` | %-10s | %-20s |\n"   \
+						"_${RESOURCE_TYPE}_" \
+						"$RESOURCE_NAME"     \
+						"_${TYPE}_"          \
+						"_${TEAM}_"
+
+  done < "$TMP"
+
+done
+
+fi
+
+}
+
+changelog_generate > "$CHANGELOG" && echo "GENERATE $CHANGELOG"
+
+mv "$CHANGELOG" "$TMP"
+git checkout "$CURRENT_BRANCH" >/dev/null 2>/dev/null
+[[ -e "$CHANGELOG" ]] && SHOW_DIFF=1
+mv -f "$TMP" "$CHANGELOG"
+[[ "$SHOW_DIFF" -eq 1 ]] && git diff

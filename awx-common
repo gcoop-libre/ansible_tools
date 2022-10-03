@@ -23,16 +23,23 @@
 # shellcheck disable=SC2086
 # shellcheck disable=SC2181
 
+[[ -n "$TERM" ]] && export TERM='screen-256color'
+
 RED="$(tput setaf 196)"
 GREEN="$(tput setaf 46)"
+NORMAL="$(tput sgr0)"
 DIR_REAL="$(realpath "$DIR_BIN")"
 DIR_BASE="$(dirname "$DIR_REAL")"
 AWX_CONFIG="$HOME/.awx-config"
+AWX_BACKUP="$HOME/.awx-config-$(date +%s).bak"
 BIN=$(basename "$0")
+AWX_CFG="$HOME/.tower_cli.cfg"
 
 die ()
 {
-  printf "%s\\n" "${RED}[ERROR] $1 $NORMAL" && exit 1
+  stderror "${RED}[ERROR] $1 $NORMAL"
+  [[ "$ERROR_SHOW_USAGE" -eq 1 ]] && usage
+  exit 1
 }
 
 log ()
@@ -45,6 +52,7 @@ log ()
 log_send_file()
 {
   MAX_COLS="$(tput cols)"
+  awx_cfg_read
   echo "SEND $1 to $AWX_CFG_HOST *****"
 }
 
@@ -57,24 +65,6 @@ stderror ()
 {
   echo >&2 "$1"
 }
-
-[[ ! -e "$AWX_CONFIG" ]] && die "NOT FOUND FILE: $AWX_CONFIG"
-
-eval $(sed '/:/!d;/^ *#/d;s/:/ /;' < "$AWX_CONFIG" | while read -r k v
-do
-    str="$k='$v'"
-    echo "$str"
-done)
-
-[[ -z "$HTTP_PROXY" ]] || stderror "Using HTTP_PROXY=$HTTP_PROXY"
-
-# check dependencies
-
-for i in awx-cli jq yq
-do
-  command -v "$i" >/dev/null || die "try: pip install $i " \
-    | sed 's/awx-cli/ansibel-tower-cli/g'
-done
 
 markdown()
 {
@@ -113,7 +103,7 @@ get_file_list()
   DIR='.'
 
   [[ -z "$1" ]] && exit 1
-  [[ ! -z "$2" ]] && DIR="$2"
+  [[ -z "$2" ]] || DIR="$2"
 
   find -L "$DIR" -type f -iname "$1" | while read -r FILE
   do
@@ -155,8 +145,8 @@ filelist_send_all()
 {
   local FILE
 
-  [[   -z "$1" ]] && exit 1
-  [[ ! -e "$1" ]] && exit 1
+  [[   -z "$1" ]] && die "EMPTY FILE"
+  [[   -e "$1" ]] || die "NOT FOUND FILE"
 
   while read -r FILE
   do
@@ -184,13 +174,18 @@ grant_inventory_use()
     --inventory "$1"
 }
 
+grant_inventory()
+{
+  grant_inventory_use "$1" "$2"
+}
+
 grant_project()
 {
   local TYPE
 
   TYPE='use'
 
-  [[ ! -z "$3" ]] && TYPE="$3"
+  [[ -z "$3" ]] || TYPE="$3"
 
   echo awx-cli role grant \
     "$AWX_DEBUG"          \
@@ -215,7 +210,7 @@ grant_job_template()
 
   TYPE='execute'
 
-  [[ ! -z "$3" ]] && TYPE="$3"
+  [[ -z "$3" ]] || TYPE="$3"
 
   echo awx-cli role grant \
     "$AWX_DEBUG"          \
@@ -240,7 +235,7 @@ grant_workflow()
 
   TYPE='execute'
 
-  [[ ! -z "$3" ]] && TYPE="$3"
+  [[ -z "$3" ]] || TYPE="$3"
 
   echo awx-cli role grant \
     $AWX_DEBUG            \
@@ -309,7 +304,7 @@ host_disable()
 log_ansible_proxmox_kvm()
 {
 
-  [[ ! -e "$1" ]] && die "NOT FOUND FILE $1"
+  [[ -e "$1" ]] || die "NOT FOUND FILE $1"
 
   local DATE HOST VMID STATE
 
@@ -374,7 +369,17 @@ awx_ad_hoc_shell_footer
 
 awx_cfg_get()
 {
-  grep "$1" "$HOME/.tower_cli.cfg" | cut -d= -f2 | tr -d ' '
+  local TYPE
+  TYPE="$(file -b --mime-type "$AWX_CFG")"
+  [[ "$TYPE" != 'text/plain' ]] && die "INVALID $AWX_CFG"
+  grep "$1" "$AWX_CFG" | cut -d= -f2 | tr -d ' '
+}
+
+awx_cfg_read()
+{
+  AWX_CFG_HOST="$(awx_cfg_get 'host')"
+  AWX_CFG_PASS="$(awx_cfg_get 'pass')"
+  AWX_CFG_USER="$(awx_cfg_get 'user')"
 }
 
 wait_seconds()
@@ -382,7 +387,7 @@ wait_seconds()
   local S
   S=5
 
-  [[ ! -z "$2" ]] && S="$2"
+  [[ -z "$2" ]] || S="$2"
 
   for i in $(seq "$S" -1 0)
   do
@@ -502,6 +507,8 @@ function get_url()
   [[ "$1" = 'job_template' ]] && P='#/templates/job_template'
   [[ "$1" = 'workflow'     ]] && P='#/templates/workflow_job_template'
 
+  awx_cfg_read
+
   printf "%s/%s/%s" "$AWX_CFG_HOST" "$P" "$2"
 }
 
@@ -554,6 +561,57 @@ ssh_config()
 
 }
 
-AWX_CFG_HOST="$(awx_cfg_get 'host')"
-AWX_CFG_PASS="$(awx_cfg_get 'pass')"
-AWX_CFG_USER="$(awx_cfg_get 'user')"
+config_read()
+{
+
+  eval $(sed '/:/!d;/^ *#/d;s/:/ /;' < "$AWX_CONFIG" | while read -r k v
+  do
+      str="$k='$v'"
+      echo "$str"
+  done)
+
+  # use proxy
+  [[ -z "$HTTP_PROXY" ]] || stderror "Using HTTP_PROXY=$HTTP_PROXY"
+
+}
+
+dependencies_verify()
+{
+
+  for i in awx-cli jq yq
+  do
+    command -v "$i" >/dev/null || die "try: pip install $i " \
+      | sed 's/awx-cli/ansibel-tower-cli/g'
+  done
+
+}
+
+config_verify()
+{
+
+  if [[ ! -e "$AWX_CONFIG" ]]
+  then
+
+    if [[ ! "$1" =~ ^[-]+(c|config) ]]
+    then
+      echo "NOT FOUND FILE: $AWX_CONFIG TRY awx-config -c" && exit 1
+    fi
+
+    return 1
+
+  fi
+
+}
+
+main ()
+{
+
+  if config_verify "$1"
+  then
+    dependencies_verify
+    config_read
+  fi
+
+}
+
+main "$1"

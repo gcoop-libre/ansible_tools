@@ -1,0 +1,147 @@
+#!/bin/bash
+
+# This script comes with ABSOLUTELY NO WARRANTY, use at own risk
+# Copyright (C) 2022 Osiris Alejandro Gomez <osiux@osiux.com>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+
+# shellcheck disable=SC1090
+# shellcheck disable=SC1091
+# shellcheck source=/dev/null
+# shellcheck disable=SC2086
+
+DIR_BIN="$(dirname "$0")" && source "$DIR_BIN/awx-common"
+
+function usage()
+{
+cat << EOF
+Usage:
+
+\`\`\`bash
+
+  $BIN PROJECT_NAME
+
+\`\`\`
+
+Update _project_ when \`scm_revision\` don't match with last _commit_ of current _branch_
+
+Example:
+
+\`\`\`bash
+
+  $BIN ansible_freeipa_sssd_tools_v0.4.0
+
+    GET SCM_REVISION FROM PROJECT ansible_freeipa_sssd_tools_v0.4.0
+    PROJECT ansible_freeipa_sssd_tools_v0.4.0 OK LAST_COMMIT (ce779df11eda84e977c1926bf2ce34bfedcf6327) = SCM_REVISION (ce779df11eda84e977c1926bf2ce34bfedcf6327)
+
+  NEXT_TAG=v0.2.2 $BIN
+
+    GET SCM_REVISION FROM PROJECT ansible_freeipa_sssd_tools_v0.2.2
+    BRANCH feature/start-restart-services LAST COMMIT (ce779df1) != PROJECT SCM REVISION (ddcb8feb)
+    UPDATE PROJECT ansible_freeipa_sssd_tools_v0.2.2
+    Resource changed.
+    ===== ==== ======== ======= ==========
+     id   name scm_type scm_url local_path
+    ===== ==== ======== ======= ==========
+    24546 N/A  N/A      N/A     N/A
+    ===== ==== ======== ======= ==========
+    WAITING UPDATE ...
+    GET SCM_REVISION FROM PROJECT ansible_freeipa_sssd_tools_v0.2.2
+    BRANCH feature/start-restart-services LAST COMMIT (ce779df1) != PROJECT SCM REVISION (ddcb8feb)
+    UPDATE PROJECT ansible_freeipa_sssd_tools_v0.2.2
+    Resource changed.
+    ===== ==== ======== ======= ==========
+     id   name scm_type scm_url local_path
+    ===== ==== ======== ======= ==========
+    24547 N/A  N/A      N/A     N/A
+    ===== ==== ======== ======= ==========
+    WAITING UPDATE ...
+    GET SCM_REVISION FROM PROJECT ansible_freeipa_sssd_tools_v0.2.2
+    [ERROR] TOO MANY UPDATES, CANCEL SYNC
+
+\`\`\`
+
+EOF
+exit 0
+}
+
+[[ "$1" =~ ^[-]+(h|help) ]] && usage
+
+[[ -n "$VERSION" ]] || VERSION='MINOR'
+[[ -n "$WAITING" ]] || WAITING=6
+
+if [[ -z "$1"  ]]
+then
+
+  [[ -n "$PROJECT" ]] || PROJECT="$(basename "${PWD//_role_/_}")"
+
+  if [[ -z "$NEXT_TAG" ]]
+  then
+    LAST_TAG="$(git-last-tag)"
+    NEXT_TAG="$(bump-version "$LAST_TAG" "$VERSION")"
+  fi
+
+  AWX_PROJECT="${PROJECT}_${NEXT_TAG}"
+
+else
+
+  AWX_PROJECT="$1"
+
+fi
+
+function project_get_scm_revision()
+{
+
+echo "GET SCM_REVISION FROM PROJECT $AWX_PROJECT"
+SCM_REVISION="$(awx-project-get-variable "$AWX_PROJECT" scm_revision)"
+[[ -z "$SCM_REVISION" ]] && die "EMPTY SCM_REVISION"
+
+REVISION="${SCM_REVISION::8}"
+
+}
+
+project_sync()
+{
+
+project_get_scm_revision
+
+if [[ "$LAST_COMMIT" = "$SCM_REVISION" ]]
+then
+  printf "PROJECT %s OK LAST_COMMIT (%s) = SCM_REVISION (%s)\\n" \
+         "$AWX_PROJECT" "$LAST_COMMIT" "$SCM_REVISION"
+  exit 0
+fi
+
+[[ "$UPDATES" -gt 2 ]] && die "TOO MANY UPDATES, CANCEL SYNC"
+
+printf "BRANCH %s LAST COMMIT (%s) != PROJECT SCM REVISION (%s)\\n" \
+       "$CURRENT_BRANCH" "$COMMIT" "$REVISION"
+printf "UPDATE PROJECT %s\\n" "$AWX_PROJECT"
+awx-project-update "$AWX_PROJECT"
+UPDATES=$((UPDATES+1))
+printf "WAITING UPDATE ...\\n"
+sleep "$WAITING"
+project_sync
+
+}
+
+# EXIT IMMEDIATELY IF A COMMAND EXITS WITH A NON-ZERO STATUS
+set -e
+
+UPDATES=1
+CURRENT_BRANCH="$(git branch | grep -E '^\*' | tr -d ' *')"
+LAST_COMMIT="$(git-log-lastcommit)"
+COMMIT="${LAST_COMMIT::8}"
+
+project_sync

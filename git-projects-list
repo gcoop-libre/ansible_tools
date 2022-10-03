@@ -17,6 +17,8 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 # shellcheck disable=SC1090
+# shellcheck disable=SC1091
+# shellcheck source=/dev/null
 
 DIR_BIN=$(dirname "$0") && source "$DIR_BIN/awx-common"
 
@@ -47,14 +49,14 @@ exit 0
 
 [[ "$1" =~ ^[-]+(h|help) ]] && usage
 
-[[ ! -z "$GITLAB_CI_TOKEN" ]] && TOKEN="$GITLAB_CI_TOKEN"
-[[ -z "$TOKEN" ]] && die "NOT FOUND TOKEN"
+[[ -z "$GITLAB_CI_TOKEN" ]] || TOKEN="$GITLAB_CI_TOKEN"
+[[ -z "$TOKEN"           ]] && die "NOT FOUND TOKEN"
 
 function get_projects()
 {
 
 local PAGE=1
-[[ ! -z "$1" ]] && PAGE="$1"
+[[ -z "$1" ]] || PAGE="$1"
 
 URL="$SCM_URL_API/projects?page=$PAGE&per_page=100&membership=true"
 JSON="git-projects-${PAGE}.json"

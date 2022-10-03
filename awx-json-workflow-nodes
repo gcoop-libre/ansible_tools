@@ -1,0 +1,106 @@
+#!/bin/bash
+
+# This script comes with ABSOLUTELY NO WARRANTY, use at own risk
+# Copyright (C) 2022 Osiris Alejandro Gomez <osiux@osiux.com>
+# Copyright (C) 2022 Osiris Alejandro Gomez <osiris@gcoop.coop>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+
+# shellcheck disable=SC1090
+# shellcheck disable=SC1091
+# shellcheck source=/dev/null
+
+DIR_BIN=$(dirname "$0") && source "$DIR_BIN/awx-common"
+
+function usage()
+{
+cat << EOF
+
+Usage:
+
+\`\`\`bash
+
+  $BIN SRC_YML AWX_YML
+
+\`\`\`
+
+Show _workflow_ nodes grouped by common nodes
+
+Example:
+
+\`\`\`bash
+
+	$BIN workflow/wfw_pve_vms_v0.2.2.json
+
+	wfw_vms_ans_v0.2.4  apt_set_v0.1.1 vms_acs_v0.1.0 vms_cin_v0.2.0 vms_ans_v0.2.2
+	wfw_vms_ftp_v0.2.2  apt_set_v0.1.1 vms_acs_v0.1.0 vms_cin_v0.2.0 vms_ftp_v0.2.0
+	wfw_vms_pxe_v0.5.2  apt_set_v0.1.1 vms_acs_v0.1.0 vms_cin_v0.2.0 vms_pxe_v0.5.0
+	wfw_vms_log_v0.1.2  apt_set_v0.1.1 vms_acs_v0.1.0 vms_cin_v0.2.0 vms_log_v0.1.0
+	wfw_vms_git_v0.1.2  apt_set_v0.1.1 vms_acs_v0.1.0 vms_cin_v0.2.0 vms_git_v0.3.1
+	wfw_vms_prn_v0.1.2  apt_set_v0.1.1 vms_acs_v0.1.0 vms_cin_v0.2.0 vms_prn_v0.1.0
+	wfw_vms_cdn_v0.2.2  apt_set_v0.1.1 vms_acs_v0.1.0 vms_cin_v0.2.0 vms_cdn_v0.2.0
+	wfw_vms_apt_v1.10.4 apt_set_v0.1.1 vms_acs_v0.1.0 vms_cin_v0.2.0 vms_apt_v1.10.2
+	wfw_vms_rep_v0.1.1  apt_set_v0.1.1 vms_acs_v0.1.0 vms_cin_v0.2.0 vms_rep_v0.1.0
+
+\`\`\`
+
+EOF
+exit 0
+}
+
+[[ "$1" =~ ^[-]+(h|help) ]] && usage
+
+
+[[ -n "$WORKFLOW" ]] || WORKFLOW="$1"
+[[ -e "$WORKFLOW" ]] || die "NOT FOUND WORKFLOW $WORKFLOW"
+
+NODES="$(mktemp)"
+COMMON="$(mktemp)"
+NAME="$(basename "$WORKFLOW" .json)"
+SUFFIX="$(echo "$NAME" | cut -d_ -f3)"
+
+awx-json-get-unified-job-name "$WORKFLOW" > "$NODES"
+
+while read -r NODE
+do
+  awx-json-get-unified-job-name "workflow/$NODE.json"
+done < "$NODES"      \
+  | cut -d_ -f1,2    \
+  | sort             \
+  | uniq -c          \
+  | grep -v ' 1 '    \
+  | awk '{print $2}' > "$COMMON"
+
+while read -r NODE
+do
+
+  P="$(echo "$NODE" | cut -d '_' -f3)"
+
+  printf "%-20s" "$NODE"
+  while read -r N
+  do
+
+    J="workflow/$NODE.json"
+    n="$(awx-json-get-unified-job-name "$J" | grep "$N")"
+    printf "%-20s" "$n"
+
+  done < "$COMMON"
+
+  p="$(awx-json-get-unified-job-name "$J" | grep "${SUFFIX}_${P}")"
+  printf "%-20s\\n" "$p"
+
+done < "$NODES"
+
+rm -f "$NODES"
+rm -f "$COMMON"

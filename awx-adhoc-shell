@@ -17,6 +17,8 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 # shellcheck disable=SC1090
+# shellcheck disable=SC1091
+# shellcheck source=/dev/null
 
 DIR_BIN=$(dirname "$0") && source "$DIR_BIN/awx-common"
 
@@ -56,10 +58,11 @@ LIMIT="$2"
 [[ -z "$3" ]] && die "EMPTY MODULE_ARGS"
 MODULE_ARGS="$3"
 
-BECOME='true'
-JOB_TYPE='run'
-MODULE_NAME='shell'
-VERBOSE='more_verbose'
+[[ -n "$BECOME"                 ]] || BECOME='true'
+[[ -n "$JOB_TYPE"               ]] || JOB_TYPE='run'
+[[ -n "$MODULE_NAME"            ]] || MODULE_NAME='shell'
+[[ -n "$VERBOSE"                ]] || VERBOSE='more_verbose'
+[[ -n "$DEFAULT_SSH_CREDENTIAL" ]] || DEFAULT_SSH_CREDENTIAL='ssh_ansible'
 
 if [[ "$LIMIT" = 'nolimit' ]]
 then

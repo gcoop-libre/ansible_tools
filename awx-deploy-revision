@@ -1,0 +1,337 @@
+#!/bin/bash
+
+# This script comes with ABSOLUTELY NO WARRANTY, use at own risk
+# Copyright (C) 2022 Osiris Alejandro Gomez <osiris@gcoop.coop>
+# Copyright (C) 2022 Osiris Alejandro Gomez <osiux@osiux.com>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+
+# shellcheck disable=SC1090
+# shellcheck disable=SC1091
+# shellcheck source=/dev/null
+# shellcheck disable=SC2001
+
+[[ -n "$BASH_DEBUG" ]] && set -x
+DIR_BIN="$(dirname "$0")" && source "$DIR_BIN/awx-common"
+
+function die()
+{
+  printf "%s\\n" "${RED}[ERROR] $1 $NORMAL"
+  if [[ -n "$DOC_TMP" ]]
+  then
+    echo "CLEAN TEMPORAL FILES IN $DOC_TMP ..."
+    [[ -d "$DOC_TMP" ]] && rm -rf "$DOC_TMP"
+  fi
+  exit 1
+}
+
+function usage()
+{
+cat << EOF
+Usage:
+
+\`\`\`bash
+
+  $BIN awx v0.1.0 [DEPLOY_TYPE|update]
+
+\`\`\`
+
+Checkout and deploy awx specific revision as tag, branch or commit.
+Send all resources (projects, job_templates, workflows) defined in file.
+
+Example:
+
+\`\`\`bash
+
+  $BIN awx v0.1.0 update
+
+\`\`\`
+
+EOF
+exit 0
+}
+
+[[ -e "$AWX_CFG" ]] || die "NOT FOUND .tower_cli.cfg TRY awx-config"
+
+AWX_DIR="$1"
+REVISION="$2"
+DEPLOY_TYPE='update'
+[[ -n "$REGEX_VERSION"   ]] || REGEX_VERSION='v[0-9]+\.[0-9]+\.[0-9]+'
+[[ -n "$REGEX_REVISION"  ]] || REGEX_REVISION='(master|release|hotfix|tag)'
+[[ -n "$DONT_PULL"       ]] || DONT_PULL=0
+[[ -n "$DONT_FETCH_TAGS" ]] || DONT_FETCH_TAGS=0
+[[ -n "$DOC_CHECK"       ]] || DOC_CHECK=1
+[[ -n "$DOC_CLONE"       ]] || DOC_CLONE=1
+[[ -n "$DOC_TYPE"        ]] || DOC_TYPE='.md'
+[[ -n "$DOC_SPLIT"       ]] || DOC_SPLIT='_'
+[[ -n "$DOC_JOB_SHORT"   ]] || DOC_JOB_SHORT=1
+
+if [[ -n "$DOC_USER"     ]]
+then
+  [[ -n "$DOC_PASS"      ]] || DOC_PASS="$DOC_USER:$DOC_TOKEN@"
+fi
+
+[[ -n "$DOC_DIR"         ]] || DOC_DIR='/tmp'
+[[ -n "$DOC_PROTO"       ]] || DOC_PROTO='https://'
+[[ -n "$ORIGIN"          ]] || ORIGIN='origin'
+
+if [[ -z "$DOC_URL"      ]]
+then
+
+  if [[ -n "$DOC_HOST"   ]]
+  then
+    if [[ -n "$DOC_REPO" ]]
+    then
+      DOC_URL="${DOC_PROTO}${DOC_PASS}$DOC_HOST/$JOB_GROUP/$DOC_REPO"
+    fi
+  else
+
+URL="$(git remote get-url --all "$ORIGIN" | head -1 | sed 's/>git$//g')"
+GIT="$(echo "$URL" | rev | cut -d/ -f2- | rev)"
+GRP="$(echo "$URL" | rev | cut -d/ -f2  | rev)"
+DOC_URL="$GIT/$GRP.wiki.git"
+
+  fi
+fi
+
+DIR_NAME="$(echo "$PWD" | rev | cut -d/ -f1 | rev)"
+[[ -n "$DOC_TMP"        ]] || DOC_TMP="$DOC_DIR/$DIR_NAME.$(date +%s)"
+MSK_URL="$(echo "$DOC_URL" | sed 's/[a-z\-]\+:[a-zA-Z0-9_\-]\+@//g')"
+[[ -n "$DOC_WIKI"       ]] || DOC_WIKI="${MSK_URL//.wiki.git/\/-\/wikis}"
+
+[[ -z "$1"              ]] && die "EMPTY AWX DIR"
+[[ -z "$2"              ]] && die "EMPTY REVISION"
+[[ -z "$3"              ]] || DEPLOY_TYPE="$3"
+[[ -d "$AWX_DIR"        ]] || die "NOT FOUND AWX DIR"
+[[ -z "$DEPLOY_DIR"     ]] && DEPLOY_DIR='deploy'
+DEPLOY_FILE="$DEPLOY_DIR/${DEPLOY_TYPE}.awx"
+
+cd "$AWX_DIR"              || die "FAILED TO CHANGE TO AWX DIR"
+[[ -d '.git'            ]] || die "NOT FOUND GIT REPOSITORY"
+CURRENT_BRANCH="$(git branch --no-color | grep '^\* ' | cut -d ' ' -f2)"
+
+git fetch --all            || die "FAILED TO FECTH"
+
+if [[ "$CURRENT_BRANCH" != "$REVISION" ]]
+then
+  git checkout "$REVISION" || die "FAILED TO CHECKOUT $REVISION"
+fi
+
+if [[ -n "$GIT_RESET_HARD_REVISION" ]]
+then
+  git reset --hard "$ORIGIN/$REVISION" \
+    || die "FAILED TO HARD RESET $REVISION"
+fi
+
+REVISION_TYPE="$(git cat-file -t "$REVISION")"
+REVISION_BRANCH="${REVISION%%/*}"
+
+if [[ "$REVISION_TYPE" != 'tag' ]]
+then
+
+  if [[ "$DONT_PULL" -eq 0 ]]
+  then
+
+    # FIXME fatal: refusing to merge unrelated histories
+    git pull --allow-unrelated-histories "$ORIGIN" "$REVISION" \
+      || die "FAILED TO PULL $REVISION"
+
+  fi
+
+else
+
+  REVISION_BRANCH='tag'
+  if [[ "$DONT_FETCH_TAGS" -eq 0 ]]
+  then
+
+    git fetch --tags       || die "FAILED TO FETCH TAG $REVISION"
+
+  fi
+
+fi
+
+[[ -d "$DEPLOY_DIR"     ]] || die "NOT FOUND DIR $DEPLOY_DIR"
+[[ -e "$DEPLOY_FILE"    ]] || echo "NOT FOUND FILE $DEPLOY_FILE"
+[[ -z "$ORGANIZATION"   ]] && ORGANIZATION="$DEFAULT_ORGANIZATION"
+
+# EXIT IMMEDIATELY IF A COMMAND EXITS WITH A NON-ZERO STATUS
+set -e
+
+if [[ -e "$DEPLOY_FILE" ]]
+then
+
+grep ^team "$DEPLOY_FILE" | sort | while read -r JSON
+do
+
+  [[ -e "$JSON" ]] || die "NOT FOUND FILE $JSON"
+	JQ='.[].name'
+  TEAM="$(jq -r "$JQ" "$JSON")"
+
+  echo "SEND TEAM $TEAM"
+  bash -c "awx-cli send $JSON" || die "FAILED TO CREATE TEAM $TEAM"
+
+done
+
+grep ^credential "$DEPLOY_FILE" | sort | while read -r CREDENTIAL
+do
+
+  [[ -e "$CREDENTIAL" ]] || die "NOT FOUND FILE $CREDENTIAL"
+	JQ='.[].name'
+  CREDENTIAL_NAME="$(jq -r "$JQ" "$CREDENTIAL")"
+  [[ -z "$CREDENTIAL_NAME" ]] && die "EMPTY NAME IN $CREDENTIAL"
+
+  echo "FIND CREDENTIAL $CREDENTIAL_NAME"
+  echo "awx-cli credential get -n '$CREDENTIAL_NAME'" | bash \
+    || die "FAILED FIND CREDENTIAL $CREDENTIAL_NAME"
+
+done
+
+grep ^project "$DEPLOY_FILE" | sort | while read -r PROJECT
+do
+
+  [[ -e "$PROJECT" ]] || die "NOT FOUND FILE $PROJECT"
+  PROJECT_NAME="$(basename "$PROJECT" .json)"
+  PROJECT_VERSION="$(echo "$PROJECT_NAME" | grep -Eo "$REGEX_VERSION")"
+  JQ_NAME="$(jq -r '.[].name' "$PROJECT")"
+  JQ_BRANCH="$(jq -r '.[].scm_branch' "$PROJECT")"
+
+  if [[ "$REVISION_BRANCH" =~ $REGEX_REVISION ]]
+  then
+
+  [[ "$JQ_NAME" = "$PROJECT_NAME" ]] \
+    || die "PROJECT $PROJECT_NAME NOT MATCH name: $JQ_NAME"
+
+  [[ "$JQ_BRANCH" = "$PROJECT_VERSION" ]] \
+    || die "PROJECT $PROJECT_NAME NOT MATCH version: $PROJECT_VERSION \
+WITH scm_branch: $JQ_BRANCH"
+
+  fi
+
+  echo "SEND PROJECT $PROJECT_NAME"
+  echo "awx-cli send $PROJECT" | bash \
+    || die "FAILED SEND PROJECT $PROJECT_NAME"
+
+  echo "UPDATE PROJECT $PROJECT_NAME"
+  echo "awx-cli project update -n $PROJECT_NAME" | bash \
+    || die "FAILED UPDATE PROJECT $PROJECT_NAME"
+
+done
+
+grep ^inventory "$DEPLOY_FILE" | sort | while read -r INVENTORY
+do
+
+  [[ -e "$INVENTORY" ]] || die "NOT FOUND FILE $INVENTORY"
+
+  JQ='.[].asset_relation.inventory_source[].source_project'
+  INVENTORY_SOURCE="$(jq -r "$JQ" "$INVENTORY")"
+  PROJECT_SOURCE="project/$INVENTORY_SOURCE.json"
+
+  if [[ ! -e "$PROJECT_SOURCE" ]]
+  then
+    stderror "NOT FOUND FILE $PROJECT_SOURCE SKIP SEND $INVENTORY"
+    continue
+  fi
+
+  echo "SEND PROJECT $INVENTORY_SOURCE"
+  echo "awx-cli send $PROJECT_SOURCE" | bash \
+    || die "FAILED SEND PROJECT $INVENTORY_SOURCE"
+
+  echo "UPDATE PROJECT $INVENTORY_SOURCE"
+  echo "awx-cli project update -n $INVENTORY_SOURCE" | bash \
+    || die "FAILED UPDATE PROJECT $INVENTORY_SOURCE"
+
+  printf "\n"
+  echo "GET scm_revision AND scm_branch IN PROJECT $INVENTORY_SOURCE"
+  printf "\n"
+  JQ=".scm_revision,\" \",.scm_branch"
+  AWX_CMD="awx-cli project get -n $INVENTORY_SOURCE -f json"
+  echo "$AWX_CMD | jq -rj '$JQ'" | bash \
+    || die "FAILED TO GET scm_revision AND scm_branch"
+  printf "\n\n"
+
+  echo "SEND INVENTORY $INVENTORY"
+  echo "awx-cli send $INVENTORY" | bash \
+    || die "FAILED SEND INVENTORY $INVENTORY"
+
+  JQ='.[].asset_relation.inventory_source[].name'
+  INVENTORY_SOURCE_NAME="$(jq -r "$JQ" "$INVENTORY")"
+  echo "UPDATE INVENTORY SOURCE $INVENTORY_SOURCE_NAME"
+  echo "awx-cli inventory_source update $INVENTORY_SOURCE_NAME" | bash \
+    || die "FAILED UPDATE $INVENTORY_SOURCE_NAME"
+
+done
+
+grep ^job_template "$DEPLOY_FILE" | sort | while read -r JOB_TEMPLATE
+do
+
+  [[ -e "$JOB_TEMPLATE" ]] || die "NOT FOUND FILE $JOB_TEMPLATE"
+
+  JOB_NAME="$(basename "$JOB_TEMPLATE" .json)"
+  JOB_GROUP="/${JOB_NAME%%"$DOC_SPLIT"*}"
+  JOB_SHORT="$(echo "$JOB_NAME" | sed 's/_v[0-9]\+.[0-9]\+.[0-9]\+//g')"
+  DOC_NAME="$JOB_NAME"
+
+  [[ "$DOC_JOB_SHORT" -eq 1 ]] && DOC_NAME="$JOB_SHORT"
+
+  DOC_FILE="$DOC_TMP${JOB_GROUP}/$DOC_NAME${DOC_TYPE}"
+  DOC_LINK="$DOC_WIKI${JOB_GROUP}/$DOC_NAME"
+
+  if [[ "$DOC_CLONE" -eq 1 ]]
+  then
+    echo "CLONE DOCUMENTATION REPOSITORY $MSK_URL"
+    git clone "$DOC_URL" "$DOC_TMP" || die "FAIL CLONE $MSK_URL"
+  fi
+
+  if [[ "$DOC_CHECK" -eq 1 ]]
+  then
+
+    [[ -e "$DOC_FILE" ]] \
+    || die "NOT FOUND DOC FOR $JOB_NAME IN $DOC_FILE, \
+TRY WRITE IN $DOC_LINK"
+
+  fi
+
+  echo "SEND JOB_TEMPLATE $JOB_TEMPLATE"
+  echo "awx-cli send $JOB_TEMPLATE" | bash \
+    || die "FAILED SEND JOB_TEMPLATE $JOB_TEMPLATE"
+
+done
+
+grep ^workflow "$DEPLOY_FILE" | while read -r WORKFLOW
+do
+
+  [[ -e "$WORKFLOW" ]] || die "NOT FOUND FILE $WORKFLOW"
+
+  echo "SEND WORKFLOW $WORKFLOW"
+  echo "awx-cli send $WORKFLOW" | bash \
+    || die "FAILED SEND WORKFLOW $WORKFLOW"
+
+done
+
+fi
+
+TEAM_ASSOCIATE="$DEPLOY_DIR/team-associate.awx"
+if [[ -e "$TEAM_ASSOCIATE" ]]
+then
+  while read -r USERNAME TEAM
+  do
+
+    awx-team-associate "$USERNAME" "$TEAM"
+
+  done < "$TEAM_ASSOCIATE"
+fi
+
+GRANT_FILE="$DEPLOY_DIR/grant.awx"
+[[ -e "$GRANT_FILE" ]] && awx-grant-team "$GRANT_FILE"
+

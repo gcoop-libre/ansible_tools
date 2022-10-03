@@ -17,10 +17,47 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 # shellcheck disable=SC1090
+# shellcheck disable=SC1091
+# shellcheck source=/dev/null
 
-DIR_BIN=$(dirname "$0") && source "$DIR_BIN/awx-common"
+DIR_BIN="$(dirname "$0")" && source "$DIR_BIN/awx-common"
 
-if [[ ! -z "$1" ]]
+function usage()
+{
+cat << EOF
+Usage:
+
+\`\`\`bash
+
+  $BIN SYSLOGFILE
+
+\`\`\`
+
+    DATE="$(echo "$LINE" | cut -c -15)"
+    HOST="$(echo "$LINE" | awk '{print $4}')"
+    VMID="$(echo "$LINE" | grep -oE 'vmid=[0-9]+')"
+    STATE="$(echo "$LINE" | grep -oE 'state=[a-z]+')"
+    printf "%s %s ansible-proxmox_kvm: %s %s\\n" "$DATE" "$HOST" "$VMID" "$STATE"
+
+0
+Read a \`syslog\` and return lines match with \`ansible-proxmox_kvm\`,
+summary columns _date_, _host_, _vmid_ and _state_.
+
+Example:
+
+\`\`\`bash
+
+  $BIN /var/log/syslog
+
+	Mar 23 16:34:36 spve-dev ansible-proxmox_kvm: vmid=900 state=present
+
+\`\`\`
+
+EOF
+exit 0
+}
+
+if [[ -n "$1" ]]
 then
   log_ansible_proxmox_kvm "$1"
 else

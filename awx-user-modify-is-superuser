@@ -17,6 +17,8 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 # shellcheck disable=SC1090
+# shellcheck disable=SC1091
+# shellcheck source=/dev/null
 
 DIR_BIN=$(dirname "$0") && source "$DIR_BIN/awx-common"
 
@@ -24,9 +26,24 @@ function usage()
 {
 cat << EOF
 Usage:
-  $BIN
 
-Description
+\`\`\`bash
+
+  $BIN USERNAME [SUPERUSER]
+
+\`\`\`
+
+Modify user type as SysAdmin
+
+Example:
+
+\`\`\`bash
+
+  $BIN elliot
+
+  $BIN dom false
+
+\`\`\`
 
 EOF
 exit 0
@@ -37,8 +54,8 @@ exit 0
 SUPERUSER='true'
 USERNAME="$1"
 
-[[   -z "$1" ]] && die "EMPTY USERNAME"
-[[ ! -z "$2" ]] && SUPERUSER="$2"
+[[ -z "$1" ]] && die "EMPTY USERNAME"
+[[ -z "$2" ]] || SUPERUSER="$2"
 
 awx-cli user modify           \
   --is-superuser "$SUPERUSER" \

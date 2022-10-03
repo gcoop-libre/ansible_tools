@@ -1,7 +1,8 @@
 #!/bin/bash
 
 # This script comes with ABSOLUTELY NO WARRANTY, use at own risk
-# Copyright (C) 2020 Osiris Alejandro Gomez <osiris@gcoop.coop>
+# Copyright (C) 2022 Osiris Alejandro Gomez <osiris@gcoop.coop>
+# Copyright (C) 2022 Osiris Alejandro Gomez <osiux@osiux.com>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -17,39 +18,41 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 # shellcheck disable=SC1090
+# shellcheck disable=SC1091
+# shellcheck source=/dev/null
 
-DIR_BIN=$(dirname "$0") && source "$DIR_BIN/awx-common"
+DIR_BIN="$(dirname "$0")" && source "$DIR_BIN/awx-common"
 
 function usage()
 {
 cat << EOF
+
 Usage:
+
+\`\`\`bash
+
   $BIN
 
-Description
+\`\`\`
 
+Install dependencies using apt on Debian based distros
+
+\`\`\`bash
+
+  $BIN
+
+\`\`\`
 EOF
 exit 0
 }
 
 [[ "$1" =~ ^[-]+(h|help) ]] && usage
 
-JSON_LIST="$(mktemp)"
+[[ "$UID" -ne 0 ]] && die "YOU NEED ROOT, TRY sudo $BIN"
 
-if [[ -z "$1" ]]
-then
-  filelist_workflows  >  "$JSON_LIST"
-else
-  #[[ ! -e "$1" ]] && die "NOT FOUND $1"
-  echo "$1"           > "$JSON_LIST"
-fi
-
-while read -r FILE
-do
-  NAME="$(basename "$FILE" .json)"
-  ID="$(awx-cli workflow get -n "$NAME" -f id)"
-  URL="$AWX_CFG_HOST/#/templates/workflow_job_template/$ID"
-  printf "%-30s %s\\n" "$NAME" "$URL"
-done < "$JSON_LIST"
-
-rm -f "$JSON_LIST"
+apt install \
+  coreutils \
+  gpg       \
+  moreutils \
+  pass      \
+  tree

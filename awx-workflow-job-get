@@ -17,6 +17,8 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 # shellcheck disable=SC1090
+# shellcheck disable=SC1091
+# shellcheck source=/dev/null
 
 DIR_BIN=$(dirname "$0") && source "$DIR_BIN/awx-common"
 
@@ -50,13 +52,15 @@ awx-cli workflow_job get   \
 
 [[ -s "$JSON" ]] || die "EMPTY JSON"
 
+awx_cfg_read
+
 NAME="$(jq -r '.name' "$JSON")"
 STARTED="$(jq -r '.started' "$JSON")"
 FINISHED="$(jq -r '.finished' "$JSON" | grep -v null)"
 START="$(date --date "$STARTED" '+%F %H:%M')"
 URL="$AWX_CFG_HOST/#/workflows/$WORKFLOW_JOB_ID"
 
-if [[ ! -z "$FINISHED" ]]
+if [[ -n "$FINISHED" ]]
 then
   END="$(date --date "$FINISHED" '+%H:%M')"
   DURATION="$(timediff "$END" "$(echo "$START" | cut -d' ' -f2)")"

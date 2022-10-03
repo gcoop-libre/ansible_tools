@@ -17,6 +17,8 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 # shellcheck disable=SC1090
+# shellcheck disable=SC1091
+# shellcheck source=/dev/null
 
 DIR_BIN=$(dirname "$0") && source "$DIR_BIN/awx-common"
 
@@ -74,7 +76,7 @@ START="$(date -d "$STARTED" +'%T')"
 
 JOB_TEMPLATE="$(jq -r .summary_fields.job_template.name "$JSON")"
 
-if [[ ! -z "$TOTAL" ]]
+if [[ -n "$TOTAL" ]]
 then
   PERCENT="$(echo "scale=2;($ELAPSED/$TOTAL)*100" | bc) %"
 fi

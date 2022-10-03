@@ -17,6 +17,8 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 # shellcheck disable=SC1090
+# shellcheck disable=SC1091
+# shellcheck source=/dev/null
 
 DIR_BIN=$(dirname "$0") && source "$DIR_BIN/awx-common"
 
@@ -27,7 +29,7 @@ Usage:
 
 \`\`\`bash
 
-  $BIN HOST [INVENTORY]
+  $BIN HOST [KEY|all] [INVENTORY|prefix-]
 
 \`\`\`
 
@@ -43,11 +45,19 @@ Example:
 
 \`\`\`
 
-  Explicit _host_ and _inventory_:
+  Get value of \`ansible_host\` from _host_:
 
 \`\`\`bash
 
-  $BIN dev01 pve
+  $BIN pve-dev01 ansible_host
+
+\`\`\`
+
+  Explicit _host_, all variables and _inventory_:
+
+\`\`\`bash
+
+  $BIN dev01 all pve
 
 \`\`\`
 
@@ -62,6 +72,8 @@ exit 0
 HOST="$1"
 KEY="$2"
 PREFIX="${HOST//-*/}"
+[[ -z "$2"         ]] && KEY='all'
+[[ -z "$3"         ]] || INVENTORY="$3"
 [[ -z "$INVENTORY" ]] && INVENTORY="${PREFIX,,}"
 
 JSON="$(mktemp --suffix .json)"
@@ -77,7 +89,7 @@ YAML="$(mktemp --suffix .yml)"
 
 jq -r .variables "$JSON" > "$YAML" 2>/dev/null
 
-if [[ -z "$KEY" ]]
+if [[ "$KEY" = 'all' ]]
 then
 
   printf "%s\\n\\n" '---'

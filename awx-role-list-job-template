@@ -17,6 +17,8 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 # shellcheck disable=SC1090
+# shellcheck disable=SC1091
+# shellcheck source=/dev/null
 # shellcheck disable=SC1117
 # shellcheck disable=SC2086
 
@@ -51,11 +53,13 @@ exit 0
 
 [[ -z "$1" ]] && die "EMPTY JOB_TEMPLATE"
 JOB_TEMPLATE="$1"
-[[ ! -z "$2" ]] && TEAM="$2"
+[[ -z "$2" ]] || TEAM="$2"
 
 [[ -z "$TEAM" ]] && TEAM="$DEFAULT_TEAM"
 
 awx-cli role list $AWX_DEBUG      \
   --all-pages                     \
   --job-template "$JOB_TEMPLATE"  \
-  --team "$TEAM"
+  --team "$TEAM"                  \
+    | grep 'job_template'         \
+    | awk '{print $1,$2,$3}'

@@ -17,6 +17,8 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 # shellcheck disable=SC1090
+# shellcheck disable=SC1091
+# shellcheck source=/dev/null
 
 DIR_BIN=$(dirname "$0") && source "$DIR_BIN/awx-common"
 
@@ -77,7 +79,7 @@ diff -U "$TOT_DFF" "$SRD_YML" "$AWX_YML" \
   | grep -v '@@'                         \
   | tail -n+3                            \
   | sed 's/^--$/---\n\n/g'               \
-  | sed 's/^ \([a-z]\+\)/\1/g'           > "$SRC_YML"
+  | sed 's/^ \([a-z]\+\)/\1/g'           > "$SRC_YML" && echo "$SRC_YML"
 
 rm -f "$SRD_YML"
 rm -f "$AWX_YML"

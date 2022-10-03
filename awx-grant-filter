@@ -17,6 +17,8 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 # shellcheck disable=SC1090
+# shellcheck disable=SC1091
+# shellcheck source=/dev/null
 
 DIR_BIN=$(dirname "$0") && source "$DIR_BIN/awx-common"
 
@@ -33,11 +35,37 @@ Usage:
 
 Filter grants from ROLE_FILE and generate awx-cli role grant
 
+Example CSV:
+
+\`\`\`
+RESOURCE_TYPE RESOURCE_NAME       TYPE
+inventory     wst                 admin
+project       ansible_wst_v1.6.0  use
+job_template  wst_upd_v1.6.0      execute
+workflow      wfw_pve_apt_v1.2.0  execute
+\`\`\`
+
 Example:
 
 \`\`\`bash
 
   $BIN role/devops.csv support
+
+	## inventory
+
+	awx-cli role grant -v --team support --type  admin      --inventory     wst
+
+	## project
+
+	awx-cli role grant -v --team support --type  use        --project       ansible_wst_v1.6.0
+
+	## job_template
+
+	awx-cli role grant -v --team support --type  execute    --job-template  wst_upd_v1.6.0
+
+	## workflow
+
+	awx-cli role grant -v --team support --type  execute    --workflow      wfw_pve_apt_v1.2.0
 
 \`\`\`
 
@@ -68,15 +96,17 @@ do
 
   if [[ -e "$EXCLUDE" ]]
   then
-    grep -vf "$EXCLUDE" "$TMP1" > "$TMP2"
+    grep -f "$EXCLUDE" "$TMP1" > "$TMP2"
   else
-    cp -v "$TMP1" "$TMP2"
+    cp -f "$TMP1" "$TMP2"
   fi
 
   PREVIOUS=''
 
   while read -r RESOURCE_TYPE RESOURCE_NAME TYPE
   do
+
+    [[ -z "$TYPE" ]] && TYPE='use'
 
     if [[ "$RESOURCE_TYPE" != "$PREVIOUS" ]]
     then
