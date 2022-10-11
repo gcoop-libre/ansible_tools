@@ -77,6 +77,9 @@ DEPLOY_TYPE='update'
 [[ -n "$DOC_SPLIT"       ]] || DOC_SPLIT='_'
 [[ -n "$DOC_JOB_SHORT"   ]] || DOC_JOB_SHORT=1
 
+[[ -n "$CHECK_PROJECT_NAME"   ]] || CHECK_PROJECT_NAME=1
+[[ -n "$CHECK_BRANCH_VERSION" ]] || CHECK_BRANCH_VERSION=1
+
 if [[ -n "$DOC_USER"     ]]
 then
   [[ -n "$DOC_PASS"      ]] || DOC_PASS="$DOC_USER:$DOC_TOKEN@"
@@ -209,12 +212,18 @@ do
   if [[ "$REVISION_BRANCH" =~ $REGEX_REVISION ]]
   then
 
-  [[ "$JQ_NAME" = "$PROJECT_NAME" ]] \
-    || die "PROJECT $PROJECT_NAME NOT MATCH name: $JQ_NAME"
+    if [[ "$CHECK_PROJECT_NAME" -eq 1 ]]
+    then
+      [[ "$JQ_NAME" = "$PROJECT_NAME" ]] \
+        || die "PROJECT $PROJECT_NAME NOT MATCH name: $JQ_NAME"
+    fi
 
-  [[ "$JQ_BRANCH" = "$PROJECT_VERSION" ]] \
-    || die "PROJECT $PROJECT_NAME NOT MATCH version: $PROJECT_VERSION \
+    if [[ "$CHECK_BRANCH_VERSION" -eq 1 ]]
+    then
+      [[ "$JQ_BRANCH" = "$PROJECT_VERSION" ]] \
+        || die "PROJECT $PROJECT_NAME NOT MATCH version: $PROJECT_VERSION \
 WITH scm_branch: $JQ_BRANCH"
+    fi
 
   fi
 
