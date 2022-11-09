@@ -129,7 +129,7 @@ echo "$DEFAULT_TEAM_DEPLOY" \
 
     stderror "WRITE DEFAULT PERMISSIONS FOR TEAM $TEAM TO REVISION $REVISION IN $OUT"
 
-    ID="$(awx-cli team get -n "$TEAM" -f id)"
+    ID="$(awx-cli team get -n "$TEAM" -f id || die "ERROR TEAM $TEAM")"
     [[ -z "$ID" ]] && die "NOT FOUND TEAM $TEAM"
 
     while IFS=/ read -r D F
