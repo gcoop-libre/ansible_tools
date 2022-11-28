@@ -30,6 +30,7 @@ function cleanup()
   if [[ -n "$DOC_TMP" ]]
   then
     echo "CLEAN TEMPORAL FILES IN $DOC_TMP ..."
+    ls -lht "$DOC_TMP"
     [[ -d "$DOC_TMP" ]] && rm -rf "$DOC_TMP"
   fi
 }
