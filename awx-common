@@ -291,6 +291,16 @@ awx-cli role list $AWX_DEBUG          \
   | jq -r .results[].name 2>/dev/null
 }
 
+role_list_team_workflow()
+{
+awx-cli role list $AWX_DEBUG          \
+  --all-pages                         \
+  --team "$1"                         \
+  --workflow "$2"                     \
+  -f json                 2>/dev/null \
+  | jq -r .results[].name 2>/dev/null
+}
+
 group_get_id()
 {
   awx-cli group get  \
