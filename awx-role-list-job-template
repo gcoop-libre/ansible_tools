@@ -51,15 +51,17 @@ exit 0
 
 [[ "$1" =~ ^[-]+(h|help) ]] && usage
 
-[[ -z "$1" ]] && die "EMPTY JOB_TEMPLATE"
+[[ -z "$1"        ]] && die "EMPTY JOB_TEMPLATE"
 JOB_TEMPLATE="$1"
-[[ -z "$2" ]] || TEAM="$2"
+[[ -z "$2"        ]] || TEAM="$2"
+[[ -z "$TEAM"     ]] && TEAM="$DEFAULT_TEAM"
+[[ -n "$MD_TABLE" ]] || MD_TABLE=0
 
-[[ -z "$TEAM" ]] && TEAM="$DEFAULT_TEAM"
+RESOURCE_TYPE='job_template'
+RESOURCE_NAME="$JOB_TEMPLATE"
+TYPE="$(role_list_team_job_template "$TEAM" "$JOB_TEMPLATE")"
+[[ -z "$TYPE" ]] && exit 1
 
-awx-cli role list $AWX_DEBUG      \
-  --all-pages                     \
-  --job-template "$JOB_TEMPLATE"  \
-  --team "$TEAM"                  \
-    | grep 'job_template'         \
-    | awk '{print $1,$2,$3}'
+ROLE_LIST_FUNC='role_list_team_csv'
+[[ "$MD_TABLE" -eq 1 ]] && ROLE_LIST_FUNC='role_list_team_table'
+$ROLE_LIST_FUNC "$RESOURCE_TYPE" "$RESOURCE_NAME" "$TYPE" "$TEAM"
