@@ -1,7 +1,9 @@
 *.bak
 *.dat
+*.dot
 *.log
 *.pdf
+*.png
 *.tar.gz
 awx
 bak/*
