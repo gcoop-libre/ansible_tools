@@ -35,13 +35,20 @@ Usage:
 
 \'\'\'
 
-List
+Show the permissions of a _job template_ for a _team_.
+By default output is a CSV, you can enable Markdown output.
 
 Example:
 
 \'\'\'bash
 
-  $BIN pve-udp-v0.1.0 devops
+  $BIN pve_upd_v0.1.0 devops
+
+    job_template,pve_upd_v0.4.0,Execute,devops
+
+  MD_TABLE=1 $BIN pve_upd_v0.4.0 devops
+
+    | _job_template_       | \`pve_upd_v0.4.0                        \` | _Execute_  | _devops_             |
 
 \'\'\'
 
