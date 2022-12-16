@@ -310,6 +310,19 @@ role_list_team_csv()
   printf "%s,%s,%s,%s\\n" "$1" "$2" "$3" "$4"
 }
 
+role_list_team_table()
+{
+  # $1 RESOURSE_TYPE
+  # $2 RESOURSE_NAME
+  # $3 TYPE
+  # $4 TEAM
+  printf "| %-20s | \`%-38s\` | %-10s | %-20s |\\n" \
+         "_${1}_"                                   \
+         "$2"                                       \
+         "_${3}_"                                   \
+         "_${4}_"
+}
+
 group_get_id()
 {
   awx-cli group get  \
