@@ -249,6 +249,17 @@ grant_workflow_execute()
   grant_workflow "$1" "$2" 'execute'
 }
 
+role_list_team_credential()
+{
+awx-cli role list $AWX_DEBUG          \
+  --all-pages                         \
+  --team "$1"                         \
+  --credential "$2"                   \
+  -f human                2>/dev/null \
+  | grep -w "$2"                      \
+  | awk '{print $2}'
+}
+
 group_get_id()
 {
   awx-cli group get  \
