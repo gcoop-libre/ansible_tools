@@ -31,9 +31,20 @@ Usage:
 
   $BIN
 
-$(code)
+\`\`\`
 
-List all _workflows_.
+List all _workflows_ names.
+
+Example:
+
+\`\`\`bash
+
+  $BIN
+
+  wfw_pve_kvm_v0.1.0
+  wfw_wst_upd_v0.1.0
+
+\`\`\`
 
 EOF
 exit 0
@@ -41,4 +52,5 @@ exit 0
 
 [[ "$1" =~ ^[-]+(h|help) ]] && usage
 
-awx-cli workflow list -a
+JQ='.results[].name'
+awx-cli workflow list -a -f json | jq -r "$JQ" | sort
