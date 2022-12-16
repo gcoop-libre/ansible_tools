@@ -301,6 +301,15 @@ awx-cli role list $AWX_DEBUG          \
   | jq -r .results[].name 2>/dev/null
 }
 
+role_list_team_csv()
+{
+  # $1 RESOURSE_TYPE
+  # $2 RESOURSE_NAME
+  # $3 TYPE
+  # $4 TEAM
+  printf "%s,%s,%s,%s\\n" "$1" "$2" "$3" "$4"
+}
+
 group_get_id()
 {
   awx-cli group get  \
