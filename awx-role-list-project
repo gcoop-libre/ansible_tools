@@ -66,9 +66,12 @@ PROJECT="$1"
 
 RESOURCE_TYPE='project'
 RESOURCE_NAME="$PROJECT"
-TYPE="$(role_list_team_project "$TEAM" "$PROJECT")"
-[[ -z "$TYPE" ]] && exit 1
-
 ROLE_LIST_FUNC='role_list_team_csv'
 [[ "$MD_TABLE" -eq 1 ]] && ROLE_LIST_FUNC='role_list_team_table'
-$ROLE_LIST_FUNC "$RESOURCE_TYPE" "$RESOURCE_NAME" "$TYPE" "$TEAM"
+
+role_list_team_project "$TEAM" "$PROJECT" | while read -r TYPE
+do
+
+  $ROLE_LIST_FUNC "$RESOURCE_TYPE" "$RESOURCE_NAME" "$TYPE" "$TEAM"
+
+done
