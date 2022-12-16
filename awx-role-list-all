@@ -1,0 +1,154 @@
+#!/bin/bash
+
+# This script comes with ABSOLUTELY NO WARRANTY, use at own risk
+# Copyright (C) 2021 Osiris Alejandro Gomez <osiris@gcoop.coop>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+
+# shellcheck disable=SC1090
+# shellcheck disable=SC1091
+# shellcheck source=/dev/null
+# shellcheck disable=SC1117
+# shellcheck disable=SC2086
+
+DIR_BIN=$(dirname "$0") && source "$DIR_BIN/awx-common"
+
+function usage()
+{
+cat << EOF
+Usage:
+
+\'\'\'bash
+
+  $BIN [TEAM]
+
+\'\'\'
+
+List all permissions in CSV or _Markdown_ table iterating all resources.
+
+Example:
+
+\'\'\'bash
+
+  $BIN
+
+    credential,ssh_ansible,Use,devops
+    inventory,wst,Admin,devops
+    project,pve,Use,devops
+    job_template,wst_upd_v0.1.0,Execute,support
+    workflow,wfw_pve_kvm_v0.1.0,Uxecute,support
+
+  MD_TABLE=1 $BIN
+
+    | resource_type        | resource_name                            | type       | team                 |
+    |----------------------|------------------------------------------|------------|----------------------|
+    | _credential_         | \`ssh_ansible                           \` | _Use_      | _devops_             |
+    | _inventory_          | \`wst                                   \` | _Admin_    | _devops_             |
+    | _project_            | \`pve                                   \` | _Use_      | _devops_             |
+    | _job_template_       | \`wst_upd_v0.1.0                        \` | _Execute_  | _support_            |
+    | _workflow_           | \`wfw_pve_kvm_v0.1.0                    \` | _Uxecute_  | _support_            |
+
+\'\'\'
+
+EOF
+exit 0
+}
+
+[[ "$1" =~ ^[-]+(h|help) ]] && usage
+
+[[ -n "$MD_TABLE" ]] || MD_TABLE=0
+
+TEAMS="$(mktemp)"
+CREDENTIALS="$(mktemp)"
+PROJECTS="$(mktemp)"
+INVENTORIES="$(mktemp)"
+JOB_TEMPLATES="$(mktemp)"
+WORKFLOWS="$(mktemp)"
+
+if [[ -z "$1" ]]
+then
+  stderror "GET ALL TEAMS ..."
+  awx-team-list       > "$TEAMS"
+else
+  echo "$1"           > "$TEAMS"
+fi
+
+stderror "GET ALL CREDENTIALS ..."
+awx-credential-list   > "$CREDENTIALS"
+stderror "GET ALL PROJECTS ..."
+awx-project-list      > "$PROJECTS"
+stderror "GET ALL INVENTORIES ..."
+awx-inventory-list    > "$INVENTORIES"
+stderror "GET ALL JOB TEMPLATES ..."
+awx-job-template-list > "$JOB_TEMPLATES"
+stderror "GET ALL WORKFLOWS ..."
+awx-workflow-list     > "$WORKFLOWS"
+
+if [[ "$MD_TABLE" -eq 1 ]]
+then
+
+printf "\\n# %s\\n\\n" 'AWX Permissions'
+
+printf "| %-20s | %-40s | %-10s | %-20s |\n"   \
+        'resource_type' \
+        'resource_name' \
+        'type' \
+        'team'
+printf "| %-20s | %-40s | %-10s | %-20s |\n"   \
+            ' ' ' ' ' ' ' ' | sed 's/ /-/g'
+
+fi
+
+stderror "GET ALL PERMISSIONS ..."
+while read -r TEAM
+do
+  stderror "GET ALL PERMISSIONS FOR TEAM $TEAM ..."
+  while read -r CREDENTIAL
+  do
+    stderror "GET PERMISSIONS FOR $TEAM CREDENTIAL $CREDENTIAL ..."
+    awx-role-list-credential "$CREDENTIAL" "$TEAM"
+  done < "$CREDENTIALS"
+
+  while read -r PROJECT
+  do
+    stderror "GET PERMISSIONS FOR $TEAM PROJECT $PROJECT ..."
+    awx-role-list-project "$PROJECT" "$TEAM"
+  done < "$PROJECTS"
+
+  while read -r INVENTORY
+  do
+    stderror "GET PERMISSIONS FOR $TEAM INVENTORY $INVENTORY ..."
+    awx-role-list-inventory "$INVENTORY" "$TEAM"
+  done < "$INVENTORIES"
+
+  while read -r JOB_TEMPLATE
+  do
+    stderror "GET PERMISSIONS FOR $TEAM JOB TEMPLATE $JOB_TEMPLATE ..."
+    awx-role-list-job-template "$JOB_TEMPLATE" "$TEAM"
+  done < "$JOB_TEMPLATES"
+
+  while read -r WORKFLOW
+  do
+    stderror "GET PERMISSIONS FOR $TEAM WORKFLOW $WORKFLOW ..."
+    awx-role-list-workflow "$WORKFLOW" "$TEAM"
+  done < "$WORKFLOWS"
+
+done < "$TEAMS"
+
+rm -f "$TEAMS"
+rm -f "$CREDENTIALS"
+rm -f "$PROJECTS"
+rm -f "$INVENTORIES"
+rm -f "$JOB_TEMPLATES"
+rm -f "$WORKFLOWS"
