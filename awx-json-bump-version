@@ -42,7 +42,7 @@ exit 0
 
 [[ "$1" =~ ^[-]+(h|help) ]] && usage
 
-VERSION='bug'
+VERSION='PATCH'
 
 [[ -z "$1" ]] && die "EMPTY FILE"
 [[ -e "$1" ]] || die "NOT FOUND $1"
