@@ -30,7 +30,7 @@ Usage:
 
 \`\`\`bash
 
-  $BIN INVENTORY GROUP_ID
+  $BIN INVENTORY GROUP
 
 \`\`\`
 
@@ -56,10 +56,12 @@ exit 0
 [[ "$1" =~ ^[-]+(h|help) ]] && usage
 
 [[ -z "$1" ]] && die "EMPTY INVENTORY"
-[[ -z "$2" ]] && die "EMPTY GROUP_ID"
+[[ -z "$2" ]] && die "EMPTY GROUP"
 
 INVENTORY="$1"
-GROUP_ID="$2"
+GROUP="$2"
+
+GROUP_ID="$(awx-cli group get -i "$INVENTORY" -n "$GROUP" -f id)"
 
 awx-cli host list          \
   --all-pages              \
