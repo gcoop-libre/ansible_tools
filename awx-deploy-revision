@@ -213,6 +213,8 @@ do
   [[ -e "$PROJECT" ]] || die "NOT FOUND FILE $PROJECT"
   PROJECT_NAME="$(basename "$PROJECT" .json)"
   PROJECT_VERSION="$(echo "$PROJECT_NAME" | grep -Eo "$REGEX_VERSION")"
+  [[ -z "$PROJECT_VERSION" ]] \
+    && die "EMPTY PROJECT VERSION NOT MATCH WITH $REGEX_VERSION"
   JQ_NAME="$(jq -r '.[].name' "$PROJECT")"
   JQ_BRANCH="$(jq -r '.[].scm_branch' "$PROJECT")"
 
