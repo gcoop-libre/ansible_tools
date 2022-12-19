@@ -290,6 +290,13 @@ do
 
 done
 
+if [[ "$DOC_CLONE" -eq 1 ]]
+then
+  echo "CLONE DOCUMENTATION REPOSITORY $MSK_URL"
+  git clone "$DOC_URL" "$DOC_TMP" || die "FAIL CLONE $MSK_URL"
+  DOC_CLEAN=1
+fi
+
 grep ^job_template "$DEPLOY_FILE" | sort | while read -r JOB_TEMPLATE
 do
 
@@ -304,13 +311,6 @@ do
 
   DOC_FILE="$DOC_TMP${JOB_GROUP}/$DOC_NAME${DOC_TYPE}"
   DOC_LINK="$DOC_WIKI${JOB_GROUP}/$DOC_NAME"
-
-  if [[ "$DOC_CLONE" -eq 1 ]]
-  then
-    echo "CLONE DOCUMENTATION REPOSITORY $MSK_URL"
-    git clone "$DOC_URL" "$DOC_TMP" || die "FAIL CLONE $MSK_URL"
-    DOC_CLEAN=1
-  fi
 
   if [[ "$DOC_CHECK" -eq 1 ]]
   then
