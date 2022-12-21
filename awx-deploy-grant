@@ -65,6 +65,8 @@ EOF
 exit 0
 }
 
+[[ "$1" =~ ^[-]+(h|help) ]] && usage
+
 [[ -e "$AWX_CFG" ]] || die "NOT FOUND .tower_cli.cfg TRY awx-config"
 
 DEPLOY_TYPE='update'
