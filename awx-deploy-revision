@@ -353,4 +353,7 @@ fi
 
 GRANT_FILE="$DEPLOY_DIR/grant.awx"
 [[ -e "$GRANT_FILE" ]] && awx-grant-team "$GRANT_FILE"
+
+REVOKE_FILE="$DEPLOY_DIR/revoke.awx"
+[[ -e "$REVOKE_FILE" ]] && awx-revoke-team "$REVOKE_FILE"
 cleanup
