@@ -33,7 +33,7 @@ Usage:
 
 \`\`\`
 
-List all _inventories_ names.
+List all _job_templates_ names.
 
 Example:
 
@@ -41,8 +41,7 @@ Example:
 
   $BIN
 
-  pve
-  wst
+  pve_kvm_v0.1.0
 
 \`\`\`
 
@@ -53,4 +52,4 @@ exit 0
 [[ "$1" =~ ^[-]+(h|help) ]] && usage
 
 JQ='.results[].name'
-awx-cli inventory list -a -f json | jq -r "$JQ" | sort
+awx-cli job_template list -a -f json | jq -r "$JQ" | sort

@@ -1,0 +1,58 @@
+#!/bin/bash
+
+# This script comes with ABSOLUTELY NO WARRANTY, use at own risk
+# Copyright (C) 2022 Osiris Alejandro Gomez <osiux@osiux.com>
+# Copyright (C) 2022 Osiris Alejandro Gomez <osiris@gcoop.coop>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+
+function awx_config()
+{
+  awk -F= "/$1/ {print \$2}" $HOME/.tower_cli.cfg
+}
+
+function roles_related()
+{
+  AWX_URL="$AWX_HOST/api/v2/roles/$1/$2/"
+  curl -s --user $AWX_USER:$AWX_PASS "$AWX_URL"
+}
+
+function roles_users()
+{
+  roles_related $1 users        \
+    | jq -r .results[].username \
+    | while read USERNAME;do echo 'user' "$USERNAME";done
+}
+
+function roles_teams()
+{
+  roles_related $1 teams    \
+    | jq -r .results[].name \
+    | while read TEAM;do echo 'team' "$TEAM";done
+}
+
+AWX_HOST="$(awx_config host)"
+AWX_USER="$(awx_config username)"
+AWX_PASS="$(awx_config password)"
+INVENTORY="$1"
+
+[[ -z "$INVENTORY" ]] && exit 1
+
+awx-cli role list -a --inventory "$INVENTORY" -f json \
+  | jq -r '.results[] | "\(.id) \(.name)"'            \
+  | while read -r ID TYPE
+    do
+      roles_users $ID | while read -r U;do echo "$TYPE $U";done
+      roles_teams $ID | while read -r T;do echo "$TYPE $T";done
+    done

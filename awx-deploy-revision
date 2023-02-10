@@ -25,14 +25,20 @@
 [[ -n "$BASH_DEBUG" ]] && set -x
 DIR_BIN="$(dirname "$0")" && source "$DIR_BIN/awx-common"
 
-function die()
+function cleanup()
 {
-  printf "%s\\n" "${RED}[ERROR] $1 $NORMAL"
+  [[ "$DOC_CLEAN" -eq 0 ]] && return
   if [[ -n "$DOC_TMP" ]]
   then
     echo "CLEAN TEMPORAL FILES IN $DOC_TMP ..."
     [[ -d "$DOC_TMP" ]] && rm -rf "$DOC_TMP"
   fi
+}
+
+function die()
+{
+  printf "%s\\n" "${RED}[ERROR] $1 $NORMAL"
+  cleanup
   exit 1
 }
 
@@ -73,9 +79,13 @@ DEPLOY_TYPE='update'
 [[ -n "$DONT_FETCH_TAGS" ]] || DONT_FETCH_TAGS=0
 [[ -n "$DOC_CHECK"       ]] || DOC_CHECK=1
 [[ -n "$DOC_CLONE"       ]] || DOC_CLONE=1
+[[ -n "$DOC_CLEAN"       ]] || DOC_CLEAN=0
 [[ -n "$DOC_TYPE"        ]] || DOC_TYPE='.md'
 [[ -n "$DOC_SPLIT"       ]] || DOC_SPLIT='_'
 [[ -n "$DOC_JOB_SHORT"   ]] || DOC_JOB_SHORT=1
+
+[[ -n "$CHECK_PROJECT_NAME"   ]] || CHECK_PROJECT_NAME=1
+[[ -n "$CHECK_BRANCH_VERSION" ]] || CHECK_BRANCH_VERSION=1
 
 if [[ -n "$DOC_USER"     ]]
 then
@@ -202,19 +212,27 @@ do
 
   [[ -e "$PROJECT" ]] || die "NOT FOUND FILE $PROJECT"
   PROJECT_NAME="$(basename "$PROJECT" .json)"
-  PROJECT_VERSION="$(echo "$PROJECT_NAME" | grep -Eo "$REGEX_VERSION")"
+  PROJECT_VERSION="$(echo "$PROJECT_NAME" | { grep -Eo "$REGEX_VERSION" || true; })"
+  [[ -z "$PROJECT_VERSION" ]] \
+    && die "EMPTY PROJECT VERSION NOT MATCH WITH $REGEX_VERSION"
   JQ_NAME="$(jq -r '.[].name' "$PROJECT")"
   JQ_BRANCH="$(jq -r '.[].scm_branch' "$PROJECT")"
 
   if [[ "$REVISION_BRANCH" =~ $REGEX_REVISION ]]
   then
 
-  [[ "$JQ_NAME" = "$PROJECT_NAME" ]] \
-    || die "PROJECT $PROJECT_NAME NOT MATCH name: $JQ_NAME"
+    if [[ "$CHECK_PROJECT_NAME" -eq 1 ]]
+    then
+      [[ "$JQ_NAME" = "$PROJECT_NAME" ]] \
+        || die "PROJECT $PROJECT_NAME NOT MATCH name: $JQ_NAME"
+    fi
 
-  [[ "$JQ_BRANCH" = "$PROJECT_VERSION" ]] \
-    || die "PROJECT $PROJECT_NAME NOT MATCH version: $PROJECT_VERSION \
+    if [[ "$CHECK_BRANCH_VERSION" -eq 1 ]]
+    then
+      [[ "$JQ_BRANCH" = "$PROJECT_VERSION" ]] \
+        || die "PROJECT $PROJECT_NAME NOT MATCH version: $PROJECT_VERSION \
 WITH scm_branch: $JQ_BRANCH"
+    fi
 
   fi
 
@@ -272,6 +290,13 @@ do
 
 done
 
+if [[ "$DOC_CLONE" -eq 1 ]]
+then
+  echo "CLONE DOCUMENTATION REPOSITORY $MSK_URL"
+  git clone "$DOC_URL" "$DOC_TMP" || die "FAIL CLONE $MSK_URL"
+  DOC_CLEAN=1
+fi
+
 grep ^job_template "$DEPLOY_FILE" | sort | while read -r JOB_TEMPLATE
 do
 
@@ -286,12 +311,6 @@ do
 
   DOC_FILE="$DOC_TMP${JOB_GROUP}/$DOC_NAME${DOC_TYPE}"
   DOC_LINK="$DOC_WIKI${JOB_GROUP}/$DOC_NAME"
-
-  if [[ "$DOC_CLONE" -eq 1 ]]
-  then
-    echo "CLONE DOCUMENTATION REPOSITORY $MSK_URL"
-    git clone "$DOC_URL" "$DOC_TMP" || die "FAIL CLONE $MSK_URL"
-  fi
 
   if [[ "$DOC_CHECK" -eq 1 ]]
   then
@@ -335,3 +354,6 @@ fi
 GRANT_FILE="$DEPLOY_DIR/grant.awx"
 [[ -e "$GRANT_FILE" ]] && awx-grant-team "$GRANT_FILE"
 
+REVOKE_FILE="$DEPLOY_DIR/revoke.awx"
+[[ -e "$REVOKE_FILE" ]] && awx-revoke-team "$REVOKE_FILE"
+cleanup

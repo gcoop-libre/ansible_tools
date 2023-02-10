@@ -249,6 +249,81 @@ grant_workflow_execute()
   grant_workflow "$1" "$2" 'execute'
 }
 
+role_list_team_credential()
+{
+awx-cli role list $AWX_DEBUG          \
+  --all-pages                         \
+  --team "$1"                         \
+  --credential "$2"                   \
+  -f human                2>/dev/null \
+  | grep -wE "$2.*credential"         \
+  | awk '{print $2}'
+}
+
+role_list_team_project()
+{
+awx-cli role list $AWX_DEBUG          \
+  --all-pages                         \
+  --team "$1"                         \
+  --project "$2"                      \
+  -f human                2>/dev/null \
+  | grep -wE "$2.*project"            \
+  | awk '{print $2}'
+}
+
+role_list_team_inventory()
+{
+awx-cli role list $AWX_DEBUG          \
+  --all-pages                         \
+  --team "$1"                         \
+  --inventory "$2"                    \
+  -f human                2>/dev/null \
+  | grep -wE "$2.*inventory"          \
+  | awk '{print $2}'
+}
+
+role_list_team_job_template()
+{
+awx-cli role list $AWX_DEBUG          \
+  --all-pages                         \
+  --team "$1"                         \
+  --job-template "$2"                 \
+  -f json                 2>/dev/null \
+  | jq -r .results[].name 2>/dev/null
+}
+
+role_list_team_workflow()
+{
+awx-cli role list $AWX_DEBUG          \
+  --all-pages                         \
+  --team "$1"                         \
+  --workflow "$2"                     \
+  -f json                 2>/dev/null \
+  | jq -r .results[].name 2>/dev/null
+}
+
+role_list_team_csv()
+{
+  # $1 RESOURSE_TYPE
+  # $2 RESOURSE_NAME
+  # $3 TYPE
+  # $4 TEAM
+  printf "%s,%s,%s,%s\\n" "$1" "$2" "$3" "$4"
+}
+
+role_list_team_table()
+{
+  # $1 RESOURSE_TYPE
+  # $2 RESOURSE_NAME
+  # $3 TYPE
+  # $4 TEAM
+  printf "| %-20s | \`%-38s\` | %-10s | %-20s |\\n" \
+         "_${1}_"                                   \
+         "$2"                                       \
+         "_${3}_"                                   \
+         "_${4}_"
+}
+
 group_get_id()
 {
   awx-cli group get  \

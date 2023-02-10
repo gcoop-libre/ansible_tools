@@ -35,13 +35,20 @@ Usage:
 
 \'\'\'
 
-List
+Show the permissions of a _job template_ for a _team_.
+By default output is a CSV, you can enable Markdown output.
 
 Example:
 
 \'\'\'bash
 
-  $BIN pve-udp-v0.1.0 devops
+  $BIN pve_upd_v0.1.0 devops
+
+    job_template,pve_upd_v0.4.0,Execute,devops
+
+  MD_TABLE=1 $BIN pve_upd_v0.4.0 devops
+
+    | _job_template_       | \`pve_upd_v0.4.0                        \` | _Execute_  | _devops_             |
 
 \'\'\'
 
@@ -51,15 +58,20 @@ exit 0
 
 [[ "$1" =~ ^[-]+(h|help) ]] && usage
 
-[[ -z "$1" ]] && die "EMPTY JOB_TEMPLATE"
+[[ -z "$1"        ]] && die "EMPTY JOB_TEMPLATE"
 JOB_TEMPLATE="$1"
-[[ -z "$2" ]] || TEAM="$2"
+[[ -z "$2"        ]] || TEAM="$2"
+[[ -z "$TEAM"     ]] && TEAM="$DEFAULT_TEAM"
+[[ -n "$MD_TABLE" ]] || MD_TABLE=0
 
-[[ -z "$TEAM" ]] && TEAM="$DEFAULT_TEAM"
+RESOURCE_TYPE='job_template'
+RESOURCE_NAME="$JOB_TEMPLATE"
+ROLE_LIST_FUNC='role_list_team_csv'
+[[ "$MD_TABLE" -eq 1 ]] && ROLE_LIST_FUNC='role_list_team_table'
 
-awx-cli role list $AWX_DEBUG      \
-  --all-pages                     \
-  --job-template "$JOB_TEMPLATE"  \
-  --team "$TEAM"                  \
-    | grep 'job_template'         \
-    | awk '{print $1,$2,$3}'
+role_list_team_job_template "$TEAM" "$JOB_TEMPLATE" | while read -r TYPE
+do
+
+  $ROLE_LIST_FUNC "$RESOURCE_TYPE" "$RESOURCE_NAME" "$TYPE" "$TEAM"
+
+done

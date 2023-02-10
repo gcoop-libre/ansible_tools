@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # This script comes with ABSOLUTELY NO WARRANTY, use at own risk
-# Copyright (C) 2020 Osiris Alejandro Gomez <osiris@gcoop.coop>
+# Copyright (C) 2021 Osiris Alejandro Gomez <osiris@gcoop.coop>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -33,7 +33,7 @@ Usage:
 
 \`\`\`
 
-List all _inventories_ names.
+List all _teams_ names.
 
 Example:
 
@@ -41,8 +41,8 @@ Example:
 
   $BIN
 
-  pve
-  wst
+  devops
+  support
 
 \`\`\`
 
@@ -53,4 +53,4 @@ exit 0
 [[ "$1" =~ ^[-]+(h|help) ]] && usage
 
 JQ='.results[].name'
-awx-cli inventory list -a -f json | jq -r "$JQ" | sort
+awx-cli team list -a -f json | jq -r "$JQ"

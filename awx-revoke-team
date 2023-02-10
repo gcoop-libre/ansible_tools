@@ -31,11 +31,11 @@ Usage:
 
 \`\`\`bash
 
-  $BIN GRANT_FILE
+  $BIN REVOKE_FILE
 
 \`\`\`
 
-Generate awx-cli role grant from grant file
+Generate awx-cli role revoke from revoke file
 
 Example file:
 
@@ -53,10 +53,10 @@ Example:
 
   $BIN role/devops.awx devops
 
-awx-cli role grant -v --team devops --type admin --inventory wst
-awx-cli role grant -v --team devops --type use --project ansible_wst_v1.6.0
-awx-cli role grant -v --team devops --type execute --job-template wst_upd_v1.6.0
-awx-cli role grant -v --team devops --type execute --workflow wfw_pve_apt_v1.2.0
+awx-cli role revoke -v --team devops --type admin --inventory wst
+awx-cli role revoke -v --team devops --type use --project ansible_wst_v1.6.0
+awx-cli role revoke -v --team devops --type execute --job-template wst_upd_v1.6.0
+awx-cli role revoke -v --team devops --type execute --workflow wfw_pve_apt_v1.2.0
 
 \`\`\`
 
@@ -66,25 +66,25 @@ exit 0
 
 [[ "$1" =~ ^[-]+(h|help) ]] && usage
 
-[[ -z "$1" ]] && die "EMPTY GRANT FILE"
+[[ -z "$1" ]] && die "EMPTY REVOKE FILE"
 [[ -e "$1" ]] || die "NOT FOUND FILE $1"
 
 TMP="$(mktemp)"
-GRANT_FILE="$1"
-CLI_PREFIX="awx-cli role grant --team"
+REVOKE_FILE="$1"
+CLI_PREFIX="awx-cli role revoke --team"
 
 set -e
 
 for i in credential inventory project job_template workflow
 do
 
-  awk "/^$i/" "$GRANT_FILE" > "$TMP"
+  awk "/^$i/" "$REVOKE_FILE" > "$TMP"
 
   while read -r RESOURCE_TYPE RESOURCE_NAME TYPE TEAM
   do
 
     [[ -z "$TYPE" ]] && TYPE='use'
-    echo "GRANT $TYPE TO $RESOURCE_NAME FOR THE TEAM $TEAM"
+    echo "REVOKE $TYPE TO $RESOURCE_NAME FOR THE TEAM $TEAM"
     TYPE="--type ${TYPE}"
     RESOURCE_TYPE="--${RESOURCE_TYPE//job_template/job-template}"
     CLI_CMD="$CLI_PREFIX $TEAM $TYPE $RESOURCE_TYPE $RESOURCE_NAME"

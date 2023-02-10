@@ -19,35 +19,38 @@
 # shellcheck disable=SC1090
 # shellcheck disable=SC1091
 # shellcheck source=/dev/null
+# shellcheck disable=SC1117
+# shellcheck disable=SC2086
 
 DIR_BIN=$(dirname "$0") && source "$DIR_BIN/awx-common"
 
 function usage()
 {
 cat << EOF
-
 Usage:
 
-\`\`\`bash
+\'\'\'bash
 
-  $BIN INVENTORY GROUP
+  $BIN PROJECT [TEAM]
 
-\`\`\`
+\'\'\'
 
-Get enabled hosts in group of inventory.
+Show the permissions of a _project_ for a _team_.
+By default output is a CSV, you can enable Markdown output.
 
 Example:
 
-\`\`\`bash
+\'\'\'bash
 
-  $BIN wst 123
+  $BIN ansible_proxmox_v0.1.0 devops
 
-	150 wstdev01
-	151 wstdev02
-	152 wstdev03
-	153 wstdev04
+    project,ansible_proxmox_v0.1.0,Use,devops
 
-\`\`\`
+	MD_TABLE=1 $BIN ansible_proxmox_v0.1.0 devops
+
+    | _project_            | \`ansible_proxmox_v0.1.0                \` | _Use_      | _devops_             |
+
+\'\'\'
 
 EOF
 exit 0
@@ -55,15 +58,20 @@ exit 0
 
 [[ "$1" =~ ^[-]+(h|help) ]] && usage
 
-[[ -z "$1" ]] && die "EMPTY INVENTORY"
-[[ -z "$2" ]] && die "EMPTY GROUP"
+[[ -z "$1"        ]] && die "EMPTY PROJECT"
+PROJECT="$1"
+[[ -z "$2"        ]] || TEAM="$2"
+[[ -z "$TEAM"     ]] && TEAM="$DEFAULT_TEAM"
+[[ -n "$MD_TABLE" ]] || MD_TABLE=0
 
-INVENTORY="$1"
-GROUP="$2"
+RESOURCE_TYPE='project'
+RESOURCE_NAME="$PROJECT"
+ROLE_LIST_FUNC='role_list_team_csv'
+[[ "$MD_TABLE" -eq 1 ]] && ROLE_LIST_FUNC='role_list_team_table'
 
-GROUP_ID="$(awx-cli group get -i "$INVENTORY" -n "$GROUP" -f id)"
+role_list_team_project "$TEAM" "$PROJECT" | while read -r TYPE
+do
 
-awx-cli host list          \
-  --all-pages              \
-  --inventory "$INVENTORY" \
-  --group     "$GROUP_ID"  | awk '/true/ {print $1, $2}'
+  $ROLE_LIST_FUNC "$RESOURCE_TYPE" "$RESOURCE_NAME" "$TYPE" "$TEAM"
+
+done

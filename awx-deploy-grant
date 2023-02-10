@@ -65,6 +65,8 @@ EOF
 exit 0
 }
 
+[[ "$1" =~ ^[-]+(h|help) ]] && usage
+
 [[ -e "$AWX_CFG" ]] || die "NOT FOUND .tower_cli.cfg TRY awx-config"
 
 DEPLOY_TYPE='update'
@@ -129,7 +131,7 @@ echo "$DEFAULT_TEAM_DEPLOY" \
 
     stderror "WRITE DEFAULT PERMISSIONS FOR TEAM $TEAM TO REVISION $REVISION IN $OUT"
 
-    ID="$(awx-cli team get -n "$TEAM" -f id)"
+    ID="$(awx-cli team get -n "$TEAM" -f id || die "ERROR TEAM $TEAM")"
     [[ -z "$ID" ]] && die "NOT FOUND TEAM $TEAM"
 
     while IFS=/ read -r D F
