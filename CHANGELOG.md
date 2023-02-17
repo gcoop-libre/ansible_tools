@@ -2,6 +2,133 @@
 
  - this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
+## [`Unreleased - 2023-02-10`](https://gitlab.com/gcoop-libre/ansible_tools/-/compare/v0.4.0...develop)
+
+
+## [`v0.4.0 - 2023-02-10`](https://gitlab.com/gcoop-libre/ansible_tools/-/compare/v0.3.0...v0.4.0) _revoke grant permissions if exists deploy/revoke.awx file_
+
+### `awx-common`
+
+- better filter for role list team functions
+- add function role_list_team_table
+- add function role_list_team_csv
+- add function role_list_team_workflow
+- add function role_list_team_job_template
+- add function role_list_team_inventory
+- add function role_list_team_project
+- add function role_list_team_credential
+
+### `awx-credential-list`
+
+- get sorted names of all credentials
+
+### `awx-deploy-grant`
+
+- add usage on -h or --help
+- add die error when get team
+
+### `awx-deploy-revision`
+
+- fix typo, replace REVOKET_FILE with REVOKE_FILE
+- revoke permission to a team if exits awx/revoke.awx
+- clone documentation repository only once
+- prevent grep from exiting in case of nomatch
+- fail when PROJECT_VERSION is empty
+- clean temporal files only when DOC_CLEAN=1
+- add ls for debug in cleanup
+- clean temporary files on die and normal exit
+- enable CHECK_PROJECT_NAME and CHECK_BRANCH_VERSION by default
+
+### `awx-grant-inventory`
+
+- disable SC2086 for shellcheck lint
+
+### `awx-grant-team`
+
+- set -x when BASH_DEBUG is defined
+
+### `awx-host-list-inventory-group`
+
+- use group instead of group id as parameter
+
+### `awx-inventory-list`
+
+- only get sorted names of all inventories
+
+### `awx-inventory-role-list`
+
+- get user and teams permissions from an inventory
+
+### `awx-job-template-list`
+
+- get sorted names of all job templates
+
+### `awx-job-template-role-list`
+
+- get user and teams permissions from an job template
+
+### `awx-json-bump-version`
+
+- define default VERSION as PATCH
+
+### `awx-project-list`
+
+- get sorted names of all projects
+
+### `awx-revoke-team`
+
+- add script for revoke permission to a team from file
+
+### `awx-role-list-all`
+
+- list all permissions in CSV or Markdown table iterating all resources
+
+### `awx-role-list-credential`
+
+- allow to show multiple permissions of the same resource
+- show CSV or MD Table using role_list_team_credential function
+
+### `awx-role-list-inventory`
+
+- allow to show multiple permissions of the same resource
+- show CSV or MD Table using role_list_team_inventory function
+
+### `awx-role-list-job-template`
+
+- improve help description and example
+- allow to show multiple permissions of the same resource
+- show CSV or MD Table usign role_list_team_job_template function
+
+### `awx-role-list-project`
+
+- allow to show multiple permissions of the same resource
+- show CSV or MD Table using role_list_team_project function
+
+### `awx-role-list-workflow`
+
+- allow to show multiple permissions of the same resource
+- show CSV or MD Table using role_list_team_workflow function
+
+### `awx-team-list`
+
+- get sorted names of all teams
+
+### `awx-team-users-list`
+
+- get all usernames of a team
+
+### `awx-workflow-list`
+
+- only get sorted names of all workflows
+
+### `awx-workflow-role-list`
+
+- get user and team permissions from a workflow
+
+### `gitignore`
+
+- add *.dot and *.png
+
 ## [`v0.3.0 - 2022-10-03`](https://gitlab.com/gcoop-libre/ansible_tools/-/compare/v0.2.0...v0.3.0) _scripts that automate the deployment of an AWX release and various other improvements_
 
 ### `ansible-inventory-test`
@@ -110,6 +237,7 @@
 
 ### `awx-deploy-revision`
 
+- add quote inside JOB_GROUP to prevent shellcheck error SC2295
 - verify job template documentacion and fail when not found by default (DOC_CHECK=1)
 - replace hardcoded origin with ORIGIN variable when execute git reset --hard
 - prevent execute git pull and git fetch --tags when DONT_PULL and DONT_FETCH_TAGS are enabled
@@ -215,6 +343,10 @@
 ### `awx-group-get-variable`
 
 - use `all` as default variable
+
+### `awx-help`
+
+- update AWX Help
 
 ### `awx-host-associate`
 
@@ -409,9 +541,21 @@
 
 - add example in usage, refactor according Semantic Version
 
+### `CHANGELOG`
+
+- add ChangeLog from all versions from v0.1.0 to v0.3.0
+
+### `general`
+
+- add disable=SC1091 and source=/dev/null to prevent shellcheck errors
+
 ### `gitignore`
 
 - exclude awx directory
+
+### `gitlab-ci`
+
+- find shellscripts and execute shellcheck using koalaman/shellcheck-alpine:stable
 
 ### `git-projects-list`
 
