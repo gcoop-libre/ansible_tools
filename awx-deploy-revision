@@ -84,6 +84,7 @@ DEPLOY_TYPE='update'
 [[ -n "$DOC_SPLIT"       ]] || DOC_SPLIT='_'
 [[ -n "$DOC_JOB_SHORT"   ]] || DOC_JOB_SHORT=1
 
+[[ -n "$CHECK_PROJECT_VERSION" ]] || CHECK_PROJECT_VERSION=1
 [[ -n "$CHECK_PROJECT_NAME"   ]] || CHECK_PROJECT_NAME=1
 [[ -n "$CHECK_BRANCH_VERSION" ]] || CHECK_BRANCH_VERSION=1
 
@@ -213,8 +214,15 @@ do
   [[ -e "$PROJECT" ]] || die "NOT FOUND FILE $PROJECT"
   PROJECT_NAME="$(basename "$PROJECT" .json)"
   PROJECT_VERSION="$(echo "$PROJECT_NAME" | { grep -Eo "$REGEX_VERSION" || true; })"
+
+  if [[ "$CHECK_PROJECT_VERSION" -eq 1 ]]
+  then
+
   [[ -z "$PROJECT_VERSION" ]] \
     && die "EMPTY PROJECT VERSION NOT MATCH WITH $REGEX_VERSION"
+
+  fi
+
   JQ_NAME="$(jq -r '.[].name' "$PROJECT")"
   JQ_BRANCH="$(jq -r '.[].scm_branch' "$PROJECT")"
 
