@@ -292,6 +292,10 @@ do
 
   JQ='.[].asset_relation.inventory_source[].name'
   INVENTORY_SOURCE_NAME="$(jq -r "$JQ" "$INVENTORY")"
+
+  echo "LIST INVENTORY SOURCE WITH NAME $INVENTORY_SOURCE_NAME"
+  awx-cli inventory_source list --name "$INVENTORY_SOURCE_NAME" | bash
+
   echo "UPDATE INVENTORY SOURCE $INVENTORY_SOURCE_NAME"
   echo "awx-cli inventory_source update $INVENTORY_SOURCE_NAME" | bash \
     || die "FAILED UPDATE $INVENTORY_SOURCE_NAME"
