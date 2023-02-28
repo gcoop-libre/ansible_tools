@@ -36,17 +36,17 @@ Usage:
 Filter /var/log/ipa-sss-syn.log by \`REGEX\` (Default current date) and
 show the following colums:
 
-  time sAMAccountName sss_cache seconds
+  time user sAMAccountName sss_cache seconds
 
 Example:
 
   $BIN ipa ipa
 
-	14:57 sAMAccountName=0227 sss_cache=0 seconds=1
-	15:13 sAMAccountName=3250 sss_cache=0 seconds=0
-	15:40 sAMAccountName=0282 sss_cache=0 seconds=0
-	15:54 sAMAccountName=0847 sss_cache=1 seconds=5
-	16:08 sAMAccountName=3318 sss_cache=1 seconds=
+	14:57 user=root sAMAccountName=0227 sss_cache=0 seconds=1
+	15:13 user=ansible sAMAccountName=3250 sss_cache=0 seconds=0
+	15:40 user=root sAMAccountName=0282 sss_cache=0 seconds=0
+	15:54 user=root sAMAccountName=0847 sss_cache=1 seconds=5
+	16:08 user=rootansible sAMAccountName=3318 sss_cache=1 seconds=
 
 EOF
 exit 0
@@ -67,7 +67,7 @@ LIMIT="$2"
 [[ -z "$3"         ]] || REGEX="$3"
 [[ -z "$REGEX"     ]] && die "EMPTY REGEX"
 
-COMMAND="sudo /usr/bin/awk '/$REGEX/ {print \$2,\$4,\$19,\$NF}' $LOG"
+COMMAND="sudo /usr/bin/awk '/$REGEX/ {print \$2,\$3,\$4,\$19,\$NF}' $LOG"
 
 printf "## Execute $COMMAND in %s" "$LIMIT"
 echo
