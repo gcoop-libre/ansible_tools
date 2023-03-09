@@ -1,0 +1,112 @@
+#!/bin/bash
+
+# This script comes with ABSOLUTELY NO WARRANTY, use at own risk
+# Copyright (C) 2020 Osiris Alejandro Gomez <osiris@gcoop.coop>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+
+# shellcheck disable=SC1090
+# shellcheck disable=SC1091
+# shellcheck source=/dev/null
+# shellcheck disable=SC2086
+# shellcheck disable=SC2089
+# shellcheck disable=SC2090
+
+DIR_BIN="$(dirname "$0")" && source "$DIR_BIN/awx-common"
+
+function usage()
+{
+cat << EOF
+Usage:
+
+\`\`\`bash
+
+  $BIN JOB_TEMPLATE NAME
+
+\`\`\`
+
+Create schedule to run _job_template_.
+
+\`\`\`bash
+
+  $BIN wst_wol_all_v0.1.0 WoL all Workstations
+
+\`\`\`
+
+EOF
+exit 0
+}
+
+[[ "$1" =~ ^[-]+(h|help) ]] && usage
+
+[[ -z "$1"            ]] || JOB_TEMPLATE="$1"
+[[ -z "$2"            ]] || NAME="$2"
+[[ -z "$JOB_TEMPLATE" ]] && die "EMPTY JOB_TEMPLATE NAME"
+[[ -n "$TZID"         ]] || TZID="$(cat /etc/timezone)"
+[[ -n "$DDELTA"       ]] || DDELTA='now +5 minutes'
+[[ -n "$DFORMAT"      ]] || DFORMAT='%Y%m%dT%H%M%S'
+[[ -n "$DSTART"       ]] || DSTART="$(date -d "$DDELTA" +"$DFORMAT")"
+[[ -n "$NUMBER"       ]] || NUMBER="$(date +'%s')"
+[[ -z "$NAME"         ]] && NAME="schedule $NUMBER"
+[[ -n "$COUNT"        ]] || COUNT='1'
+[[ -n "$INTERVAL"     ]] || INTERVAL='1'
+[[ -n "$FREQ"         ]] || FREQ='DAILY'
+
+if [[ -z "$LIMIT"   ]]
+then
+  [[ -n "$DEFAULT_SCHEDULE_LIMIT" ]] && LIMIT="$DEFAULT_SCHEDULE_LIMIT"
+fi
+
+[[ -n "$LIMIT" ]] && LIMIT="--limit $LIMIT"
+
+if [[ -n "$EXTRA_JSON" ]]
+then
+  [[ -e "$EXTRA_JSON" ]] || die "NOT FOUND FILE $EXTRA_JSON"
+  EXTRA_DATA="--extra-data '@$EXTRA_JSON'"
+else
+  EXTRA_JSON="schedule/$JOB_TEMPLATE.json"
+  if [[ -e "$EXTRA_JSON" ]]
+  then
+    echo "USING EXTRA_DATA FROM $EXTRA_JSON"
+    if command -v jsonlint >/dev/null;then jsonlint "$EXTRA_JSON";fi
+    EXTRA_DATA="--extra-data '@$EXTRA_JSON'"
+  fi
+fi
+
+if [[ -n "$EXTRA_RRULE" ]]
+then
+
+  [[ -e "$EXTRA_RRULE" ]] || die "NOT FOUND FILE $EXTRA_RRULE"
+
+else
+
+RRULE=$(cat << EOF
+DTSTART;TZID=$TZID:$DSTART RRULE:FREQ=$FREQ;INTERVAL=$INTERVAL;COUNT=$COUNT
+EOF
+)
+
+  EXTRA_RRULE="schedule/$JOB_TEMPLATE.rrule"
+  if [[ -e "$EXTRA_RRULE" ]]
+  then
+    echo "USING EXTRA_RRULE FROM $EXTRA_RRULE"
+    RRULE="$(cat "$EXTRA_RRULE")"
+  fi
+
+fi
+
+echo "CREATE SCHEDULE $NAME | $RRULE"
+awx-cli schedule create          \
+  --name "$NAME"                 \
+  --job-template "$JOB_TEMPLATE" \
+  --rrule "$RRULE" $LIMIT $EXTRA_DATA $AWX_DEBUG
