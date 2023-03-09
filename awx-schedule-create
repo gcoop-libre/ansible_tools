@@ -23,6 +23,8 @@
 # shellcheck disable=SC2089
 # shellcheck disable=SC2090
 
+[[ -n "$BASH_DEBUG" ]] && set -x
+
 DIR_BIN="$(dirname "$0")" && source "$DIR_BIN/awx-common"
 
 function usage()
