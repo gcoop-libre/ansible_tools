@@ -82,7 +82,9 @@ else
   then
     echo "USING EXTRA_DATA FROM $EXTRA_JSON"
     if command -v jsonlint >/dev/null;then jsonlint "$EXTRA_JSON";fi
-    EXTRA_DATA="--extra-data '@$EXTRA_JSON'"
+    EXTRA_DATA="--extra-data '@"
+    EXTRA_DATA+="$EXTRA_JSON"
+    EXTRA_DATA+="'"
   fi
 fi
 
