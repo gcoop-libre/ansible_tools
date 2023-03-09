@@ -111,4 +111,4 @@ echo "CREATE SCHEDULE $NAME | $RRULE"
 awx-cli schedule create          \
   --name "$NAME"                 \
   --job-template "$JOB_TEMPLATE" \
-  --rrule "$RRULE" $LIMIT $EXTRA_DATA $AWX_DEBUG
+  --rrule "$RRULE" $LIMIT $EXTRA_DATA
