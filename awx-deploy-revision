@@ -353,6 +353,17 @@ done
 
 fi
 
+SCHEDULE_FILE="$DEPLOY_DIR/schedule.awx"
+if [[ -e "$SCHEDULE_FILE" ]]
+then
+  while read -r SCHEDULE_JOB_TEMPLATE SCHEDULE_NAME
+  do
+
+    awx-schedule-create "$SCHEDULE_JOB_TEMPLATE" "$SCHEDULE_NAME"
+
+  done < "$SCHEDULE_FILE"
+fi
+
 TEAM_ASSOCIATE="$DEPLOY_DIR/team-associate.awx"
 if [[ -e "$TEAM_ASSOCIATE" ]]
 then
