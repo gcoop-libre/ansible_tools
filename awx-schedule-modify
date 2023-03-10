@@ -109,7 +109,7 @@ fi
 
 if command -v rrule-validate >/dev/null;then rrule-validate "$RRULE";fi
 
-echo "CREATE SCHEDULE $NAME | $RRULE"
+echo "MODIFY SCHEDULE $NAME | $RRULE"
 awx-cli schedule modify          \
   --name "$NAME"                 \
   --job-template "$JOB_TEMPLATE" \
