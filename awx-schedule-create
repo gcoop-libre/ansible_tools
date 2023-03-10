@@ -107,6 +107,8 @@ EOF
 
 fi
 
+if command -v rrule-validate >/dev/null;then rrule-validate "$RRULE";fi
+
 echo "CREATE SCHEDULE $NAME | $RRULE"
 awx-cli schedule create          \
   --name "$NAME"                 \
