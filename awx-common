@@ -601,7 +601,7 @@ schedule_get_id()
 {
   [[ -z "$1" ]] && return
   [[ -z "$2" ]] && return
-  awx-cli schedule get --job-template "$1" -n "$2" -f id
+  awx-cli schedule get --job-template "$1" -n "$2" -f id || true
 }
 
 jq_yq_modify()
