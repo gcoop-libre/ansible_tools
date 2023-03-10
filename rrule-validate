@@ -1,0 +1,66 @@
+#!/bin/bash
+
+# This script comes with ABSOLUTELY NO WARRANTY, use at own risk
+# Copyright (C) 2023 Osiris Alejandro Gomez <osiux@osiux.com>
+# Copyright (C) 2023 Osiris Alejandro Gomez <osiris@gcoop.coop>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+
+## Examplet DTSTART;TZID=America/Argentina/Buenos_Aires:20230310T018000 RRULE:FREQ=DAILY;INTERVAL=1;COUNT=1"
+
+[[ -n "$BASH_DEBUG" ]] && set -x
+
+function die()
+{
+  echo >&2 "ERROR: $1"
+  exit 1
+}
+
+function validate()
+{
+  if ! LC_ALL=en_US.UTF-8 date -d "$1" >/dev/null 2>/dev/null
+  then
+    die "INVALID DATETIME: ${1//:/}"
+  fi
+}
+
+[[ -z "$1"          ]] && die "EMPTY RRULE"
+RRULE="$1"
+[[ -e "$1"          ]] && RRULE="$(cat "$1")"
+[[ -z "$RRULE"      ]] && die "EMPTY RRULE"
+
+DTSTART="$(echo "$RRULE" | grep -Eo '^DTSTART.*[0-9]{6}T[0-9]{6}' | cut -d : -f2)"
+[[ -z "$DTSTART"    ]] && die "EMPTY DTSTART"
+
+DATE="${DTSTART%T*}"
+[[ -z "$DATE"       ]] && die "EMPTY DATE"
+
+TIME="${DTSTART#*T}"
+[[ -z "$TIME"       ]] && die "EMPTY TIME"
+
+validate "$DATE"
+HH="${TIME::2}"
+[[ -z "$HH"         ]] && die "EMPTY HOUR"
+
+MM="${TIME:2:4}"
+MM="${MM::2}"
+[[ -z "$MM"         ]] && die "EMPTY MINUTES"
+
+SS="${TIME:4:2}"
+[[ -z "$SS"         ]] && die "EMPTY SECONDS"
+
+HOUR="$HH:$MM:$SS"
+validate "$HOUR"
+
+echo "NO ERRORS FOUND IN RRULE: $RRULE"
