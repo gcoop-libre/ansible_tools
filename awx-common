@@ -597,6 +597,13 @@ job_template_get_id()
   [[ -z "$1" ]] || awx-cli job_template get -n "$1" -f id
 }
 
+schedule_get_id()
+{
+  [[ -z "$1" ]] && return
+  [[ -z "$2" ]] && return
+  awx-cli schedule get --job-template "$1" -n "$2" -f id
+}
+
 jq_yq_modify()
 {
   jq empty "$1" 2>/dev/null
