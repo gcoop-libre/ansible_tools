@@ -66,8 +66,13 @@ DEPLOY_TYPE='update'
 [[ -z "$2"          ]] || REVISION="$2"
 [[ -z "$3"          ]] || DEPLOY_TYPE="$3"
 [[ -d "$AWX_DIR"    ]] || die "NOT FOUND DIRECTORY $AWX_DIR"
+[[ -n "$DONT_PULL"     ]] || DONT_PULL=0
+[[ -n "$DONT_CHECKOUT" ]] || DONT_CHECKOUT=0
 
 DEPLOY_FILE="$DEPLOY_DIR/${DEPLOY_TYPE}.awx"
+SCHEDULE_FILE="$DEPLOY_DIR/schedule.awx"
+GRANT_FILE="$DEPLOY_DIR/grant.awx"
+REVOKE_FILE="$DEPLOY_DIR/revoke.awx"
 
 cd "$AWX_DIR"          || die "FAILED TO CHANGE TO $AWX_DIR"
 [[ -d '.git'        ]] || die "NOT FOUND GIT REPOSITORY"
@@ -86,8 +91,13 @@ then
 
   git fetch >/dev/null 2>/dev/null || die "FAILED TO FECTH"
 
+  if [[ "$DONT_CHECKOUT" -eq 0 ]]
+  then
+
   git checkout "$REVISION" >/dev/null 2>/dev/null \
     || die "FAILED TO CHECKOUT $REVISION"
+
+  fi
 
 fi
 
@@ -96,18 +106,28 @@ REVISION_TYPE="$(git cat-file -t "$REVISION")"
 if [[ "$REVISION_TYPE" != 'tag' ]]
 then
 
+  if [[ "$DONT_PULL" -eq 0 ]]
+  then
+
   git pull >/dev/null 2>/dev/null || die "FAILED TO PULL $REVISION"
+
+  fi
 
 else
 
+  if [[ "$DONT_CHECKOUT" -eq 0 ]]
+  then
+
   git checkout "$REVISION" >/dev/null || die "FAILED TO PULL $REVISION"
+
+  fi
 
 fi
 
 [[ -d "$DEPLOY_DIR"     ]] || die "NOT FOUND DIR $DEPLOY_DIR"
 
 # EXIT IMMEDIATELY IF A COMMAND EXITS WITH A NON-ZERO STATUS
-set -e
+# FIXME set -e
 
 [[ -n "$DIR_NAME"   ]] || DIR_NAME="$(echo "$PWD" | rev | cut -d/ -f1 | rev)"
 [[ -n "$CHANGELOG"  ]] || CHANGELOG="${DIR_NAME}-${REVISION}.md"
@@ -117,35 +137,11 @@ COMMIT="$(git show-ref -s "$REVISION")"
 NOW="$(date +%F)"
 TITLE="$DIR_NAME $REVISION"
 
-function changelog_generate()
+function generate_resources()
 {
 
-HEAD=$(cat << EOF
----
-title: $TITLE
-date: $NOW
-author: CC-BY-SA Osiris Alejandro Gomez osiris@gcoop.coop
-fontsize: 10pt
----
-
-EOF
-)
-
-printf "%s\n\n" "$HEAD"
-
-printf "## [\`%s\`](%s) [\`%s\`](%s)\n\n" \
-       "$DIR_NAME" \
-       "$GIT_URL"  \
-       "$REVISION" \
-       "$GIT_TAG"
-
-printf " - revision: %s\n" "$GIT_TAG"
-printf " - commit: %s\n" "$COMMIT"
-printf "\n"
-
-printf "\`\`\`\n\n"
-git show --name-only "$REVISION"
-printf "\`\`\`\n\n"
+[[ -e "$DEPLOY_FILE" ]] || return
+[[ -s "$DEPLOY_FILE" ]] || return
 
 printf "### %s\n\n" 'resources'
 
@@ -156,9 +152,6 @@ printf "| %-20s | %-40s | %-65s |\n"   \
 
 printf "| %-20s | %-40s | %-65s |\n"   \
        ' ' ' ' ' ' | sed 's/ /-/g'
-
-if [[ -e "$DEPLOY_FILE" ]]
-then
 
 grep ^credential "$DEPLOY_FILE" | sort | while read -r JSON
 do
@@ -235,8 +228,6 @@ do
 
 done
 
-fi
-
 TEAM_ASSOCIATE="$DEPLOY_DIR/team-associate.awx"
 if [[ -e "$TEAM_ASSOCIATE" ]]
 then
@@ -248,15 +239,50 @@ then
 
   done < "$TEAM_ASSOCIATE"
 fi
+}
 
-TMP="$(mktemp)"
-GRANT_FILE="$DEPLOY_DIR/grant.awx"
+function generate_schedule()
+{
 
-if [[ -e "$GRANT_FILE" ]]
-then
+[[ -e "$SCHEDULE_FILE" ]] || return
+[[ -s "$SCHEDULE_FILE" ]] || return
 
-printf "\n"
-printf "### %s\n\n" 'permissions'
+printf "\\n### %s\\n\\n" 'schedule'
+
+printf "| %-24s | %-25s | %-32s | %-100s |\n"   \
+        'job_template' \
+        'name'         \
+        'extra_data'   \
+        'rrule'
+
+printf "| %-24s | %-25s | %-32s | %-100s |\n"   \
+        ' ' ' ' ' ' ' ' | sed 's/ /-/g'
+
+sort "$SCHEDULE_FILE" | while read -r SCHEDULE_JOB NAME
+do
+  JOB_RRULE="schedule/$SCHEDULE_JOB.rrule"
+  JOB_EXTRA="schedule/$SCHEDULE_JOB.json"
+
+  [[ -e "$JOB_RRULE" ]] && SCHEDULE_RRULE="$(cat "$JOB_RRULE")"
+  [[ -e "$JOB_EXTRA" ]] && SCHEDULE_EXTRA="$(jq -c . "$JOB_EXTRA")"
+
+  printf "| \`%-22s\` | _%-23s_ | \`%-30s\` | \`%-98s\` |\n" \
+         "$SCHEDULE_JOB" "$NAME" "${SCHEDULE_EXTRA//,/, }" "$SCHEDULE_RRULE"
+
+done
+
+}
+
+function generate_permissions()
+{
+  local PERMISSION_FILE
+
+[[ -z "$1"               ]] || PERMISSION_NAME="$1"
+[[ -z "$2"               ]] || PERMISSION_FILE="$2"
+[[ -e "$PERMISSION_FILE" ]] || return
+[[ -s "$PERMISSION_FILE" ]] || return
+
+printf "\\n### %s\\n\\n" "$PERMISSION_NAME permissions"
 
     printf "| %-20s | %-40s | %-10s | %-20s |\n"   \
             'resource_type' \
@@ -269,7 +295,7 @@ printf "### %s\n\n" 'permissions'
 for i in credential inventory project job_template workflow
 do
 
-  awk "/^$i/" "$GRANT_FILE" > "$TMP"
+  awk "/^$i/" "$PERMISSION_FILE" > "$TMP"
 
   while read -r RESOURCE_TYPE RESOURCE_NAME TYPE TEAM
   do
@@ -283,7 +309,63 @@ do
 
 done
 
-fi
+}
+
+function generate_grant()
+{
+  generate_permissions 'grant' "$GRANT_FILE"
+}
+
+function generate_revoke()
+{
+  generate_permissions 'revoke' "$REVOKE_FILE"
+}
+
+function generate_revision()
+{
+
+printf "%s\\n\\n" "$HEAD"
+
+printf "## [\`%s\`](%s) [\`%s\`](%s)\n\n" \
+       "$DIR_NAME" \
+       "$GIT_URL"  \
+       "$REVISION" \
+       "$GIT_TAG"
+
+printf " - revision: %s\\n" "$GIT_TAG"
+printf " - commit: %s\\n" "$COMMIT"
+printf "\\n"
+
+printf "\`\`\`\n\n"
+git show --name-only "$REVISION"
+printf "\`\`\`\n\n"
+
+}
+
+function changelog_generate()
+{
+
+HEAD=$(cat << EOF
+---
+title: $TITLE
+date: $NOW
+author: CC-BY-SA Osiris Alejandro Gomez osiris@gcoop.coop
+fontsize: 10pt
+classoption: landscape
+---
+
+EOF
+)
+
+TMP="$(mktemp)"
+
+generate_revision
+generate_resources
+generate_schedule
+generate_grant
+generate_revoke
+
+rm -f "$TMP"
 
 }
 
