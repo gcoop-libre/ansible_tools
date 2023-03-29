@@ -131,10 +131,13 @@ fi
 
 [[ -n "$DIR_NAME"   ]] || DIR_NAME="$(echo "$PWD" | rev | cut -d/ -f1 | rev)"
 [[ -n "$CHANGELOG"  ]] || CHANGELOG="${DIR_NAME}-${REVISION}.md"
+[[ -n "$AUTHOR"      ]] || AUTHOR='CC-BY-SA Osiris Gomez osiris@gcoop.coop'
+[[ -n "$DATE"        ]] || DATE="$(date +%F)"
+[[ -n "$FONT_SIZE"   ]] || FONT_SIZE='10pt'
+[[ -n "$CLASSOPTION" ]] || CLASSOPTION='landscape'
 GIT_URL="$(git remote get-url --all origin | sed 's/[a-z\-]\+:[a-zA-Z0-9_\-]\+@//g' | grep http | head -1 | sed 's/\.git$//g')"
 GIT_TAG="$GIT_URL/-/tags/$REVISION"
 COMMIT="$(git show-ref -s "$REVISION")"
-NOW="$(date +%F)"
 TITLE="$DIR_NAME $REVISION"
 
 function generate_resources()
@@ -348,10 +351,10 @@ function changelog_generate()
 HEAD=$(cat << EOF
 ---
 title: $TITLE
-date: $NOW
-author: CC-BY-SA Osiris Alejandro Gomez osiris@gcoop.coop
-fontsize: 10pt
-classoption: landscape
+date: $DATE
+author: $AUTHOR
+fontsize: $FONT_SIZE
+classoption: $CLASSOPTION
 ---
 
 EOF
