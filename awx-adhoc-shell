@@ -62,7 +62,9 @@ MODULE_ARGS="$3"
 [[ -n "$JOB_TYPE"               ]] || JOB_TYPE='run'
 [[ -n "$MODULE_NAME"            ]] || MODULE_NAME='shell'
 [[ -n "$VERBOSE"                ]] || VERBOSE='more_verbose'
-[[ -n "$DEFAULT_SSH_CREDENTIAL" ]] || DEFAULT_SSH_CREDENTIAL='ssh_ansible'
+[[ -n "$INVENTORY_CREDENTIAL"     ]] || INVENTORY_CREDENTIAL="DEFAULT_SSH_CREDENTIAL_${INVENTORY^^}"
+[[ -n "$INVENTORY_SSH_CREDENTIAL" ]] || INVENTORY_SSH_CREDENTIAL="${!INVENTORY_CREDENTIAL}"
+[[ -z "$INVENTORY_SSH_CREDENTIAL" ]] && INVENTORY_SSH_CREDENTIAL="$DEFAULT_SSH_CREDENTIAL"
 
 if [[ "$LIMIT" = 'nolimit' ]]
 then
@@ -70,7 +72,7 @@ then
 awx-cli ad_hoc launch                         \
   --job-type        "$JOB_TYPE"               \
   --inventory       "$INVENTORY"              \
-  --credential      "$DEFAULT_SSH_CREDENTIAL" \
+  --credential      "$INVENTORY_SSH_CREDENTIAL" \
   --module-name     "$MODULE_NAME"            \
   --module-args     "$MODULE_ARGS"            \
   --verbosity       "$VERBOSE"                \
@@ -83,7 +85,7 @@ awx-cli ad_hoc launch                         \
   --job-type        "$JOB_TYPE"               \
   --inventory       "$INVENTORY"              \
   --limit           "$LIMIT"                  \
-  --credential      "$DEFAULT_SSH_CREDENTIAL" \
+  --credential      "$INVENTORY_SSH_CREDENTIAL" \
   --module-name     "$MODULE_NAME"            \
   --module-args     "$MODULE_ARGS"            \
   --verbosity       "$VERBOSE"                \
