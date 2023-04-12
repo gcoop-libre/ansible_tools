@@ -373,6 +373,14 @@ inventory_get_id()
     --name "$1"
 }
 
+group_get_description()
+{
+  awx-cli group get  \
+    --format json    \
+    --inventory "$1" \
+    --name "$2"      | jq -r .description
+}
+
 host_disable()
 {
   awx-cli host modify   \
