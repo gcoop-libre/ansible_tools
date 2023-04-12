@@ -131,8 +131,9 @@ else
     --name "$GROUP"              \
     --description "$DESCRIPTION" $VARIABLES
 
-  echo ""
-
 fi
 
+repeat_string "$MID_WIDTH" '='
+
+rm -f "$NEW_VARIABLES"
 rm -f "$OLD_VARIABLES"
