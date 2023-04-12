@@ -70,6 +70,8 @@ DEPLOY_TYPE='update'
 [[ -n "$DONT_CHECKOUT" ]] || DONT_CHECKOUT=0
 
 DEPLOY_FILE="$DEPLOY_DIR/${DEPLOY_TYPE}.awx"
+[[ -n "$GROUPS_FILE"  ]] || GROUPS_FILE="$DEPLOY_DIR/groups.awx"
+[[ -n "$GROUPS_INDEX" ]] || GROUPS_INDEX="groups/index"
 SCHEDULE_FILE="$DEPLOY_DIR/schedule.awx"
 GRANT_FILE="$DEPLOY_DIR/grant.awx"
 REVOKE_FILE="$DEPLOY_DIR/revoke.awx"
@@ -130,7 +132,7 @@ fi
 # FIXME set -e
 
 [[ -n "$DIR_NAME"   ]] || DIR_NAME="$(echo "$PWD" | rev | cut -d/ -f1 | rev)"
-[[ -n "$CHANGELOG"  ]] || CHANGELOG="${DIR_NAME}-${REVISION}.md"
+[[ -n "$CHANGELOG"  ]] || CHANGELOG="${DIR_NAME}-${REVISION#*/}.md"
 [[ -n "$AUTHOR"      ]] || AUTHOR='CC-BY-SA Osiris Gomez osiris@gcoop.coop'
 [[ -n "$DATE"        ]] || DATE="$(date +%F)"
 [[ -n "$FONT_SIZE"   ]] || FONT_SIZE='10pt'
@@ -242,6 +244,38 @@ then
 
   done < "$TEAM_ASSOCIATE"
 fi
+}
+
+function generate_groups()
+{
+
+[[ -e "$GROUPS_FILE" ]] || return
+[[ -s "$GROUPS_FILE" ]] || return
+
+printf "\\n### %s\\n\\n" 'groups'
+
+printf "| %-22s | %-22s | %-22s | %-42s |\\n" \
+        'inventory'                           \
+        'group'                               \
+        'group_vars'                          \
+        'description'
+
+printf "| %-22s | %-22s | %-22s | %-42s |\\n" \
+       ' ' ' ' ' ' ' ' | sed 's/ /-/g'
+
+grep -v '^#' "$GROUPS_FILE" | while read -r INVENTORY GROUP
+do
+
+  GROUP_DESCRIPTION="$(group_index_get_description "$GROUP")"
+  GROUP_VARS="groups/$GROUP.yml"
+
+  [[ -e "$GROUP_VARS" ]] || GROUP_VARS='-'
+
+  printf "| \`%-20s\` | \`%-20s\` | \`%-20s\` | _%-40s_ |\\n" \
+          "$INVENTORY" "$GROUP" "$GROUP_VARS" "$GROUP_DESCRIPTION"
+
+done
+
 }
 
 function generate_schedule()
@@ -364,6 +398,7 @@ TMP="$(mktemp)"
 
 generate_revision
 generate_resources
+generate_groups
 generate_schedule
 generate_grant
 generate_revoke
@@ -372,6 +407,7 @@ rm -f "$TMP"
 
 }
 
+true               > "$CHANGELOG"
 changelog_generate > "$CHANGELOG" && echo "GENERATE $CHANGELOG"
 
 mv "$CHANGELOG" "$TMP"
