@@ -381,6 +381,19 @@ group_get_description()
     --name "$2"      | jq -r .description
 }
 
+function group_index_get_description()
+{
+  local GROUP="$1"
+  local DESCRIPTION=''
+
+  DESCRIPTION="$(grep -E "^$GROUP" "$GROUPS_INDEX" || true)"
+
+  echo "$DESCRIPTION" \
+    | cut -d ' ' -f2- \
+    | sed 's/^ \+//g' \
+    | sed 's/ \+$//g'
+}
+
 host_disable()
 {
   awx-cli host modify   \
