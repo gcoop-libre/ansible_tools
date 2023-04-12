@@ -97,6 +97,12 @@ title3()
   printf "\\n### %s\\n\\n" "$1"
 }
 
+repeat_string()
+{
+  printf "%*s" "$1" ' ' | tr ' ' "$2"
+  printf "\\n"
+}
+
 get_file_list()
 {
   local DIR
