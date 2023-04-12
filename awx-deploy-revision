@@ -303,6 +303,9 @@ do
 
 done
 
+[[ -n "$GROUPS_FILE" ]] || GROUPS_FILE="$DEPLOY_DIR/groups.awx"
+[[ -e "$GROUPS_FILE" ]] && awx-deploy-groups "$GROUPS_FILE"
+
 if [[ "$DOC_CLONE" -eq 1 ]]
 then
   echo "CLONE DOCUMENTATION REPOSITORY $MSK_URL"
