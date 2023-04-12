@@ -1,0 +1,75 @@
+#!/bin/bash
+
+# This script comes with ABSOLUTELY NO WARRANTY, use at own risk
+# Copyright (C) 2023 Osiris Alejandro Gomez <osiux@osiux.com>
+# Copyright (C) 2023 Osiris Alejandro Gomez <osiris@gcoop.coop>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+
+# shellcheck disable=SC1090
+# shellcheck disable=SC1091
+# shellcheck source=/dev/null
+
+[[ -n "$BASH_DEBUG" ]] && set -x
+
+DIR_BIN="$(dirname "$0")" && source "$DIR_BIN/awx-common"
+
+function usage()
+{
+cat << EOF
+Usage:
+
+\`\`\`
+
+  $BIN
+
+\`\`\`
+
+Deploy groups defined in \`deploy/groups.awx\`, create or modify _group_
+in _inventory_ with variables from \`.yaml\` file from
+groups directory. Get description from \`groups/index\`.
+
+EOF
+exit 0
+}
+
+[[ "$1" =~ ^[-]+(h|help) ]] && usage
+
+[[ -n "$DEPLOY_DIR"     ]] || DEPLOY_DIR='deploy'
+[[ -d "$DEPLOY_DIR"     ]] || die "NOT FOUND DIRECTORY $DEPLOY_DIR"
+[[ -n "$GROUPS_FILE"    ]] || GROUPS_FILE="$DEPLOY_DIR/groups.awx"
+[[ -z "$1"              ]] || GROUPS_FILE="$1"
+[[ -e "$GROUPS_FILE"    ]] || die "NOT FOUND FILE $GROUPS_FILE"
+[[ -n "$GROUPS_INDEX"   ]] || GROUPS_INDEX="groups/index"
+
+if [[ -e "$GROUPS_FILE" ]]
+then
+
+  printf "\\n\\n%s\\n" "DEPLOY GROUPS FROM $GROUPS_FILE"
+
+  while read -r INVENTORY GROUP
+  do
+
+    [[ "$INVENTORY" =~ ^# ]] && continue
+
+    GROUP_DESCRIPTION="$(group_index_get_description "$GROUP")"
+    GROUP_FILE="groups/$GROUP.yml"
+
+    awx-group-update "$INVENTORY" "$GROUP" "$GROUP_DESCRIPTION" "$GROUP_FILE"
+
+    printf "\\n"
+
+  done < "$GROUPS_FILE"
+
+fi
