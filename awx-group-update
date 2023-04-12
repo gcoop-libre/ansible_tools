@@ -100,7 +100,7 @@ then
     --format id                  \
     --inventory "$INVENTORY"     \
     --name "$GROUP"              \
-    --description "$DESCRIPTION" $VARIABLES $AWX_DEBUG
+    --description "$DESCRIPTION" $VARIABLES
 
 else
 
@@ -129,7 +129,7 @@ else
     --format id                  \
     --inventory "$INVENTORY"     \
     --name "$GROUP"              \
-    --description "$DESCRIPTION" $VARIABLES $AWX_DEBUG
+    --description "$DESCRIPTION" $VARIABLES
 
   echo ""
 
