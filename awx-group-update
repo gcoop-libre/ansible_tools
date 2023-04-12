@@ -82,9 +82,13 @@ then
   DESCRIPTION="$(group_index_get_description "$GROUP")"
 fi
 
+# EXIT IMMEDIATELY IF A COMMAND EXITS WITH A NON-ZERO STATUS
+set -e
+
 if [[ -z "$GROUP_ID" ]]
 then
 
+  echo "NOT FOUND GROUP $GROUP EMPTY GROUP_ID"
   echo "CREATE GROUP $GROUP IN INVENTORY $INVENTORY"
   echo "ADD DESCRIPTION $DESCRIPTION"
   echo "ADD VARIABLES FROM $FILE"
@@ -101,6 +105,7 @@ then
 
 else
 
+  echo "FOUND GROUP $GROUP WITH GROUP_ID $GROUP_ID"
   OLD_DESCRIPTION="$(group_get_description "$INVENTORY" "$GROUP")"
   OLD_VARIABLES="$(mktemp --suffix .yml)"
   awx-group-get-variable "$INVENTORY" "$GROUP" \
