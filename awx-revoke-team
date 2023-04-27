@@ -71,7 +71,8 @@ exit 0
 
 TMP="$(mktemp)"
 REVOKE_FILE="$1"
-CLI_PREFIX="awx-cli role revoke --team"
+CLI_GET='awx-cli role get --team'
+CLI_REVOKE='awx-cli role revoke --team'
 
 set -e
 
@@ -87,7 +88,13 @@ do
     echo "REVOKE $TYPE TO $RESOURCE_NAME FOR THE TEAM $TEAM"
     TYPE="--type ${TYPE}"
     RESOURCE_TYPE="--${RESOURCE_TYPE//job_template/job-template}"
-    CLI_CMD="$CLI_PREFIX $TEAM $TYPE $RESOURCE_TYPE $RESOURCE_NAME"
+
+    CLI_CMD="$CLI_GET $TEAM $TYPE $RESOURCE_TYPE $RESOURCE_NAME"
+    REVOKE="$(bash -c "$CLI_CMD" -f id || true)"
+
+    [[ -z "$REVOKE" ]] && continue
+
+    CLI_CMD="$CLI_REVOKE $TEAM $TYPE $RESOURCE_TYPE $RESOURCE_NAME"
     bash -c "$CLI_CMD"
 
   done < "$TMP"
