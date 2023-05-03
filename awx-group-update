@@ -120,7 +120,7 @@ else
 
     repeat_string "$DIFF_WIDTH" '-'
 
-    diff -W "$DIFF_WIDTH" -y "$OLD_VARIABLES" "$NEW_VARIABLES"
+    diff -W "$DIFF_WIDTH" -y "$OLD_VARIABLES" "$NEW_VARIABLES" || true
 
     repeat_string "$DIFF_WIDTH" '-'
   fi
