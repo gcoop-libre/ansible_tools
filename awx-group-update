@@ -50,6 +50,7 @@ exit 0
 [[ -n "$GROUP"       ]] || GROUP="$2"
 [[ -z "$GROUP"       ]] && die "EMPTY GROUP"
 [[ -n "$DESCRIPTION" ]] || DESCRIPTION="$3"
+[[ -n "$GROUPS_INDEX" ]] || GROUPS_INDEX="groups/index"
 [[ -z "$4"           ]] || FILE="$4"
 [[ -n "$VARIABLES"   ]] || VARIABLES=''
 [[ -n "$DIFF_WIDTH"  ]] || DIFF_WIDTH='160'
@@ -75,11 +76,13 @@ if [[ -n "$FILE" ]]
 then
   NEW_VARIABLES="$(mktemp --suffix .yml)"
   yq -y --sort-keys -r . "$FILE" | grep -v '^---' > "$NEW_VARIABLES"
+  DIFF_WIDTH_NEW="$(wc -L "$NEW_VARIABLES" | awk '{print $1}')"
 fi
 
 if [[ -z "$DESCRIPTION" ]]
 then
   DESCRIPTION="$(group_index_get_description "$GROUP")"
+  echo "GET '$DESCRIPTION' FOR GROUP $GROUP FROM $GROUPS_INDEX"
 fi
 
 # EXIT IMMEDIATELY IF A COMMAND EXITS WITH A NON-ZERO STATUS
@@ -110,7 +113,7 @@ else
   awx-group-get-variable "$INVENTORY" "$GROUP" \
     | grep -v '^---'                           \
     | grep -v '^$'                             > "$OLD_VARIABLES"
-
+  DIFF_WIDTH_OLD="$(wc -L "$OLD_VARIABLES" | awk '{print $1}')"
   echo "MODIFY GROUP $GROUP IN INVENTORY $INVENTORY"
   echo "REPLACE RESCRIPTION '$OLD_DESCRIPTION' WITH '$DESCRIPTION'"
 
@@ -119,6 +122,13 @@ else
     echo "UPDATE VARIABLES FROM $FILE"
 
     repeat_string "$DIFF_WIDTH" '-'
+
+    if [[ "$DIFF_WIDTH_OLD" -ge "$DIFF_WIDTH_NEW" ]]
+    then
+      DIFF_WIDTH="$DIFF_WIDTH_OLD"
+    else
+      DIFF_WIDTH="$DIFF_WIDTH_NEW"
+    fi
 
     diff -W "$DIFF_WIDTH" -y "$OLD_VARIABLES" "$NEW_VARIABLES" || true
 
