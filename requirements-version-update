@@ -18,6 +18,12 @@
 
 BIN="$(basename "$0")"
 
+function die()
+{
+  echo >&2 "$1"
+  exit 1
+}
+
 function usage()
 {
 cat << EOF
@@ -38,27 +44,69 @@ exit 0
 
 [[ "$1" =~ ^[-]+(h|help) ]] && usage
 
-cd "$PWD" || exit 1
-YML='requirements.yml'
+cd "$PWD"               || die "ERROR TO CHANGE DIRECTORY $PWD"
+[[ -n "$REQ"         ]] || REQ='requirements.yml'
+[[ -z "$1"           ]] || REQ="$1"
+[[ -e "$REQ"         ]] || die "NOT FOUND $REQ"
+[[ -n "$DIFF"        ]] || DIFF='diff -y --suppress-common-lines'
+[[ -n "$YQ_SORT"     ]] || YQ_SORT='. |= sort_by(.name)'
+[[ -n "$YAML_LINT"   ]] || YAML_LINT=0
+[[ -n "$ROLE_PREFIX" ]] || ROLE_PREFIX='ansible-role-'
+[[ -n "$GIT_HOST"    ]] || GIT_HOST='github.com'
+[[ -n "$GIT_TYPE"    ]] || GIT_TYPE='https://'
+[[ -n "$GIT_URL"     ]] || GIT_URL="${GIT_TYPE}${GIT_HOST}"
 
-[[ ! -e "$YML" ]] && exit 1
+DELTA="$(command -v delta || true)"
+[[ -z "$DELTA" ]] || DIFF="$DELTA --paging never --side-by-side"
 
-TMP=$(mktemp)
+TMP="$(mktemp)"
+YML="$(mktemp)"
 
-grep 'src:' "$YML" | awk '{print $3}' | while read -r REPO
+printf "%s\\n" '---' > "$TMP"
+
+yq -r '.[].name' "$REQ" | while read -r NAME
 do
-  LAST_TAG=$(git-ls-remote-tags "$REPO" | head -1)
-  NAME=$(grep -A3 "$REPO" "$YML" | grep name: | awk '{print $2}')
+
+  OWNER="${NAME%.*}"
+  ROLE="${NAME#*.}"
+
+  YQ=".[] | select(.name == \"$NAME\")"
+  yq -r "$YQ" "$REQ" > "$YML"
+
+  SRC="$(yq -r .src "$YML")"
+  [[ -z "$SRC" ]] || SRC="$GIT_URL/$OWNER/${ROLE_PREFIX}$ROLE"
+
+  SCM="$(yq -r .scm "$YML")"
+  VERSION="$(yq -r .version "$YML")"
+
+  [[ -z "$SCM" ]] || SCM='git'
+
+  LAST_TAG="$(git-ls-remote-tags "$SRC" | head -1)"
+  echo >&2 "GET LAST TAG $LAST_TAG FROM SOURCE $SRC"
+  [[ -z "$LAST_TAG" ]] && LAST_TAG="$VERSION"
 
 YAML=$(cat << EOF
-- src: $REPO
-  scm: git
+- name: $NAME
+  scm: $SCM
+  src: $SRC
   version: $LAST_TAG
-  name: $NAME
 EOF
 
 )
 
 echo "$YAML"
 
-done > "$TMP" && mv -f "$TMP" "$YML"
+done | yq -y --sort-keys -r "$YQ_SORT" >> "$TMP"
+
+bash -c "$DIFF $REQ $TMP || true"
+
+if command -v yamllint >/dev/null
+then
+  if [[ "$YAML_LINT" -eq 1 ]]
+  then
+    yamllint --no-warnings "$TMP" || echo "INVALID YAML"
+  fi
+fi
+
+mv -f "$TMP" "$REQ"
+rm -f "$YML"
