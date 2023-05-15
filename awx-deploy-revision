@@ -338,8 +338,8 @@ TRY WRITE IN $DOC_LINK"
   fi
 
   echo "SEND JOB_TEMPLATE $JOB_TEMPLATE"
-  echo "awx-cli send $JOB_TEMPLATE" | bash \
-    || die "FAILED SEND JOB_TEMPLATE $JOB_TEMPLATE"
+  AWX_CMD="awx-cli send $JOB_TEMPLATE"
+  bash -c "$AWX_CMD" || die "FAILED SEND JOB_TEMPLATE $JOB_TEMPLATE"
 
 done
 
