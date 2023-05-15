@@ -337,9 +337,13 @@ TRY WRITE IN $DOC_LINK"
 
   fi
 
+  OUT="$(mktemp)"
   echo "SEND JOB_TEMPLATE $JOB_TEMPLATE"
-  AWX_CMD="awx-cli send $JOB_TEMPLATE"
+  AWX_CMD="awx-cli send $JOB_TEMPLATE > $OUT"
+  AWX_CMD+=";cat $OUT"
+  AWX_CMD+=";grep -o 'failed=0' $OUT || exit 1"
   bash -c "$AWX_CMD" || die "FAILED SEND JOB_TEMPLATE $JOB_TEMPLATE"
+  rm -f "$OUT"
 
 done
 
