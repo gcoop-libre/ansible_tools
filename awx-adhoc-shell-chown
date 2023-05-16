@@ -1,0 +1,71 @@
+#!/bin/bash
+
+# This script comes with ABSOLUTELY NO WARRANTY, use at own risk
+# Copyright (C) 2020 Osiris Alejandro Gomez <osiris@gcoop.coop>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+
+# shellcheck disable=SC1090
+# shellcheck disable=SC1091
+# shellcheck source=/dev/null
+
+DIR_BIN="$(dirname "$0")" && source "$DIR_BIN/awx-common"
+
+function usage()
+{
+cat << EOF
+Usage:
+
+\`\`\`bash
+
+  $BIN INVENTORY LIMIT sAMAccountName
+
+\`\`\`
+
+Execute chown sAMAccountName in /home/$AD_DOMAIN/$sAMAccountName
+
+Example:
+
+\`\`\`bash
+
+  $BIN wst dev admin
+
+\`\`\`
+
+EOF
+exit 0
+}
+
+[[ "$1" =~ ^[-]+(h|help) ]] && usage
+
+[[ -z "$1" ]] && die "EMPTY INVENTORY"
+INVENTORY="$1"
+
+[[ -z "$2" ]] && die "EMPTY LIMIT"
+LIMIT="$2"
+
+[[ -z "$3" ]] && die "EMPTY sAMAccountName"
+sAMAccountName="$3"
+
+[[ -n "$AD_DOMAIN" ]] || AD_DOMAIN="$DEFAULT_AD_DOMAIN"
+[[ -z "$AD_DOMAIN" ]] && die "UNDEFINED AD_DOMAIN"
+
+if [[ -n "$CHOWN_EXCLUDE" ]]
+then
+  COMMAND="sudo find /home/$AD_DOMAIN/$sAMAccountName | grep -vE '$EXCLUDE' | while read i;do sudo chown $sAMAccountName: \"\$i\" || true;done"
+else
+  COMMAND="sudo find /home/$AD_DOMAIN/$sAMAccountName | while read i;do sudo chown $sAMAccountName: \"\$i\" || true;done"
+fi
+
+awx-adhoc-shell "$INVENTORY" "$LIMIT" "$COMMAND"
