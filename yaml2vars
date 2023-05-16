@@ -1,0 +1,168 @@
+#!/bin/bash
+
+# This script comes with ABSOLUTELY NO WARRANTY, use at own risk
+# Copyright (C) 2021 Osiris Alejandro Gomez <osiris@gcoop.coop>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+
+# shellcheck disable=SC1090
+# shellcheck disable=SC1091
+# shellcheck source=/dev/null
+
+[[ -n "$BASH_DEBUG" ]] && set -x
+
+DIR_BIN="$(dirname "$0")" && source "$DIR_BIN/awx-common"
+
+function usage()
+{
+cat << EOF
+
+Usage:
+
+\`\`\`bash
+
+  $BIN YAML
+
+\`\`\`
+
+Extract variables from _YAML_ file, finding values recursively.
+
+Example:
+
+\`\`\`bash
+
+  $BIN task/cron.yml
+
+	freeipa_sssd_tools_cron_ipa_srv_mon: true
+	freeipa_sssd_tools_cron_ipa_sss_all: true
+	freeipa_sssd_tools_cron_ipa_sss_db: true
+	freeipa_sssd_tools_cron_ipa_sss_rsy: true
+	freeipa_sssd_tools_cron_ipa_sss_rsy_backup: /var/lib/ipa/backup/sss-db
+	freeipa_sssd_tools_cron_ipa_usr_syn: true
+	freeipa_sssd_tools_cron_path: {{ freeipa_sssd_tools_dir }}:/usr/local/bin:/sbin:/usr/sbin:/usr/local/bin:/usr/bin:/bin
+	freeipa_sssd_tools_cron_restart: false
+	freeipa_sssd_tools_cron_service: crond
+	freeipa_sssd_tools_cron_test_environment: PATH: '{{ freeipa_sssd_tools_cron_path }}'
+	freeipa_sssd_tools_cron_test_ipa_usr_all: false
+	freeipa_sssd_tools_cron_test_ipa_usr_syn: false
+	freeipa_sssd_tools_cron_test_no_log: true
+	freeipa_sssd_tools_cron_test_tmp_users: /tmp/ipa-usr-all-test-users
+	freeipa_sssd_tools_cron_test_write_users: false
+	freeipa_sssd_tools_dir: /opt/freeipa-sssd-tools
+	freeipa_sssd_tools_username: root
+
+\`\`\`
+
+EOF
+exit 0
+}
+
+[[ "$1" =~ ^[-]+(h|help) ]] && usage
+
+function dir2prefix()
+{
+  local DIR PREFIX
+
+  DIR="$1"
+  PREFIX="${DIR//ansible_role_/}"
+  PREFIX="${PREFIX//ansible_/}"
+
+  echo "$PREFIX"
+}
+
+function get_variables()
+{
+  grep -Eo "$VAR_FILTER" "$YAML" \
+    | sort -u                    > "$VARIABLES"
+}
+
+function get_defaults_main()
+{
+  local KEY TOT VAL
+
+  KEY="$1"
+
+  # FIXME iterate over al files in defaults/*.yml and vars/*.yml
+  if [[ -e defaults/main.yml ]]
+  then
+    VAL="$(yq -r ".$KEY" defaults/main.yml 2>/dev/null)"
+    TOT="$(echo "$VAL" | wc -l)"
+    TOT="${TOT%" "*}"
+
+    if [[ "$TOT" -gt 1 ]]
+    then
+      VAL="$(yq -y -r ".$KEY" defaults/main.yml 2>/dev/null)"
+    fi
+
+    echo "$VAL"
+  fi
+}
+
+function get_key_val()
+{
+  local KEY VAL VAR TMP
+
+  KEY="$1"
+  TMP="$(mktemp)"
+
+  VAL="$(yq -y -r ".$KEY" "$YAML" 2>/dev/null)"
+  [[ "$?" -eq 5 ]] && VAL="$(get_defaults_main "$KEY")"
+
+  echo "$VAL"               \
+    | grep -Eo "$VAL_REGEX" \
+    | tr -d '{}'            \
+    | tr -d ' '             \
+    | sort -u               > "$TMP"
+
+  if [[ -s "$TMP" ]]
+  then
+    while read -r VAR
+    do
+      get_key_val "$VAR"
+    done < "$TMP"
+  fi
+
+  printf "%s: %s\\n" "$KEY" "$VAL"
+}
+
+function get_values()
+{
+  local KEY
+
+  while read -r KEY
+  do
+
+    get_key_val "$KEY"
+
+  done < "$VARIABLES"
+}
+
+function main()
+{
+  get_variables
+  get_values
+}
+
+[[ -n "$DIR"        ]] || DIR="$(basename "$PWD")"
+[[ -n "$VAR_PREFIX" ]] || VAR_PREFIX="$(dir2prefix "$DIR")"
+[[ -n "$VAR_REGEX"  ]] || VAR_REGEX="[a-z_]+"
+[[ -n "$VAR_FILTER" ]] || VAR_FILTER="${VAR_PREFIX}_${VAR_REGEX}"
+[[ -n "$VAL_REGEX"  ]] || VAL_REGEX="\{\{ $VAR_REGEX \}\}"
+[[ -n "$YAML"       ]] || YAML='defaults/main.yml'
+[[ -z "$1"          ]] || YAML="$1"
+[[ -z "$YAML"       ]] && die "EMPTY YAML FILE"
+[[ -e "$YAML"       ]] || die "NOT FOUND FILE $YAML"
+[[ -n "$VARIABLES"  ]] || VARIABLES="$(mktemp)"
+
+main
