@@ -42,13 +42,13 @@ exit 0
 
 [[ "$1" =~ ^[-]+(h|help) ]] && usage
 
-VERSION='PATCH'
+[[ -n "$JSON"    ]] || JSON="$1"
+[[ -n "$VERSION" ]] || VERSION='PATCH'
+[[ -z "$JSON"    ]] && die "EMPTY FILE"
+[[ -e "$JSON"    ]] || die "NOT FOUND FILE $JSON"
+[[ -z "$2"       ]] || VERSION="$2"
+[[ -z "$VERSION" ]] && die "EMPTY VERSION"
 
-[[ -z "$1" ]] && die "EMPTY FILE"
-[[ -e "$1" ]] || die "NOT FOUND $1"
-[[ -z "$2" ]] || VERSION="$2"
-
-JSON="$1"
 NAME="$(basename "$JSON" .json)"
 NUMBER="$(echo "$NAME" | grep -Eo '[0-9]+\.[0-9]+\.[0-9]+')"
 NEW_NUMBER="$(bump-version "$NUMBER" "$VERSION")"
