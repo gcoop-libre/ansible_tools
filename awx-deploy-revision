@@ -245,6 +245,7 @@ WITH scm_branch: $JQ_BRANCH"
   fi
 
   echo "SEND PROJECT $PROJECT_NAME"
+  # FIXME capture error when scm_url is invalid
   echo "awx-cli send $PROJECT" | bash \
     || die "FAILED SEND PROJECT $PROJECT_NAME"
 
@@ -339,9 +340,9 @@ TRY WRITE IN $DOC_LINK"
 
   OUT="$(mktemp)"
   echo "SEND JOB_TEMPLATE $JOB_TEMPLATE"
-  AWX_CMD="awx-cli send $JOB_TEMPLATE > $OUT"
-  AWX_CMD+=";cat $OUT"
-  AWX_CMD+=";grep -o 'failed=0' $OUT || exit 1"
+  AWX_CMD="awx-cli send $JOB_TEMPLATE"
+  echo -n "$AWX_CMD | tee $OUT" | bash
+  AWX_CMD="grep -qo 'failed=0' $OUT || exit 1"
   bash -c "$AWX_CMD" || die "FAILED SEND JOB_TEMPLATE $JOB_TEMPLATE"
   rm -f "$OUT"
 
