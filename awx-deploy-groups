@@ -66,7 +66,7 @@ then
     GROUP_DESCRIPTION="$(group_index_get_description "$GROUP")"
     GROUP_FILE="groups/$GROUP.yml"
 
-    awx-group-update "$INVENTORY" "$GROUP" "$GROUP_DESCRIPTION" "$GROUP_FILE"
+    echo awx-group-update "$INVENTORY" "$GROUP" "$GROUP_DESCRIPTION" "$GROUP_FILE"
 
     printf "\\n"
 
