@@ -1,0 +1,70 @@
+#!/bin/bash
+
+# This script comes with ABSOLUTELY NO WARRANTY, use at own risk
+# Copyright (C) 2023 Osiris Alejandro Gomez <osiux@osiux.com>
+# Copyright (C) 2023 Osiris Alejandro Gomez <osiris@gcoop.coop>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+
+# shellcheck disable=SC1090
+# shellcheck disable=SC1091
+# shellcheck source=/dev/null
+# shellcheck disable=SC2001
+
+DIR_BIN=$(dirname "$0") && source "$DIR_BIN/awx-common"
+
+function usage()
+{
+cat << EOF
+Usage:
+
+\`\`\`bash
+
+  $BIN JSON [NEW_BRANCH]
+
+\`\`\`
+
+Update \`scm_branch\` in \`.json\` file, by default set semantic version
+extracted from filename.
+
+Example:
+
+\`\`\`bash
+
+  $BIN project/inventory_v0.7.13.json
+
+	UPDATE SCM_BRANCH FROM hotfix/cron-sssd-start TO v0.7.13
+	v0.7.13
+
+\`\`\`
+EOF
+exit 0
+}
+
+[[ "$1" =~ ^[-]+(h|help) ]] && usage
+
+[[ -n "$REGEX_VERSION" ]] || REGEX_VERSION='v[0-9]+\.[0-9]+\.[0-9]+'
+[[ -n "$JSON"          ]] || JSON="$1"
+[[ -z "$JSON"          ]] && die "EMPTY FILE"
+[[ -e "$JSON"          ]] || die "NOT FOUND FILE $JSON"
+[[ -n "$NAME"          ]] || NAME="$(basename "$JSON" .json)"
+[[ -n "$NEW_BRANCH"    ]] || NEW_BRANCH="$(echo "$NAME" | grep -Eo "$REGEX_VERSION")"
+[[ -z "$2"             ]] || NEW_BRANCH="$2"
+[[ -z "$NEW_BRANCH"    ]] && die "EMPTY VERSION"
+
+SCM_BRANCH="$(jq -r '.[].scm_branch' "$JSON")"
+
+stderror "UPDATE SCM_BRANCH FROM $SCM_BRANCH TO $NEW_BRANCH"
+jq -r ".[].scm_branch=\"$NEW_BRANCH\"" "$JSON" | sponge "$JSON"
+jq -r ".[].scm_branch" "$JSON"
