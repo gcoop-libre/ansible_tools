@@ -1,0 +1,210 @@
+#!/bin/bash
+
+# This script comes with ABSOLUTELY NO WARRANTY, use at own risk
+# Copyright (C) 2019 Osiris Alejandro Gomez <osiris@gcoop.coop>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+
+true > colors.used
+
+COLORS=$(cat << EOF
+008b45
+708090
+ee2c2c
+8b5a2b
+528b8b
+8b6969
+8b6508
+ee8262
+68228b
+32cd32
+8b2252
+b23aee
+00868b
+cd5b45
+ff7f00
+7a67ee
+473c8b
+f08080
+8470ff
+00688b
+ffa500
+a2cd5a
+cd00cd
+ff6eb4
+b03060
+3a5fcd
+1874cd
+cd9b9b
+ff4040
+ee7621
+da70d6
+cd950c
+dc143c
+ab82ff
+8968cd
+8b8b83
+ff7f50
+8b636c
+838b8b
+458b74
+a2b5cd
+20b2aa
+6ca6cd
+8b7355
+551a8b
+8b8386
+00b2ee
+00bfff
+00c5cd
+00cd00
+00cd66
+00cdcd
+00ced1
+00e5ee
+00ee00
+00ee76
+00f5ff
+00fa9a
+00ff00
+00ff7f
+1a1a1a
+1c1c1c
+1c86ee
+1e90ff
+1f1f1f
+20b2aa
+2b2b2b
+2e2e2e
+2e8b57
+2f4f4f
+32cd32
+EOF
+)
+
+[[ -e colors ]] || echo "$COLORS" > colors
+
+get_color()
+{
+  COLOR=$(grep -v -f colors.used colors | sort -R | head -1 | awk '{print $1}')
+  [[ -z "$COLOR" ]] && COLOR='bbbbbb'
+  echo "$COLOR" | tee -a colors.used
+}
+
+[[ -n "$REPOS" ]] || REPOS='.git-repos'
+[[ -z "$1"     ]] || REPOS="$1"
+[[ -e "$REPOS" ]] || exit 1
+
+HEAD=$(cat << EOF
+digraph roles_tasks {
+
+  rankdir=LR;
+  resolution=100;
+  nodesep=0.1
+  ranksep=0.3
+  node  [fontname=Inconsolata, fontsize=16, fontcolor=white, color="#aaaaaa", style="rounded,filled", shape=box, fillcolor="#aaaaaa"];
+  edge  [fontname=Inconsolata, fontsize=14, color=black, style=filled];
+
+EOF
+)
+
+printf "%s\n\n" "$HEAD"
+
+TMP="$(mktemp)"
+
+grep -v '\#' "$REPOS" > "$TMP"
+
+while read -r REPO _
+do
+  REPO_NAME=$(echo "$REPO" | tr '.-' '_' | rev | cut -d/ -f1 | rev | tr / _)
+  META="$REPO/meta/main.yml"
+  REQ="$REPO/roles/requirements.yml"
+  MAIN="$REPO/main.yml"
+  REPO_COLOR=$(get_color)
+  printf "  %s [label=\"%s\",fontsize=18,color=\"#%s\",fillcolor=\"#%s\"];\n" "$REPO_NAME" "$REPO_NAME" "$REPO_COLOR" "$REPO_COLOR"
+
+  if [[ -e "$META" ]]
+  then
+    # IS_ROLE=1
+    grep role: "$META" | cut -d. -f2 | while read -r DEP
+    do
+      printf "  %s -> %s [penwidth=2,color=\"#%s\", arrowhead=none];\n" "$REPO_NAME" "$(echo "ansible_role_$DEP" | tr '.-' '_')" "$REPO_COLOR"
+    done | sort -u
+  else
+    # IS_ROLE=0
+
+    if [[ -e "$MAIN" ]]
+    then
+      grep role: "$MAIN" \
+        | cut -d: -f2 \
+        | cut -d. -f2 \
+        | sort | while read -r DEP
+        do
+          DEP=$(echo "ansible_role_$DEP" \
+            | sed 's/external\/gcoop-libre\///g' \
+            | sed 's/external\///g' \
+            | sed 's/ansible_role_ansible_role/ansible_role/g')
+
+          [[ -z "$DEP" ]] && continue
+          printf "  %s -> %s [penwidth=2,color=\"#%s\", arrowhead=none];\n" "$REPO_NAME" "$(echo "$DEP" | tr '.-' '_')" "$REPO_COLOR"
+        done
+    fi
+
+    if [[ -e "$REQ" ]]
+    then
+      grep src: "$REQ"    \
+        | cut -d/ -f3- | rev | cut -d/ -f1 | rev \
+        | sed 's/ansible_role_ansible_role/ansible_role/g' \
+        | sed 's/geerlingguy\./ansible_role_/g' \
+        | tr -d '/'       \
+        | sed 's/.git$//g' \
+        | while read -r DEP
+      do
+        [[ -z "$DEP" ]] && continue
+        printf "  %s -> %s [penwidth=2,color=\"#%s\", arrowhead=none];\n" "$REPO" "$(echo "$DEP" | tr '.-' '_')" "$REPO_COLOR"
+      done
+    fi
+
+  fi
+
+  find "$REPO/tasks" -type f -iname '*.yml' \
+    | cut -c 1- \
+    | while read -r F
+  do
+    FILE=$(basename "$F" | tr '.-' '_')
+    FILE_NAME=$(echo "$FILE" | tr _ .)
+    NREPO="$(echo "$REPO" | tr '/' '_' | tr '.-' '_')"
+    NFILE="${NREPO}_${FILE}"
+    FILE_COLOR=$(get_color)
+
+    printf "%s [label=\"%s\", color=\"#%s\", fillcolor=\"#%s\"];\n" "$NFILE" "$FILE_NAME" "$FILE_COLOR" "$FILE_COLOR"
+
+    printf "  %s -> %s [penwidth=2, color=\"#%s\", arrowhead=none];\n" "$REPO_NAME" "$NFILE" "$REPO_COLOR"
+
+    grep '\- name:' "$F" | cut -d: -f2- | cut -c 2- | cat -n | while read -r N T
+    do
+      NUMBER=$(printf "%03d" "$N")
+      NTASK="${NFILE}_${NUMBER}"
+      NAME=$(echo "$T" | tr -d '"')
+      TASK_COLOR="$FILE_COLOR"
+      printf "%s [label=\"%s\", fontcolor=black, fillcolor=white, color=\"#%s\"];\n" "$NTASK" "$NAME" "$TASK_COLOR"
+      printf "  %s -> %s [penwidth=2, color=\"#%s\", arrowhead=none];\n" "$NFILE" "$NTASK" "$FILE_COLOR"
+
+    done
+  done
+done < "$TMP"
+
+printf "\n\n}\n"
+
+rm -f "$TMP"
