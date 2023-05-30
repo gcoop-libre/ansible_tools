@@ -21,6 +21,8 @@
 # shellcheck disable=SC1091
 # shellcheck source=/dev/null
 
+[[ -n "$BASH_DEBUG" ]] && set -x
+
 DIR_BIN="$(dirname "$0")" && source "$DIR_BIN/awx-common"
 
 function usage()
@@ -51,26 +53,41 @@ exit 0
 
 [[ -e "$AWX_CFG" ]] || die "NOT FOUND .tower_cli.cfg TRY awx-config"
 
-AWX_DIR="$1"
-REVISION="$2"
-DEPLOY_TYPE='update'
-
-[[ -z "$1"              ]] && die "EMPTY AWX DIR"
-[[ -z "$2"              ]] && die "EMPTY REVISION"
-[[ -z "$3"              ]] || DEPLOY_TYPE="$3"
-[[ -d "$AWX_DIR"        ]] || die "NOT FOUND AWX DIR"
-[[ -z "$DEPLOY_DIR"     ]] && DEPLOY_DIR='deploy'
-DEPLOY_FILE="$DEPLOY_DIR/${DEPLOY_TYPE}.awx"
-
-cd "$AWX_DIR"              || die "FAILED TO CHANGE TO AWX DIR"
-[[ -d '.git'            ]] || die "NOT FOUND GIT REPOSITORY"
 CURRENT_BRANCH="$(git branch --no-color | grep '^\* ' | cut -d ' ' -f2)"
+
+[[ -n "$AWX_DIR"       ]] || AWX_DIR="$PWD"
+[[ -z "$1"             ]] || AWX_DIR="$1"
+[[ -n "$REVISION"      ]] || REVISION="$CURRENT_BRANCH"
+[[ -z "$2"             ]] || REVISION="$2"
+[[ -n "$DEPLOY_TYPE"   ]] || DEPLOY_TYPE='delete'
+[[ -z "$AWX_DIR"       ]] && die "EMPTY AWX DIR"
+[[ -z "$REVISION"      ]] && die "EMPTY REVISION"
+[[ -z "$3"             ]] || DEPLOY_TYPE="$3"
+[[ -d "$AWX_DIR"       ]] || die "NOT FOUND AWX DIR"
+[[ -z "$DEPLOY_DIR"    ]] && DEPLOY_DIR='deploy'
+DEPLOY_FILE="$DEPLOY_DIR/${DEPLOY_TYPE}.awx"
+[[ -n "$DONT_FETCH"    ]] || DONT_FETCH=0
+[[ -n "$DONT_PULL"     ]] || DONT_PULL=0 
+[[ -n "$DONT_CHECKOUT" ]] || DONT_CHECKOUT=0
+
+cd "$AWX_DIR"             || die "FAILED TO CHANGE TO AWX DIR"
+[[ -d '.git'           ]] || die "NOT FOUND GIT REPOSITORY"
+
+if [[ "$DONT_FETCH" -eq 0 ]]
+then
 
 git fetch                  || die "FAILED TO FECTH"
 
+fi
+
 if [[ "$CURRENT_BRANCH" != "$REVISION" ]]
 then
-  git checkout "$REVISION" || die "FAILED TO CHECKOUT $REVISION"
+
+  if [[ "$DONT_CHECKOUT" -eq 0 ]]
+  then
+    git checkout "$REVISION" || die "FAILED TO CHECKOUT $REVISION"
+  fi
+
 fi
 
 REVISION_TYPE="$(git cat-file -t "$REVISION")"
@@ -78,7 +95,10 @@ REVISION_TYPE="$(git cat-file -t "$REVISION")"
 if [[ "$REVISION_TYPE" != 'tag' ]]
 then
 
-  git pull                 || die "FAILED TO PULL $REVISION"
+  if [[ "$DONT_PULL" -eq 0 ]]
+  then
+    git pull               || die "FAILED TO PULL $REVISION"
+  fi
 
 fi
 
@@ -88,12 +108,42 @@ fi
 # EXIT IMMEDIATELY IF A COMMAND EXITS WITH A NON-ZERO STATUS
 set -e
 
-awx-deploy-sort "$DEPLOY_FILE" | tac | while IFS='/' read -r DIR FILE
+ASSETS="$(mktemp)"
+awx-deploy-sort "$DEPLOY_FILE" | tac > "$ASSETS"
+TOTAL="$(wc -l "$ASSETS")"
+TOTAL="${TOTAL% *}"
+
+stderror "WARNING $TOTAL ASSETS TO DELETE (PRESS CTRL-C TO CANCEL)"
+for S in $(seq 5 -1 1)
+do
+  echo -n >&2 "$S ... "
+  sleep 1
+done
+
+echo
+
+while read -r TYPE JSON NAME
 do
 
-  ASSET="$(echo "$DIR" | tr _ -)"
-  CMD="awx-$ASSET-delete"
-  NAME="$(basename "$FILE" .json)"
-  bash -c "$CMD $NAME"
+  ASSET_TYPE="${TYPE//_/-}"
+  ASSET_CMD="awx-$ASSET_TYPE-delete"
+  ASSET_NAME="$(basename "$JSON" .json)"
 
-done
+  if [[ "$ASSET_TYPE" = 'schedule' ]]
+  then
+    AWX_CMD="$ASSET_CMD $ASSET_NAME '$NAME'"
+  else
+    AWX_CMD="$ASSET_CMD $ASSET_NAME"
+  fi
+
+  stderror "DELETE $TYPE $JSON $NAME"
+  if ! command -v "$ASSET_CMD" >/dev/null
+  then
+    die "NOT FOUND $ASSET_CMD"
+  fi
+
+  bash -c "$AWX_CMD"
+
+done < "$ASSETS"
+
+rm -f "$ASSETS"
