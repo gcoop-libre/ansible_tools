@@ -82,7 +82,7 @@ fi
 [[ -z "$1"    ]] || TMPI="$1"
 [[ -e "$TMPI" ]] || die "NOT FOUND FILE: $TMPI"
 
-for i in team credential project inventory job_template workflow
+for i in team credential project inventory job_template workflow schedule
 do
-  grep "^$i" "$TMPI" | sort | sed 's/ \+//g'
+  grep "^$i" "$TMPI" | sort | sed 's/^ \+//g' | sed 's/ \+$//g'
 done
