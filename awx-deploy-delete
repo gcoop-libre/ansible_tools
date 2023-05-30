@@ -136,7 +136,7 @@ do
     AWX_CMD="$ASSET_CMD $ASSET_NAME"
   fi
 
-  stderror "DELETE $TYPE $JSON $NAME"
+  stderror "DELETE ${TYPE^^} $NAME FOR $ASSET_NAME"
   if ! command -v "$ASSET_CMD" >/dev/null
   then
     die "NOT FOUND $ASSET_CMD"
