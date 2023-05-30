@@ -397,4 +397,16 @@ GRANT_FILE="$DEPLOY_DIR/grant.awx"
 
 REVOKE_FILE="$DEPLOY_DIR/revoke.awx"
 [[ -e "$REVOKE_FILE" ]] && awx-revoke-team "$REVOKE_FILE"
+
+DELETE_FILE="$DEPLOY_DIR/delete.awx"
+if [[ -e "$DELETE_FILE" ]]
+then
+
+DONT_FETCH=1    \
+DONT_PULL=1     \
+DONT_CHECKOUT=1 \
+awx-deploy-delete "$DELETE_FILE"
+
+fi
+
 cleanup
