@@ -405,7 +405,7 @@ then
 DONT_FETCH=1    \
 DONT_PULL=1     \
 DONT_CHECKOUT=1 \
-awx-deploy-delete "$DELETE_FILE"
+awx-deploy-delete "$AWX_DIR" "$REVISION" 'delete'
 
 fi
 
