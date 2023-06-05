@@ -113,6 +113,12 @@ awx-deploy-sort "$DEPLOY_FILE" | tac > "$ASSETS"
 TOTAL="$(wc -l "$ASSETS")"
 TOTAL="${TOTAL% *}"
 
+if [[ "$TOTAL" -eq 0 ]]
+then
+  stderror "NOTHING TO DO, $TOTAL ASSETS TO DELETE"
+  exit 0
+fi
+
 stderror "WARNING $TOTAL ASSETS TO DELETE (PRESS CTRL-C TO CANCEL)"
 for S in $(seq 5 -1 1)
 do
