@@ -81,6 +81,17 @@ exit 0
 [[ -n "$VERSION" ]] || VERSION='MINOR'
 [[ -n "$WAITING" ]] || WAITING=6
 
+if [[ -e ".$BIN" ]]
+then
+  stderror "OVERWRITE VARIABLES FROM .$BIN"
+  [[ -n "$NEXT_TAG"  ]] \
+    || eval "$(grep '^NEXT_TAG' ".$BIN")"
+  [[ -n "$POST_HOOK" ]] \
+    || POST_HOOK="$(grep '^POST_HOOK=' ".$BIN" | cut -d= -f2-)"
+  echo "NEXT_TAG=$NEXT_TAG"
+  echo "POST_HOOK=$POST_HOOK"
+fi
+
 if [[ -z "$1"  ]]
 then
 
