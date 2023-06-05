@@ -131,6 +131,7 @@ if [[ "$LAST_COMMIT" = "$SCM_REVISION" ]]
 then
   printf "PROJECT %s OK LAST_COMMIT (%s) = SCM_REVISION (%s)\\n" \
          "$AWX_PROJECT" "$LAST_COMMIT" "$SCM_REVISION"
+  [[ -n "$POST_HOOK" ]] && bash -c "$POST_HOOK"
   exit 0
 fi
 
