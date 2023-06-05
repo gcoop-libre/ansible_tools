@@ -83,7 +83,7 @@ DEPLOY_TYPE='update'
 [[ -n "$DOC_TYPE"        ]] || DOC_TYPE='.md'
 [[ -n "$DOC_SPLIT"       ]] || DOC_SPLIT='_'
 [[ -n "$DOC_JOB_SHORT"   ]] || DOC_JOB_SHORT=1
-
+[[ -n "$LAST_COMMIT"     ]] || LAST_COMMIT=1
 [[ -n "$CHECK_PROJECT_VERSION" ]] || CHECK_PROJECT_VERSION=1
 [[ -n "$CHECK_PROJECT_NAME"   ]] || CHECK_PROJECT_NAME=1
 [[ -n "$CHECK_BRANCH_VERSION" ]] || CHECK_BRANCH_VERSION=1
@@ -172,6 +172,7 @@ else
 
 fi
 
+[[ "$LAST_COMMIT" -eq 1 ]] && git log -1
 [[ -d "$DEPLOY_DIR"     ]] || die "NOT FOUND DIR $DEPLOY_DIR"
 [[ -e "$DEPLOY_FILE"    ]] || echo "NOT FOUND FILE $DEPLOY_FILE"
 [[ -z "$ORGANIZATION"   ]] && ORGANIZATION="$DEFAULT_ORGANIZATION"
