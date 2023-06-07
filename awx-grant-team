@@ -75,7 +75,7 @@ CLI_PREFIX="awx-cli role grant --team"
 
 set -e
 
-for i in credential inventory project job_template workflow
+for i in organization credential inventory project job_template workflow
 do
 
   awk "/^$i/" "$GRANT_FILE" > "$TMP"
