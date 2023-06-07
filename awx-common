@@ -162,6 +162,21 @@ filelist_send_all()
 
 }
 
+grant_organization()
+{
+  local TYPE
+
+  TYPE='read'
+
+  [[ -z "$3" ]] || TYPE="$3"
+
+  echo awx-cli role grant \
+    "$AWX_DEBUG"          \
+    --type "$TYPE"        \
+    --team "$2"           \
+    --organization "$1"   | bash
+}
+
 grant_inventory_admin()
 {
   awx-cli role grant \
