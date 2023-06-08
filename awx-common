@@ -576,7 +576,7 @@ function get_json()
   fi
 
   >&2 echo "RECEIVE $JSON"
-  awx-cli receive --$1 "$2" > "$JSON"
+  awx-cli receive $AWX_DEBUG --$1 "$2" > "$JSON"
 }
 
 json_get_unified_job_name()
