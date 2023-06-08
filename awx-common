@@ -579,6 +579,14 @@ function get_json()
   awx-cli receive $AWX_DEBUG --$1 "$2" > "$JSON"
 }
 
+json_get_source_project()
+{
+  local JQ
+
+  JQ='.[].asset_relation.inventory_source[].source_project'
+  jq -r  "$JQ" "$1"
+}
+
 json_get_unified_job_name()
 {
   local JQ
