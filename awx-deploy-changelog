@@ -329,7 +329,7 @@ printf "\\n### %s\\n\\n" "$PERMISSION_NAME permissions"
     printf "| %-20s | %-40s | %-10s | %-20s |\n"   \
             ' ' ' ' ' ' ' ' | sed 's/ /-/g'
 
-for i in credential inventory project job_template workflow
+for i in organization credential inventory project job_template workflow
 do
 
   awk "/^$i/" "$PERMISSION_FILE" > "$TMP"
