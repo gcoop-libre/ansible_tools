@@ -1,0 +1,144 @@
+#!/bin/bash
+
+# This script comes with ABSOLUTELY NO WARRANTY, use at own risk
+# Copyright (C) 2022 Osiris Alejandro Gomez <osiris@gcoop.coop>
+# Copyright (C) 2022 Osiris Alejandro Gomez <osiux@osiux.com>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+
+# shellcheck disable=SC1090
+# shellcheck disable=SC1091
+# shellcheck source=/dev/null
+# shellcheck disable=SC2002
+# shellcheck disable=SC2034
+
+DIR_BIN="$(dirname "$0")" && source "$DIR_BIN/awx-common"
+
+function usage()
+{
+cat << EOF
+Usage:
+
+\`\`\`bash
+
+  $BIN DEPLOY_DIR [DEPLOY_REVISION] [DEPLOY_TYPE]
+
+\`\`\`
+
+Clean previous deploy revision, delete files from deploy, groups, and
+schedule directories.
+
+Example:
+
+\`\`\`bash
+
+  $BIN awx v0.2.0
+
+\`\`\`
+
+EOF
+exit 0
+}
+
+[[ "$1" =~ ^[-]+(h|help) ]] && usage
+
+[[ -e "$AWX_CFG" ]] || die "NOT FOUND .tower_cli.cfg TRY awx-config"
+
+[[ -z "$1"              ]] || AWX_DIR="$1"
+[[ -z "$AWX_DIR"        ]] && AWX_DIR='.'
+[[ -d "$AWX_DIR"        ]] || die "NOT FOUND AWX DIR"
+[[ -z "$DEPLOY_DIR"     ]] && DEPLOY_DIR='deploy'
+
+cd "$AWX_DIR"              || die "FAILED TO CHANGE TO AWX DIR"
+[[ -d '.git'            ]] || die "NOT FOUND GIT REPOSITORY"
+[[ -d "$DEPLOY_DIR"     ]] || die "NOT FOUND DIR $DEPLOY_DIR"
+[[ -n "$WAIT_SECONDS"   ]] || WAIT_SECONDS='5'
+[[ -n "$DONT_WAIT"      ]] || DONT_WAIT=0
+
+CLEAN_FILES="$(mktemp)"
+GIT_COMMIT="$(mktemp)"
+
+# EXIT IMMEDIATELY IF A COMMAND EXITS WITH A NON-ZERO STATUS
+set -e
+
+find "$DEPLOY_DIR" -type f -iname '*.awx' >  "$CLEAN_FILES"
+
+if [[ -d groups ]]
+then
+  find groups -type f -iname '*.yml'        >> "$CLEAN_FILES"
+  find groups -type f -iname 'index'        >> "$CLEAN_FILES"
+fi
+
+if [[ -d schedule ]]
+then
+  find schedule -type f -iname '*.json'    >> "$CLEAN_FILES"
+  find schedule -type f -iname '*.rrule'   >> "$CLEAN_FILES"
+fi
+
+TOTAL="$(wc -l "$CLEAN_FILES")"
+TOTAL="${TOTAL%" "*}"
+
+if [[ "$TOTAL" -eq 0 ]]
+then
+  echo "NO FILES FOUND TO CLEAN FROM PREVIOUS DEPLOY REVISION"
+  exit 0
+fi
+
+echo "FOUND $TOTAL FILES TO CLEAN"
+echo "WAIT $WAIT_SECONDS TO CLEAN $TOTAL FILES (press CTRL+C to abort)"
+
+if [[ "$DONT_WAIT" -eq 0 ]]
+then
+  for i in $(seq 1 "$WAIT_SECONDS")
+  do
+    echo "."
+    sleep 1
+  done
+fi
+
+git stash
+git reset HEAD
+
+while read -r FILE
+do
+
+  echo "CLEAN PREVIOUS DEPLOY REVISION FILE $FILE"
+  true > "$FILE"
+
+done < "$CLEAN_FILES"
+
+git status --porcelain \
+  | grep "^ M"         \
+  | grep -f "$CLEAN_FILES"     \
+  | while read -r STATUS FILE
+do
+
+  git add "$FILE"
+  PREFIX="$(echo "$FILE" | rev | cut -d . -f2- | rev)"
+
+MSG="$(cat << EOF
+$PREFIX: clean previous deploy revision file
+
+  @ 00:00 hs
+EOF
+)"
+
+  echo "$MSG" > "$GIT_COMMIT"
+
+  [[ "$GIT_NO_COMMIT" -ne 1 ]] && git commit -F "$GIT_COMMIT"
+
+done
+
+rm -f "$CLEAN_FILES"
+rm -f "$GIT_COMMIT"
