@@ -153,7 +153,7 @@ set -e
 
 UPDATES=1
 CURRENT_BRANCH="$(git branch | grep -E '^\*' | tr -d ' *')"
-LAST_COMMIT="$(git-log-lastcommit)"
+LAST_COMMIT="$(git-commit-last)"
 COMMIT="${LAST_COMMIT::8}"
 
 project_sync
