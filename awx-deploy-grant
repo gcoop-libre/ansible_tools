@@ -83,6 +83,7 @@ cd "$AWX_DIR"              || die "FAILED TO CHANGE TO AWX DIR"
 CURRENT_BRANCH="$(git branch --no-color | grep '^\* ' | cut -d ' ' -f2)"
 [[ -z "$REVISION"       ]] && REVISION="$CURRENT_BRANCH"
 [[ -n "$VALID_TYPE"     ]] || VALID_TYPE='(admin|read|member|execute|adhoc|update|use|auditor|project_admin|inventory_admin|credential_admin|workflow_admin|notification_admin|job_template_admin)'
+[[ -n "$DONT_PULL"      ]] || DONT_PULL=0
 
 git fetch                  || die "FAILED TO FECTH"
 
