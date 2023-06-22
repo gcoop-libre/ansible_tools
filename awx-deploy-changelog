@@ -66,6 +66,7 @@ DEPLOY_TYPE='update'
 [[ -z "$2"          ]] || REVISION="$2"
 [[ -z "$3"          ]] || DEPLOY_TYPE="$3"
 [[ -d "$AWX_DIR"    ]] || die "NOT FOUND DIRECTORY $AWX_DIR"
+[[ -n "$DONT_FETCH"    ]] || DONT_FETCH=0
 [[ -n "$DONT_PULL"     ]] || DONT_PULL=0
 [[ -n "$DONT_CHECKOUT" ]] || DONT_CHECKOUT=0
 
@@ -91,7 +92,10 @@ CURRENT_BRANCH="$(git branch --no-color \
 if [[ "$CURRENT_BRANCH" != "$REVISION" ]]
 then
 
-  git fetch >/dev/null 2>/dev/null || die "FAILED TO FECTH"
+  if [[ "$DONT_FETCH" -eq 0 ]]
+  then
+    git fetch >/dev/null 2>/dev/null || die "FAILED TO FECTH"
+  fi
 
   if [[ "$DONT_CHECKOUT" -eq 0 ]]
   then
