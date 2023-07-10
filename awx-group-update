@@ -51,6 +51,7 @@ exit 0
 [[ -z "$GROUP"       ]] && die "EMPTY GROUP"
 [[ -n "$DESCRIPTION" ]] || DESCRIPTION="$3"
 [[ -n "$GROUPS_INDEX" ]] || GROUPS_INDEX="groups/index"
+[[ -n "$YQ_SORT_KEYS" ]] || YQ_SORT_KEYS=1
 [[ -z "$4"           ]] || FILE="$4"
 [[ -n "$VARIABLES"   ]] || VARIABLES=''
 [[ -n "$DIFF_WIDTH"  ]] || DIFF_WIDTH='160'
@@ -75,7 +76,12 @@ GROUP_ID="$(awx-cli group get    \
 if [[ -n "$FILE" ]]
 then
   NEW_VARIABLES="$(mktemp --suffix .yml)"
-  yq -y --sort-keys -r . "$FILE" | grep -v '^---' > "$NEW_VARIABLES"
+  if [[ "$YQ_SORT_KEYS" -eq 1 ]]
+  then
+    yq -y --sort-keys -r . "$FILE" | grep -v '^---' > "$NEW_VARIABLES"
+  else
+   grep ':' "$FILE" > "$NEW_VARIABLES"
+  fi
   DIFF_WIDTH_NEW="$(wc -L "$NEW_VARIABLES" | awk '{print $1}')"
 fi
 
