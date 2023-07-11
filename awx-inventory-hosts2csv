@@ -30,7 +30,7 @@ Usage:
 
 \`\`\`bash
 
-  $BIN
+  $BIN INVENTORY_NAME
 
 \`\`\`
 
@@ -43,7 +43,7 @@ Example:
 
 \`\`\`bash
 
-  $BIN
+  $BIN wst
 
   'wst01dev01','imported','192.168.1.11','ca:fe:ca:fe:00:3d','S12345678'
   'wst01dev02','imported','192.168.1.12','fa:fa:fa:02:ac:dc','S12345679'
