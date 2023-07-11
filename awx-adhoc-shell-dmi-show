@@ -1,0 +1,73 @@
+#!/bin/bash
+
+# This script comes with ABSOLUTELY NO WARRANTY, use at own risk
+# Copyright (C) 2020 Osiris Alejandro Gomez <osiris@gcoop.coop>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+
+# shellcheck disable=SC1090
+# shellcheck disable=SC1091
+# shellcheck source=/dev/null
+
+DIR_BIN=$(dirname "$0") && source "$DIR_BIN/awx-common"
+
+function usage()
+{
+cat << EOF
+Usage:
+
+\`\`\`bash
+
+  $BIN INVENTORY LIMIT
+
+\`\`\`
+
+Show _hostname_ and _DMI_ values from \`/sysclass/dmi\` defined in
+\`DMI_REGEX\` environtment variable.
+
+Default value of \`DMI_REGEX\` is:
+
+\`\`\`
+
+  '(sys_vendor|product_name|product_serial|bios_date|bios_version)'
+
+\`\`\`
+
+Example:
+
+\`\`\`bash
+
+  $BIN wst dev
+
+	wst04dev|HP|8CC0125ZYZ|HP ProDesk 400 G5 Desktop Mini|R23 Ver. 02.05.01|04/27/2020
+	wst05dev|HP|8CC0125YKQ|HP ProDesk 400 G5 Desktop Mini|R23 Ver. 02.05.01|04/27/2020
+	wst07dev|HP|8CC0125YH8|HP ProDesk 400 G5 Desktop Mini|R23 Ver. 02.05.01|04/27/2020
+
+\`\`\`
+
+EOF
+exit 0
+}
+
+[[ "$1" =~ ^[-]+(h|help) ]] && usage
+
+[[ -n "$INVENTORY" ]] || INVENTORY="$1"
+[[ -z "$INVENTORY" ]] && die "EMPTY INVENTORY"
+[[ -n "$LIMIT"     ]] || LIMIT="$2"
+[[ -z "$LIMIT"     ]] && die "EMPTY LIMIT"
+[[ -n "$DMI_REGEX" ]] || DMI_REGEX='(sys_vendor|product_name|product_serial|bios_date|bios_version)'
+
+COMMAND="echo -n \"\$(hostname -s)\";echo -n '|';echo /sys/class/dmi/id/* | tr ' ' '\n' | grep -E '$DMI_REGEX' | sort -r | while read i;do sudo cat \$i 2>/dev/null || true;done | tr '\n' '|' | sed 's/|$//g'"
+
+awx-adhoc-shell "$INVENTORY" "$LIMIT" "$COMMAND"
