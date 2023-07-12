@@ -1,0 +1,89 @@
+#!/bin/bash
+
+# This script comes with ABSOLUTELY NO WARRANTY, use at own risk
+# Copyright (C) 2023 Osiris Alejandro Gomez <osiux@osiux.com>
+# Copyright (C) 2023 Osiris Alejandro Gomez <osiris@gcoop.coop>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+
+BIN="$(basename "$0")"
+
+function usage()
+{
+cat << EOF
+Usage:
+
+\`\`\`
+
+  $BIN STATUS_ACTUAL STATUS_TOTAL [STATUS_START] [MSG]
+
+\`\`\`
+
+Show progress bar with percent completed, _ETA_ and _Elapsed_ time.
+
+Example:
+
+\`\`\`
+
+  $BIN 3 25
+
+		STATUS [*****                                            ]  12% ETA 0s Elapsed 0s
+
+  $BIN 18 25 $(date +%s)
+
+		STATUS [***********************************              ]  72% ETA 0s Elapsed 0s
+
+  $BIN 20 25 $(date +%s -d 'now - 30 seconds')
+
+		STATUS [***************************************          ]  80% ETA 6s Elapsed 30s
+
+  $BIN 24 25 $(date +%s -d 'now - 60 seconds') PROCESSING
+
+		PROCESSING [***********************************************  ]  96% ETA 3s Elapsed 60s
+
+\`\`\`
+
+EOF
+exit 0
+}
+
+[[ "$1" =~ ^[-]+(h|help) ]] && usage
+
+[[ -n "$BASH_DEBUG"    ]] && set -x
+[[ -n "$STATUS_ACTUAL" ]] || STATUS_ACTUAL="$1"
+[[ -z "$STATUS_ACTUAL" ]] && STATUS_ACTUAL='1'
+[[ -n "$STATUS_TOTAL"  ]] || STATUS_TOTAL="$2"
+[[ -z "$STATUS_TOTAL"  ]] && STATUS_TOTAL='10'
+[[ -n "$STATUS_START"  ]] || STATUS_START="$3"
+[[ -n "$STATUS_MSG"    ]] || STATUS_MSG="$4"
+[[ -z "$STATUS_MSG"    ]] && STATUS_MSG="STATUS"
+[[ -n "$STATUS_BAR"    ]] || STATUS_BAR='*'
+[[ -z "$STATUS_START"  ]] && STATUS_START="$(date +%s)"
+
+STATUS_PERCENT="$(echo "$STATUS_ACTUAL $STATUS_TOTAL" | awk '{printf "%0d",($1/$2*100)/2}')"
+STATUS_NOW="$(LC_ALL=en_US.UTF8 date +'%s')"
+STATUS_ELAPSED="$((STATUS_NOW-STATUS_START))"
+STATUS_ESTIMATED="$(echo "$STATUS_ACTUAL $STATUS_TOTAL $STATUS_ELAPSED" | awk '{printf "%0d",($1/$2)*$3}')"
+STATUS_SECONDS="$((STATUS_ESTIMATED-STATUS_ELAPSED))"
+
+[[ "$STATUS_ACTUAL" -eq "$STATUS_TOTAL" ]] && STATUS_SECONDS=0
+
+printf "%s "  "$STATUS_MSG"
+printf "%-*s" "$STATUS_PERCENT" '[' | tr ' ' "$STATUS_BAR"
+printf "%*s %3d%% ETA %s Elapsed %s\r" \
+       $((51-STATUS_PERCENT))          \
+       "]"                             \
+       "$((STATUS_PERCENT*2))"         \
+       "${STATUS_SECONDS//-/}s"        \
+       "${STATUS_ELAPSED}s"
