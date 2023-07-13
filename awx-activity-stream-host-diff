@@ -30,7 +30,7 @@ Usage:
 
 \`\`\`
 
-  $BIN HOST_REGEX [PAGE_SIZE]
+  $BIN HOST_REGEX [LIST_LIMIT]
 
 \`\`\`
 
@@ -38,14 +38,15 @@ Get _activity stream_ of one or more _host_ filter by _regex_ and save
 file list of _JSONs_ filenames with changes and invoke
 \`awx-activity-stream-json-diff\` command to show differences.
 
-By default the limit of search activity streams is \`100\`, you can redefine as
-second argument or using \`PAGE_SIZE\` environtment variable
+By default the limit of search activity streams is \`100\`, you can
+redefine as second argument or using \`LIST_LIMIT\` environtment
+variable
 
-By default the _username_ filter is \`awx_inventory\`, you can redefine using
-\`ACTOR\` environtment variable.
+By default the _username_ filter is \`awx_inventory\`, you can redefine
+using \`ACTOR\` environtment variable.
 
 By default the _operation_ filter is \`update\`, you can redefine using
-\`OPERATOR\` environtment variable.
+\`OPERATION\` environtment variable.
 
 Example:
 
@@ -55,7 +56,7 @@ Example:
 
 	ACTOR: awx_inventory
 	OPERATION: update
-	PAGE SIZE: 100
+	LIST LIMIT SIZE: 100
 	TOTAL IDS FOUND: 39
 	PROCESS ACTIVITY STREAMS [*************************************************] 100% ETA 0s Elapsed 42s
 	TOTAL IDS MATCHING WITH HOST REGEX wst14: 2
@@ -99,10 +100,12 @@ exit 0
 [[ -n "$ACTOR"      ]] || ACTOR='awx_inventory'
 [[ -n "$HOST_REGEX" ]] || HOST_REGEX="$1"
 [[ -z "$HOST_REGEX" ]] && die "EMPTY HOST_REGEX"
-[[ -n "$PAGE_SIZE"  ]] || PAGE_SIZE='100'
-[[ -z "$2"          ]] || PAGE_SIZE="$2"
+[[ -n "$LIST_LIMIT" ]] || LIST_LIMIT='100'
+[[ -n "$LIST_SIZE"  ]] || LIST_SIZE=200
+[[ -z "$2"          ]] || LIST_LIMIT="$2"
 
 IDS="$(mktemp)"
+FIRST="$(mktemp)"
 HOST_NAME="$(echo "$HOST_REGEX" | tr -d '[:punct:]')"
 JSON_LIST="activity-$HOST_NAME-$(date +'%s').json"
 AFTER="$(mktemp --suffix .json)"
@@ -110,15 +113,44 @@ BEFORE="$(mktemp --suffix .json)"
 
 printf "ACTOR: %s\\n"      "$ACTOR"
 printf "OPERATION: %s\\n"  "$OPERATION"
-printf "PAGE SIZE: %s\\n"  "$PAGE_SIZE"
+printf "LIST LIMIT: %s\\n"  "$LIST_LIMIT"
 
 awx-cli activity_stream list \
   --operation "$OPERATION"   \
   --object1 "$OBJECT1"       \
   --actor "$ACTOR"           \
-  --format id                \
-  --page-size "$PAGE_SIZE"   \
-  | tr ' ' '\n'              > "$IDS"
+  --format json              \
+  --page-size 1              > "$FIRST"
+
+TOTAL_ACTIVITY="$(jq -r .count "$FIRST")"
+printf "TOTAL RECORDS: %s\\n" "$TOTAL_ACTIVITY"
+
+[[ "$LIST_LIMIT" -gt "$LIMIT" ]] && LIST_PAGES="$((LIST_LIMIT/LIST_SIZE))"
+[[ "$LIST_PAGES" -eq 0        ]] && LIST_PAGES=1
+
+true > "$IDS"
+MSG='PROCESS RECORDS'
+START="$(LC_ALL=en_US.UTF8 date +'%s')"
+
+printf "TOTAL PAGES: %s x %s\\n" "$LIST_PAGES" "$LIST_SIZE"
+
+for PAGE in $(seq 1 "$LIST_PAGES")
+do
+
+  bareta "$PAGE" "$LIST_PAGES" "$START" "$MSG"
+
+  awx-cli activity_stream list \
+    --operation "$OPERATION"   \
+    --object1 "$OBJECT1"       \
+    --actor "$ACTOR"           \
+    --format id                \
+    --page-size "$LIST_SIZE"   \
+    --page "$PAGE"             \
+    | tr ' ' '\n'              >> "$IDS"
+
+done
+
+printf "\\n"
 
 TOTAL_IDS="$(wc -l "$IDS")"
 TOTAL_IDS="${TOTAL_IDS%% *}"
