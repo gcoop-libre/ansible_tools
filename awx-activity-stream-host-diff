@@ -1,0 +1,163 @@
+#!/bin/bash
+
+# This script comes with ABSOLUTELY NO WARRANTY, use at own risk
+# Copyright (C) 2023 Osiris Alejandro Gomez <osiux@osiux.com>
+# Copyright (C) 2023 Osiris Alejandro Gomez <osiris@gcoop.coop>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+
+# shellcheck disable=SC1091
+
+[[ -n "$BASH_DEBUG" ]] && set -x
+
+DIR_BIN="$(dirname "$0")" && source "$DIR_BIN/awx-common"
+
+function usage()
+{
+cat << EOF
+Usage:
+
+\`\`\`
+
+  $BIN HOST_REGEX [PAGE_SIZE]
+
+\`\`\`
+
+Get _activity stream_ of one or more _host_ filter by _regex_ and save
+file list of _JSONs_ filenames with changes and invoke
+\`awx-activity-stream-json-diff\` command to show differences.
+
+By default the limit of search activity streams is \`100\`, you can redefine as
+second argument or using \`PAGE_SIZE\` environtment variable
+
+By default the _username_ filter is \`awx_inventory\`, you can redefine using
+\`ACTOR\` environtment variable.
+
+By default the _operation_ filter is \`update\`, you can redefine using
+\`OPERATOR\` environtment variable.
+
+Example:
+
+\`\`\`
+
+  $BIN wst14
+
+	ACTOR: awx_inventory
+	OPERATION: update
+	PAGE SIZE: 100
+	TOTAL IDS FOUND: 39
+	PROCESS ACTIVITY STREAMS [*************************************************] 100% ETA 0s Elapsed 42s
+	TOTAL IDS MATCHING WITH HOST REGEX wst14: 2
+
+	## ACTIVITY STREAM JSON FILES LIST: activity-wst14-1689265367.json
+
+	activity-57685.json
+	activity-52994.json
+
+	## ACTIVITY ID=57685 OPERATION=update ACTOR=awx_inventory TIMESTAMP=2023-07-11T21:14:26 HOST=wst14dev DESCRIPTION=imported
+
+	### VARIABLES CHANGED
+
+	{                                                               {
+		"ansible_host": "10.12.153.109",                            |   "ansible_host": "10.12.153.93",
+		"primary_macaddress": "2e:7c:0f:25:de:30"                   |   "primary_macaddress": "06:a4:59:a8:e0:ea"
+	}                                                               }
+
+	## ACTIVITY ID=52994 OPERATION=update ACTOR=awx_inventory TIMESTAMP=2023-05-17T21:36:09 HOST=wst14dev DESCRIPTION=imported
+
+	### VARIABLES CHANGED
+
+	---                                                           | {
+	ansible_host: 10.12.153.109                                   |   "ansible_host": "10.12.153.109",
+																																>   "primary_macaddress": "2e:7c:0f:25:de:30"
+																																> }
+
+\`\`\`
+
+EOF
+exit 0
+}
+
+[[ "$1" =~ ^[-]+(h|help) ]] && usage
+
+[[ -n "$DIFF"       ]] || DIFF='diff -y'
+[[ -n "$DELTA"      ]] || DELTA="$(command -v delta || true)"
+[[ -z "$DELTA"      ]] || DIFF="$DELTA --paging never --side-by-side"
+[[ -n "$OPERATION"  ]] || OPERATION='update'
+[[ -n "$OBJECT1"    ]] || OBJECT1='host'
+[[ -n "$ACTOR"      ]] || ACTOR='awx_inventory'
+[[ -n "$HOST_REGEX" ]] || HOST_REGEX="$1"
+[[ -z "$HOST_REGEX" ]] && die "EMPTY HOST_REGEX"
+[[ -n "$PAGE_SIZE"  ]] || PAGE_SIZE='100'
+[[ -z "$2"          ]] || PAGE_SIZE="$2"
+
+IDS="$(mktemp)"
+HOST_NAME="$(echo "$HOST_REGEX" | tr -d '[:punct:]')"
+JSON_LIST="activity-$HOST_NAME-$(date +'%s').json"
+AFTER="$(mktemp --suffix .json)"
+BEFORE="$(mktemp --suffix .json)"
+
+printf "ACTOR: %s\\n"      "$ACTOR"
+printf "OPERATION: %s\\n"  "$OPERATION"
+printf "PAGE SIZE: %s\\n"  "$PAGE_SIZE"
+
+awx-cli activity_stream list \
+  --operation "$OPERATION"   \
+  --object1 "$OBJECT1"       \
+  --actor "$ACTOR"           \
+  --format id                \
+  --page-size "$PAGE_SIZE"   \
+  | tr ' ' '\n'              > "$IDS"
+
+TOTAL_IDS="$(wc -l "$IDS")"
+TOTAL_IDS="${TOTAL_IDS%% *}"
+printf "TOTAL IDS FOUND: %s\\n" "$TOTAL_IDS"
+
+true > "$JSON_LIST"
+
+N=0
+MSG="PROCESS ACTIVITY STREAMS"
+START="$(LC_ALL=en_US.UTF8 date +%s)"
+
+while read -r ID
+do
+
+  N="$((N+1))"
+  bareta "$N" "$TOTAL_IDS" "$START" "$MSG"
+
+  JSON="activity-$ID.json"
+  awx-cli activity_stream get "$ID" -f json > "$JSON"
+
+  HOST_NAME="$(jq -r '.summary_fields.host[].name' "$JSON")"
+
+  [[ "$HOST_NAME" =~ $HOST_REGEX ]] && echo "$JSON" >> "$JSON_LIST"
+
+done < "$IDS"
+
+printf "\\n"
+TOTAL_JSON_LIST="$(wc -l "$JSON_LIST")"
+TOTAL_JSON_LIST="${TOTAL_JSON_LIST%% *}"
+printf "TOTAL IDS MATCHING WITH HOST REGEX $HOST_REGEX: %s\\n" "$TOTAL_JSON_LIST"
+
+if [[ -s "$JSON_LIST" ]]
+then
+
+  printf "\\n## ACTIVITY STREAM JSON FILES LIST: %s\\n\\n" "$JSON_LIST"
+  cat "$JSON_LIST"
+
+  awx-activity-stream-json-diff "$JSON_LIST"
+
+fi
+
+rm -f "$IDS" "$AFTER" "$BEFORE" 2>/dev/null
