@@ -87,6 +87,7 @@ DEPLOY_TYPE='update'
 [[ -n "$CHECK_PROJECT_VERSION" ]] || CHECK_PROJECT_VERSION=1
 [[ -n "$CHECK_PROJECT_NAME"   ]] || CHECK_PROJECT_NAME=1
 [[ -n "$CHECK_BRANCH_VERSION" ]] || CHECK_BRANCH_VERSION=1
+[[ -n "$GIT_RESET_HARD_REVISION" ]] || GIT_RESET_HARD_REVISION=0
 
 if [[ -n "$DOC_USER"     ]]
 then
@@ -141,7 +142,7 @@ then
   git checkout "$REVISION" || die "FAILED TO CHECKOUT $REVISION"
 fi
 
-if [[ -n "$GIT_RESET_HARD_REVISION" ]]
+if [[ "$GIT_RESET_HARD_REVISION" -eq 1 ]]
 then
   printf "GIT RESET HARD %s/%s\\n" "$ORIGIN" "$REVISION"
   git reset --hard "$ORIGIN/$REVISION" \
