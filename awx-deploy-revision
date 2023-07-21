@@ -132,15 +132,18 @@ cd "$AWX_DIR"              || die "FAILED TO CHANGE TO AWX DIR"
 [[ -d '.git'            ]] || die "NOT FOUND GIT REPOSITORY"
 CURRENT_BRANCH="$(git branch --no-color | grep '^\* ' | cut -d ' ' -f2)"
 
+printf "GIT FETCH ALL\\n"
 git fetch --all            || die "FAILED TO FECTH"
 
 if [[ "$CURRENT_BRANCH" != "$REVISION" ]]
 then
+  printf "GIT CHECKOUT REVISION %s\\n" "$REVISION"
   git checkout "$REVISION" || die "FAILED TO CHECKOUT $REVISION"
 fi
 
 if [[ -n "$GIT_RESET_HARD_REVISION" ]]
 then
+  printf "GIT RESET HARD %s/%s\\n" "$ORIGIN" "$REVISION"
   git reset --hard "$ORIGIN/$REVISION" \
     || die "FAILED TO HARD RESET $REVISION"
 fi
@@ -155,6 +158,8 @@ then
   then
 
     # FIXME fatal: refusing to merge unrelated histories
+    printf "GIT PULL WITH ALLOW UNRELATED HISTORIES %s/%s\\n" \
+      "$ORIGIN" "$REVISION"
     git pull --allow-unrelated-histories "$ORIGIN" "$REVISION" \
       || die "FAILED TO PULL $REVISION"
 
@@ -166,6 +171,7 @@ else
   if [[ "$DONT_FETCH_TAGS" -eq 0 ]]
   then
 
+    printf "GIT FETCH TAGS\\n"
     git fetch --tags       || die "FAILED TO FETCH TAG $REVISION"
 
   fi
