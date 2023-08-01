@@ -1,0 +1,125 @@
+#!/bin/bash
+
+# This script comes with ABSOLUTELY NO WARRANTY, use at own risk
+# Copyright (C) 2020 Osiris Alejandro Gomez <osiris@gcoop.coop>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+
+# shellcheck disable=SC1090
+# shellcheck disable=SC1091
+# shellcheck source=/dev/null
+
+DIR_BIN=$(dirname "$0") && source "$DIR_BIN/awx-common"
+
+function usage()
+{
+cat << EOF
+Usage:
+
+\`\`\`bash
+
+  $BIN ADHOC_JOB_ID [REGEX_SUCCESS]
+
+\`\`\`
+
+Get \`stdout\` of _adhoc_ _job_ and parse output to get success and
+unreachable hosts with summary and all inventory hostanmes.
+
+Example
+
+\`\`\`bash
+
+  $BIN 1234 'ABORT NO MAC ADDRESS FOUND'
+
+       ADHOC: 1234
+      STATUS: failed
+      FAILED: true
+   INVENTORY: wst
+       LIMIT: dev
+      MODULE: shell
+        ARGS: grep 'ABORT NO MAC ADDRESS FOUND' /opt/apps/sethostname/awx_inventory.sh
+     STARTED: 2023-08-01T17:53:41
+    FINISHED: 2023-08-01T17:54:09
+     ELAPSED: 28
+    USERNAME: admin
+     SUCCESS: 2 wstdev01:wstdev02
+ UNREACHABLE: 1 wstdev03
+
+\`\`\`
+EOF
+exit 0
+}
+
+[[ "$1" =~ ^[-]+(h|help) ]] && usage
+
+[[ -n "$ADHOC_JOB_ID"  ]] || ADHOC_JOB_ID="$1"
+[[ -z "$1"             ]] || ADHOC_JOB_ID="$1"
+[[ -z "$ADHOC_JOB_ID"  ]] && die "EMPTY ADHOC_JOB_ID"
+[[ -n "$MAX"           ]] || MAX=12
+[[ -n "$REGEX_SUCCESS" ]] || REGEX_SUCCESS="$2"
+[[ -z "$2"             ]] || REGEX_SUCCESS="$2"
+[[ -z "$REGEX_SUCCESS" ]] && die "EMPTY REGEX_SUCCESS"
+
+TMP="$(mktemp)"
+JSON="$(mktemp)"
+SUCCESS="$(mktemp)"
+UNREACHABLE="$(mktemp)"
+
+awx-cli ad_hoc get -f json "$ADHOC_JOB_ID" > "$JSON" || die "FAILED"
+
+[[ -e "$JSON" ]] || die "NOT FOUND FILE $JSON"
+[[ -s "$JSON" ]] || die "EMPTY FILE $JSON"
+
+MODULE_NAME="$(jq -r '.module_name' "$JSON")"
+MODULE_ARGS="$(jq -r '.module_args' "$JSON")"
+LIMIT="$(jq -r '.limit' "$JSON")"
+STATUS="$(jq -r '.status' "$JSON")"
+FAILED="$(jq -r '.failed' "$JSON")"
+STARTED="$(jq -r '.started' "$JSON" | cut -d '.' -f1)"
+FINISHED="$(jq -r '.finished' "$JSON" | cut -d '.' -f1)"
+ELAPSED="$(jq -r '.elapsed' "$JSON" | cut -d '.' -f1)"
+INVENTORY="$(jq -r '.summary_fields.inventory.name' "$JSON" | cut -d . -f1)"
+CREATED_BY="$(jq -r '.summary_fields.created_by.username' "$JSON" | cut -d . -f1)"
+
+printf "%*s: %s\\n"  "$MAX" 'ADHOC'      "$ADHOC_JOB_ID"
+printf "%*s: %s\\n"  "$MAX" 'STATUS'     "$STATUS"
+printf "%*s: %s\\n"  "$MAX" 'FAILED'     "$FAILED"
+printf "%*s: %s\\n"  "$MAX" 'INVENTORY'  "$INVENTORY"
+printf "%*s: %s\\n"  "$MAX" 'LIMIT'      "$LIMIT"
+printf "%*s: %s\\n"  "$MAX" 'MODULE'     "$MODULE_NAME"
+printf "%*s: %s\\n"  "$MAX" 'ARGS'       "$MODULE_ARGS"
+printf "%*s: %s\\n"  "$MAX" 'STARTED'    "$STARTED"
+printf "%*s: %s\\n"  "$MAX" 'FINISHED'   "$FINISHED"
+printf "%*s: %s\\n"  "$MAX" 'ELAPSED'    "$ELAPSED"
+printf "%*s: %s\\n"  "$MAX" 'USERNAME'   "$CREATED_BY"
+
+awx-cli ad_hoc stdout "$ADHOC_JOB_ID" > "$TMP" 2>/dev/null
+
+grep -w -a1 'CHANGED' "$TMP"        \
+  | grep -T -b1 -E "$REGEX_SUCCESS" \
+  | grep 'CHANGED'                  \
+  | awk '{print $2}'                > "$SUCCESS"
+
+grep -w 'UNREACHABLE!' "$TMP"       \
+  | awk '{print $1}'                > "$UNREACHABLE"
+
+TOTAL_SUCCESS="$(wc -l "$SUCCESS")"
+TOTAL_SUCCESS="${TOTAL_SUCCESS%% *}"
+TOTAL_UNREACHABLE="$(wc -l "$UNREACHABLE")"
+TOTAL_UNREACHABLE="${TOTAL_UNREACHABLE%% *}"
+
+printf "%*s: %s %s\\n" "$MAX" 'SUCCESS'     "$TOTAL_SUCCESS"     "$(tr '\n' ':' < "$SUCCESS"     | sed 's/:$//g')"
+printf "%*s: %s %s\\n" "$MAX" 'UNREACHABLE' "$TOTAL_UNREACHABLE" "$(tr '\n' ':' < "$UNREACHABLE" | sed 's/:$//g')"
+
+rm -f "$TMP" "$SUCCESS" "$UNREACHABLE"
