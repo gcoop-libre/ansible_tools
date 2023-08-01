@@ -1,0 +1,136 @@
+#!/bin/bash
+
+# This script comes with ABSOLUTELY NO WARRANTY, use at own risk
+# Copyright (C) 2020 Osiris Alejandro Gomez <osiris@gcoop.coop>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+
+# shellcheck disable=SC1090
+# shellcheck disable=SC1091
+# shellcheck source=/dev/null
+
+DIR_BIN=$(dirname "$0") && source "$DIR_BIN/awx-common"
+
+function usage()
+{
+cat << EOF
+Usage:
+
+\`\`\`bash
+
+  $BIN JOB_ID
+
+\`\`\`
+
+Get \`stdout\` of _job_ and parse output to get success and unreachable
+hosts with summary and all inventory hostanmes.
+
+Example
+
+\`\`\`bash
+
+  $BIN 1234
+
+       ADHOC: 1234
+      STATUS: failed
+      FAILED: true
+   INVENTORY: wst
+       LIMIT: dev
+    TEMPLATE: wst_adm_v1.5.0
+     PROJECT: ansible_adminws_v1.5.0
+     STARTED: 2023-08-01T17:53:41
+    FINISHED: 2023-08-01T17:54:09
+     ELAPSED: 28
+    USERNAME: admin
+     SUCCESS: 2 wstdev01:wstdev02
+      FAILED: 0
+ UNREACHABLE: 1 wstdev03
+
+\`\`\`
+EOF
+exit 0
+}
+
+[[ "$1" =~ ^[-]+(h|help) ]] && usage
+
+[[ -n "$JOB_ID"       ]] || JOB_ID="$1"
+[[ -z "$1"            ]] || JOB_ID="$1"
+[[ -z "$JOB_ID"       ]] && die "EMPTY JOB_ID"
+[[ -n "$MAX"          ]] || MAX=12
+[[ -n "$REGEX_RESULT" ]] || REGEX_RESULT='ok=.*changed=.*unreachable=.*failed=.*skipped=.*rescued=.*ignored=.*'
+[[ -n "$REGEX_RECAP"  ]] || REGEX_RECAP='^PLAY RECAP [\*]+$'
+
+TMP="$(mktemp)"
+LOG="$(mktemp)"
+SUCCESS="$(mktemp)"
+FAILED="$(mktemp)"
+UNREACHABLE="$(mktemp)"
+
+awx-cli job stdout --outfile "$TMP" "$JOB_ID" >/dev/null || die "FAILED GET STDOUT"
+[[ -s "$TMP"  ]] || die "EMPTY FILE $TMP"
+
+JSON="$JOB_ID.json"
+awx-cli job get -f json "$JOB_ID" > "$JSON"   || die "FAILED GET JSON"
+
+[[ -s "$JSON" ]] || die "EMPTY FILE $JSON"
+
+TEMPLATE="$(jq -r '.summary_fields.job_template.name' "$JSON")"
+PROJECT="$(jq -r '.summary_fields.project.name' "$JSON")"
+LIMIT="$(jq -r '.limit' "$JSON")"
+STATUS="$(jq -r '.status' "$JSON")"
+FAILED="$(jq -r '.failed' "$JSON")"
+STARTED="$(jq -r '.started' "$JSON" | cut -d '.' -f1)"
+FINISHED="$(jq -r '.finished' "$JSON" | cut -d '.' -f1)"
+ELAPSED="$(jq -r '.elapsed' "$JSON" | cut -d '.' -f1)"
+INVENTORY="$(jq -r '.summary_fields.inventory.name' "$JSON" | cut -d . -f1)"
+CREATED_BY="$(jq -r '.summary_fields.created_by.username' "$JSON" | cut -d . -f1)"
+
+printf "%*s: %s\\n"  "$MAX" 'JOB'        "$JOB_ID"
+printf "%*s: %s\\n"  "$MAX" 'STATUS'     "$STATUS"
+printf "%*s: %s\\n"  "$MAX" 'FAILED'     "$FAILED"
+printf "%*s: %s\\n"  "$MAX" 'INVENTORY'  "$INVENTORY"
+printf "%*s: %s\\n"  "$MAX" 'LIMIT'      "$LIMIT"
+printf "%*s: %s\\n"  "$MAX" 'TEMPLATE'   "$TEMPLATE"
+printf "%*s: %s\\n"  "$MAX" 'PROJECT'    "$PROJECT"
+printf "%*s: %s\\n"  "$MAX" 'STARTED'    "$STARTED"
+printf "%*s: %s\\n"  "$MAX" 'FINISHED'   "$FINISHED"
+printf "%*s: %s\\n"  "$MAX" 'ELAPSED'    "$ELAPSED"
+printf "%*s: %s\\n"  "$MAX" 'USERNAME'   "$CREATED_BY"
+
+RECAP="$(grep -nE "REGEX_RECAP" "$TMP" | cut -d ':' -f1)"
+RECAP="$((RECAP+1))"
+
+tail -n +$RECAP "$TMP" | grep -E "$REGEX_RESULT" > "$LOG"
+
+grep -E 'ok=[1-9]+.*unreachable=0' "$LOG" \
+  | awk '{print $1}'                      > "$SUCCESS"
+
+grep -w 'ok=0.*unreachable=1' "$LOG" \
+  | awk '{print $1}'                 > "$UNREACHABLE"
+
+grep -w 'failed=1' "$LOG" \
+  | awk '{print $1}'      > "$FAILED"
+
+TOTAL_SUCCESS="$(wc -l "$SUCCESS")"
+TOTAL_SUCCESS="${TOTAL_SUCCESS%% *}"
+TOTAL_FAILED="$(wc -l "$FAILED")"
+TOTAL_FAILED="${TOTAL_FAILED%% *}"
+TOTAL_UNREACHABLE="$(wc -l "$UNREACHABLE")"
+TOTAL_UNREACHABLE="${TOTAL_UNREACHABLE%% *}"
+
+printf "%*s: %s %s\\n" "$MAX" 'SUCCESS'     "$TOTAL_SUCCESS"     "$(tr '\n' ':' < "$SUCCESS"     | sed 's/:$//g')"
+printf "%*s: %s %s\\n" "$MAX" 'FAILED'      "$TOTAL_FAILED"      "$(tr '\n' ':' < "$FAILED"      | sed 's/:$//g')"
+printf "%*s: %s %s\\n" "$MAX" 'UNREACHABLE' "$TOTAL_UNREACHABLE" "$(tr '\n' ':' < "$UNREACHABLE" | sed 's/:$//g')"
+
+rm -f "$LOG" "$TMP" "$JSON" "$SUCCESS" "$FAILED" "$UNREACHABLE"
