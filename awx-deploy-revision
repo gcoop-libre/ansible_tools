@@ -73,7 +73,7 @@ exit 0
 AWX_DIR="$1"
 REVISION="$2"
 DEPLOY_TYPE='update'
-[[ -n "$REGEX_VERSION"   ]] || REGEX_VERSION='v[0-9]+\.[0-9]+\.[0-9]+'
+[[ -n "$REGEX_VERSION"   ]] || REGEX_VERSION='v[0-9]+\.[0-9]+\.[0-9]+[-]*[a-z_-]*'
 [[ -n "$REGEX_REVISION"  ]] || REGEX_REVISION='(master|release|hotfix|tag)'
 [[ -n "$DONT_PULL"       ]] || DONT_PULL=0
 [[ -n "$DONT_FETCH_TAGS" ]] || DONT_FETCH_TAGS=0
