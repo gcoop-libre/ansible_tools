@@ -1,0 +1,180 @@
+#!/bin/bash
+
+# This script comes with ABSOLUTELY NO WARRANTY, use at own risk
+# Copyright (C) 2023 Osiris Alejandro Gomez <osiux@osiux.com>
+# Copyright (C) 2023 Osiris Alejandro Gomez <osiris@gcoop.coop>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+
+# shellcheck disable=SC1091
+
+[[ -n "$BASH_DEBUG" ]] && set -x
+
+DIR_BIN="$(dirname "$0")" && source "$DIR_BIN/awx-common"
+
+function usage()
+{
+cat << EOF
+Usage:
+
+\`\`\`
+
+  $BIN JOB_TEMPLATE [CREATED_BY]
+
+\`\`\`
+
+Get _job_ summary execution of one _job template_ filtered by
+\`created_by\` (_username_).
+
+By default the limit of search job list is \`100\`, you can redefine as
+using \`LIST_LIMIT\` environtment variable.
+
+By default the \`created_by\` filter is \`all\`, you can redefine using
+\`CREATED_BY\` environtment variable or pass as second argument and it
+is possible to use regular expressions.
+
+Example:
+
+\`\`\`
+
+  $BIN wst_adm_v1.5.0 'alice|bob'
+
+  JOB TEMPLATE: wst_adm_v1.5.0
+  CREATED BY: alice|bob
+  LIST LIMIT: 100
+  TOTAL JOBS: 267
+  TOTAL PAGES: 1 x 200
+  PROCESS JOBS [*************************************************] 100% ETA 0s Elapsed 0s
+  TOTAL IDS FOUND: 8
+
+        id      status failed created_by              started             finished elapsed limit
+    180922  successful  false        bob  2023-07-18T17:43:11  2023-07-18T17:43:29      18 wstdev01
+    182130  successful  false      alice  2023-07-26T18:20:13  2023-07-26T18:20:32      19 wst-MJ0CMLGY
+    182145      failed   true      alice  2023-07-26T18:26:02  2023-07-26T18:26:09       6 wst-8cc0125z0t
+    182155  successful  false      alice  2023-07-26T18:34:54  2023-07-26T18:35:19      24 wst-8CC0125Z0T
+    182304      failed   true      alice  2023-07-27T17:25:00  2023-07-27T17:25:10      10 wst-8CC0131NKG
+    182305  successful  false      alice  2023-07-27T17:25:59  2023-07-27T17:26:21      22 wst-8CC2110HNZ
+    182520      failed   true      alice  2023-07-28T18:14:45  2023-07-28T18:15:07      21 wst-8CC0131NKG:wst-8CC0131NGM
+    182521  successful  false      alice  2023-07-28T18:19:32  2023-07-28T18:19:53      21 wst-8CC2110HNZ
+
+\`\`\`
+
+EOF
+exit 0
+}
+
+[[ "$1" =~ ^[-]+(h|help) ]] && usage
+
+[[ -n "$JOB_TEMPLATE"   ]] || JOB_TEMPLATE="$1"
+[[ -z "$1"              ]] || JOB_TEMPLATE="$1"
+[[ -z "$JOB_TEMPLATE"   ]] && die "UNDEFINED JOB_TEMPLATE"
+[[ -n "$CREATED_BY"     ]] || CREATED_BY='all'
+[[ -z "$2"              ]] || CREATED_BY="$2"
+[[ -z "$CREATED_BY"     ]] && die "UNDEFINED CREATED_BY"
+[[ -n "$LIST_LIMIT"     ]] || LIST_LIMIT='100'
+[[ -n "$LIST_SIZE"      ]] || LIST_SIZE=200
+[[ -n "$COL_ID"         ]] || COL_ID=8
+[[ -n "$COL_STATUS"     ]] || COL_STATUS=11
+[[ -n "$COL_FAILED"     ]] || COL_FAILED=6
+[[ -n "$COL_CREATED_BY" ]] || COL_CREATED_BY=10
+[[ -n "$COL_STARTED"    ]] || COL_STARTED=20
+[[ -n "$COL_FINISHED"   ]] || COL_FINISHED=20
+[[ -n "$COL_ELAPSED"    ]] || COL_ELAPSED=7
+
+JOBS_SUMMARY="$(mktemp)"
+FIRST="$(mktemp)"
+
+printf "JOB TEMPLATE: %s\\n" "$JOB_TEMPLATE" 1>&2
+printf "CREATED BY: %s\\n"   "$CREATED_BY"   1>&2
+printf "LIST LIMIT: %s\\n"   "$LIST_LIMIT"   1>&2
+
+awx-cli job list                 \
+  --job-template "$JOB_TEMPLATE" \
+  --format json                  \
+  --page-size 1                  > "$FIRST"
+
+TOTAL_JOBS="$(jq -r .count "$FIRST")"
+printf "TOTAL JOBS: %s\\n" "$TOTAL_JOBS" 1>&2
+
+[[ "$LIST_LIMIT" -gt "$LIMIT" ]] && LIST_PAGES="$((LIST_LIMIT/LIST_SIZE))"
+[[ "$LIST_PAGES" -eq 0        ]] && LIST_PAGES=1
+
+true > "$JOBS_SUMMARY"
+MSG='PROCESS JOBS'
+START="$(LC_ALL=en_US.UTF8 date +'%s')"
+
+printf "TOTAL PAGES: %s x %s\\n" "$LIST_PAGES" "$LIST_SIZE" 1>&2
+
+[[ -n "$JQ_FIELDS" ]] || JQ_FIELDS='\(.id) \(.status) \(.failed) \(.summary_fields.created_by.username) \(.started) \(.finished) \(.elapsed) \(.limit)'
+
+if [[ "$CREATED_BY" = 'all' ]]
+then
+  JQ=".results[] | \"$JQ_FIELDS\""
+else
+  JQ=".results[] | select(.summary_fields.created_by.username | test(\"$CREATED_BY\")) | \"$JQ_FIELDS\""
+fi
+
+for PAGE in $(seq 1 "$LIST_PAGES")
+do
+
+  bareta "$PAGE" "$LIST_PAGES" "$START" "$MSG" 1>&2
+
+  awx-cli job list \
+    --job-template "$JOB_TEMPLATE" \
+    --format json                  \
+    --page-size "$LIST_SIZE"       \
+    --page "$PAGE" \
+    | jq -r "$JQ"  \
+    | while read -r ID STATUS FAILED USERNAME STARTED FINISHED ELAPSED LIMIT
+      do
+
+        STARTED="${STARTED%%.*}"
+        FINISHED="${FINISHED%%.*}"
+        ELAPSED="${ELAPSED%%.*}"
+        LIMIT="${LIMIT// /:}"
+
+        printf "%*d %*s %*s %*s %*s %*s %*d %s\\n" \
+               "$COL_ID"         "$ID"             \
+               "$COL_STATUS"     "$STATUS"         \
+               "$COL_FAILED"     "$FAILED"         \
+               "$COL_CREATED_BY" "$USERNAME"       \
+               "$COL_STARTED"    "$STARTED"        \
+               "$COL_FINISHED"   "$FINISHED"       \
+               "$COL_ELAPSED"    "$ELAPSED"        \
+                                 "$LIMIT"
+
+      done >> "$JOBS_SUMMARY"
+
+done
+
+printf "\\n" 1>&2
+
+TOTAL_IDS="$(wc -l "$JOBS_SUMMARY")"
+TOTAL_IDS="${TOTAL_IDS%% *}"
+printf "TOTAL IDS FOUND: %s\\n" "$TOTAL_IDS" 1>&2
+
+[[ "$TOTAL_IDS" -eq 0 ]] && exit
+
+printf "\\n" 1>&2
+printf "%*s %*s %*s %*s %*s %*s %*s %s\\n" \
+       "$COL_ID"         'id'              \
+       "$COL_STATUS"     'status'          \
+       "$COL_FAILED"     'failed'          \
+       "$COL_CREATED_BY" 'created_by'      \
+       "$COL_STARTED"    'started'         \
+       "$COL_FINISHED"   'finished'        \
+       "$COL_ELAPSED"    'elapsed'         \
+                         'limit'           1>&2
+
+cat "$JOBS_SUMMARY"
