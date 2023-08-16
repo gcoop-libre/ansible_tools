@@ -36,8 +36,8 @@ Usage:
 
 \`\`\`
 
-Clean previous deploy revision, delete files from deploy, groups, and
-schedule directories.
+Clean previous deploy revision, delete files from deploy, groups,
+variables and schedule directories.
 
 Example:
 
@@ -78,6 +78,11 @@ if [[ -d groups ]]
 then
   find groups -type f -iname '*.yml'        >> "$CLEAN_FILES"
   find groups -type f -iname 'index'        >> "$CLEAN_FILES"
+fi
+
+if [[ -d variables ]]
+then
+  find variables -type f -iname '*.yml'     >> "$CLEAN_FILES"
 fi
 
 if [[ -d schedule ]]
