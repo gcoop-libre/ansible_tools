@@ -1,0 +1,196 @@
+#!/bin/bash
+
+# This script comes with ABSOLUTELY NO WARRANTY, use at own risk
+# Copyright (C) 2020 Osiris Alejandro Gomez <osiris@gcoop.coop>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+
+# shellcheck disable=SC1090
+# shellcheck disable=SC1091
+# shellcheck source=/dev/null
+
+DIR_BIN="$(dirname "$0")" && source "$DIR_BIN/awx-common"
+
+function usage()
+{
+cat << EOF
+Usage:
+
+\`\`\`bash
+
+  $BIN INVENTORY [VARIABLES]
+
+\`\`\`
+
+Gets the variables from an inventory, compares them with a local YAML
+file, and if they differ, updates them in AWX.
+
+\`\`\`bash
+
+  $BIN dev variables.yml
+
+  FOUND 64 VARIABLES IN variables.yml
+  FOUND 63 VARIABLES IN INVENTORY dev
+  COMPARE INVENTORY dev VARS WITH variables.yml
+  SHOW SIDE BY SIDE DIFF BETWEEN dev AND variables.yml
+  ----------------------------------------------------
+                          >  new_foo_bar: add_test
+  ----------------------------------------------------
+  SHOW NORMAL DIFF BETWEEN dev AND variables.yml
+  ----------------------------------------------------
+  169a170
+  > new_foo_bar: add_test
+  ----------------------------------------------------
+  UPDATE INVENTORY dev VARS WITH variables.yml
+  Resource changed.
+  === ===== ============
+  id  name  organization
+  === ===== ============
+  323 dev              3
+  === ===== ============
+
+\`\`\`
+
+EOF
+exit 0
+}
+
+[[ "$1" =~ ^[-]+(h|help) ]] && usage
+
+[[ -n "$INVENTORY"      ]] || INVENTORY="$1"
+[[ -n "$VAR_YML"        ]] || VAR_YML="$2"
+[[ -z "$INVENTORY"      ]] && die "EMPTY INVENTORY"
+[[ -z "$VAR_YML"        ]] && die "EMPTY VARIABLES YAML"
+[[ -e "$VAR_YML"        ]] || die "NOT FOUND YAML FILE $VAR_YML"
+[[ -s "$VAR_YML"        ]] || die "EMPTY YAML FILE $VAR_YML"
+[[ -n "$NO_YAMLLINT"    ]] || NO_YAMLLINT=0
+[[ -n "$SHOW_DIFF"      ]] || SHOW_DIFF=0
+[[ -n "$SHOW_DIFF_SIDE" ]] || SHOW_DIFF_SIDE=1
+[[ -n "$DIFF_WIDTH"     ]] || DIFF_WIDTH='160'
+[[ -n "$DIFF_OPTS"      ]] || DIFF_OPTS='-y --suppress-common-lines'
+[[ -n "$DIFF_CMD"       ]] || DIFF_CMD="diff $DIFF_OPTS"
+[[ -z "$DELTA_OPTS"     ]] || DELTA_OPTS='--paging never --side-by-side'
+[[ -n "$DELTA"          ]] || DELTA="$(command -v delta || true)"
+[[ -z "$DELTA"          ]] || DIFF_CMD="$DELTA $DELTA_OPTS"
+
+if command -v yamllint >/dev/null 2>/dev/null
+then
+  if [[ "$NO_YAMLLINT" -eq 0 ]]
+  then
+    if ! yamllint -f parsable "$VAR_YML"
+    then
+      [[ -e '.yamllint' ]] || stderror "NOT FOUND .yamllint"
+      die "INVALID YAML FILE $VAR_YML"
+    fi
+  fi
+fi
+
+VAR_TOT="$(yq -r 'keys|length' "$VAR_YML")"
+printf "FOUND %s VARIABLES IN %s\\n" "$VAR_TOT" "$VAR_YML"
+
+VAR_SRT="$(mktemp --suffix .yml)"
+yq -r '.' -y --sort-keys < "$VAR_YML" > "$VAR_SRT"
+SRT_TOT="$(yq -r 'keys|length' "$VAR_SRT")"
+
+[[ "$VAR_TOT" -eq "$SRT_TOT" ]] \
+  || die "FAILED SORT KEYS %s NOT MATCH %s\\n" "$VAR_YML" "$SRT_TOT"
+
+JSON="$(mktemp --suffix .json)"
+
+awx-cli inventory get \
+  --format json       \
+  --name "$INVENTORY" > "$JSON" 2>/dev/null \
+  || die "FAILED GET INVENTORY $INVENTORY"
+
+[[ -s "$JSON" ]] || die "EMPTY JSON $JSON"
+
+YML_DIF="$(mktemp --suffix .tmp)"
+AWX_YML="$(mktemp --suffix .yml)"
+AWX_SRT="$(mktemp --suffix .yml)"
+AWX_TOT=0
+
+jq -r '.variables' "$JSON" > "$AWX_YML"
+
+if [[ -s "$AWX_YML" ]]
+then
+
+  AWX_TOT="$(yq -r 'keys|length' "$AWX_YML")"
+  printf "FOUND %s VARIABLES IN INVENTORY %s\\n" "$AWX_TOT" "$INVENTORY"
+  yq -r '.' -y --sort-keys < "$AWX_YML" > "$AWX_SRT"
+  SRT_TOT="$(yq -r 'keys|length' "$AWX_SRT")"
+
+  [[ "$AWX_TOT" -eq "$SRT_TOT" ]] \
+    || die "FAILED SORT KEYS %s NOT MATCH %s\\n" "$INVENTORY" "$AWX_TOT"
+
+fi
+
+diff "$AWX_SRT" "$VAR_SRT" > "$YML_DIF"
+YML_RET="$?"
+
+printf "COMPARE INVENTORY %s VARS WITH %s\\n" "$INVENTORY" "$VAR_YML"
+
+if [[ "$YML_RET" -eq 0 ]]
+then
+  MSG="NOTHING TO DO, THE VARIABLES IN $VAR_YML"
+  MSG+=" ARE THE SAME IN INVENTORY $INVENTORY"
+  stderror "$MSG"
+  exit 0
+fi
+
+if [[ "$SHOW_DIFF_SIDE" -eq 1 ]]
+then
+
+  printf "SHOW SIDE BY SIDE DIFF BETWEEN %s AND %s\\n" \
+    "$INVENTORY" "$VAR_YML"
+
+  DIFF_WIDTH_AWX="$(wc -L "$AWX_YML" | awk '{print $1}')"
+  DIFF_WIDTH_VAR="$(wc -L "$VAR_YML" | awk '{print $1}')"
+
+  if [[ "$DIFF_WIDTH_AWX" -ge "$DIFF_WIDTH_VAR" ]]
+  then
+    DIFF_WIDTH="$DIFF_WIDTH_AWX"
+  else
+    DIFF_WIDTH="$DIFF_WIDTH_VAR"
+  fi
+
+  [[ "$DIFF_WIDTH" -gt "$COLUMNS" ]] && DIFF_WIDTH="$((COLUMNS*2))"
+
+  div
+  bash -c "$DIFF_CMD -W $DIFF_WIDTH $AWX_YML $VAR_YML" || true
+  div
+
+fi
+
+if [[ "$SHOW_DIFF" -eq 1 ]]
+then
+
+  printf "SHOW NORMAL DIFF BETWEEN %s AND %s\\n" "$INVENTORY" "$VAR_YML"
+
+  div
+  cat "$YML_DIF"
+  div
+
+fi
+
+printf "UPDATE INVENTORY %s VARS WITH %s\\n" "$INVENTORY" "$VAR_YML"
+
+awx-cli inventory modify   \
+  --name      "$INVENTORY" \
+  --variables "@$VAR_YML" || die "FAILED MODIFY $INVENTORY"
+
+rm -f "$VAR_SRT"
+rm -f "$JSON"
+rm -f "$YML_DIF"
+rm -f "$AWX_YML"
+rm -f "$AWX_SRT"
