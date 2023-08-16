@@ -103,6 +103,11 @@ repeat_string()
   printf "\\n"
 }
 
+div()
+{
+  repeat_string "$COLUMNS" '-'
+}
+
 get_file_list()
 {
   local DIR
