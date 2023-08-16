@@ -1,0 +1,87 @@
+#!/bin/bash
+
+# This script comes with ABSOLUTELY NO WARRANTY, use at own risk
+# Copyright (C) 2023 Osiris Alejandro Gomez <osiux@osiux.com>
+# Copyright (C) 2023 Osiris Alejandro Gomez <osiris@gcoop.coop>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+
+# shellcheck disable=SC1090
+# shellcheck disable=SC1091
+# shellcheck source=/dev/null
+
+[[ -n "$BASH_DEBUG" ]] && set -x
+
+DIR_BIN="$(dirname "$0")" && source "$DIR_BIN/awx-common"
+
+function usage()
+{
+cat << EOF
+Usage:
+
+\`\`\`
+
+  $BIN
+
+\`\`\`
+
+Deploy variables defined in \`deploy/variables.awx\`, create or modify
+_variables_ in _inventory_ with variables from \`.yaml\` file from
+variables directory.
+
+EOF
+exit 0
+}
+
+[[ "$1" =~ ^[-]+(h|help) ]] && usage
+
+[[ -n "$DEPLOY_DIR" ]] || DEPLOY_DIR='deploy'
+[[ -d "$DEPLOY_DIR" ]] || die "NOT FOUND DIRECTORY $DEPLOY_DIR"
+[[ -n "$VARS_FILE"  ]] || VARS_FILE="$DEPLOY_DIR/variables.awx"
+[[ -z "$1"          ]] || VARS_FILE="$1"
+[[ -e "$VARS_FILE"  ]] || die "NOT FOUND FILE $VARS_FILE"
+[[ -n "$VARS_DIR"   ]] || VARS_DIR='variables'
+
+if [[ -e "$VARS_FILE" ]]
+then
+
+  if [[ -s "$VARS_FILE" ]]
+  then
+
+    printf "\\n\\n%s\\n" "DEPLOY VARIABLES FROM $VARS_FILE"
+
+    while read -r INVENTORY VARS_YAML
+    do
+
+      [[ "$INVENTORY" =~ ^# ]] && continue
+      [[ "$INVENTORY" =~ ^$ ]] && continue
+
+      VARS_DEPLOY="$VARS_DIR/$VARS_YAML"
+      [[ -e "$VARS_DEPLOY" ]] || die "NOT FOUND FILE $VARS_DEPLOY"
+
+      printf "FOUND %s FOR UPDATE INVENTORY %s VARS\\n" \
+        "$VARS_DEPLOY" "$INVENTORY"
+      awx-inventory-update-variables "$INVENTORY" "$VARS_DEPLOY"
+
+      printf "\\n"
+
+    done < "$VARS_FILE"
+
+  else
+
+    stderror "NOTHING TO DO, EMPTY $VARS_FILE"
+
+  fi
+
+fi
