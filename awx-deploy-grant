@@ -118,7 +118,9 @@ set -e
 IN="$DEPLOY_DIR/$DEPLOY_TYPE.awx"
 TMP="$(mktemp)"
 OUT="$DEPLOY_DIR/grant.awx"
-awx-deploy-sort "$IN" > "$TMP"
+
+# EXCLUDE TEAM RESOURCES FROM DEPLOY
+awx-deploy-sort "$IN" | grep -v '^team/' > "$TMP"
 
 TOTF="$(awk -F '/' '{print $2}' "$IN" | sed s/.json//g | wc -L)"
 COLF="$((TOTF+1))"
