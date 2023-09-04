@@ -50,12 +50,10 @@ exit 0
 
 [[ -z "$1" ]] && die "EMPTY HOST"
 
-HOST="$1"
-PREFIX="${HOST//-*/}"
-INVENTORY="${PREFIX,,}"
-
-[[ -z "$2" ]] || INVENTORY="$2"
-
+[[ -n "$HOST"      ]] || HOST="$1"
+[[ -n "$PREFIX"    ]] || PREFIX="${HOST//-*/}"
+[[ -n "$INVENTORY" ]] || INVENTORY="${PREFIX,,}"
+[[ -z "$2"         ]] || INVENTORY="$2"
 [[ -z "$INVENTORY" ]] && die "EMPTY INVENTORY"
 
 JSON="$(mktemp --suffix .json)"
