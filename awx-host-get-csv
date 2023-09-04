@@ -61,9 +61,16 @@ PREFIX="${HOST//-*/}"
 INVENTORY="${PREFIX,,}"
 
 [[ -z "$2" ]] || INVENTORY="$2"
+[[ -n "$OUTPUT" ]] || OUTPUT="$HOST.csv"
 
 JSON="$(mktemp --suffix .json)"
 YAML="$(mktemp --suffix .yml)"
+
+if [[ -e "$OUTPUT" ]]
+then
+  cat "$OUTPUT"
+  exit 0
+fi
 
 awx-cli host get            \
   --inventory "$INVENTORY"  \
@@ -108,7 +115,7 @@ echo "$H_NAME $H_DESCRIPTION $V_HOST $V_PMAC $V_SERIAL" \
       printf "'%s','%s','%s','%s','%s'\\n" \
              "$NAME" "$DESCRIPTION" "$IP" "$MAC" "$SERIAL"
 
-    done
+    done | tee "$OUTPUT"
 
 rm -f "$JSON"
 rm -f "$YAML"
