@@ -84,7 +84,6 @@ exit 0
 [[ -n "$DELTA"      ]] || DELTA="$(command -v delta || true)"
 [[ -z "$DELTA"      ]] || DIFF_CMD="$DELTA --paging never --side-by-side"
 [[ -n "$HOST_REGEX" ]] || HOST_REGEX="$2"
-[[ -z "$HOST_REGEX" ]] || HOST_REGEX='.*'
 [[ -n "$JSON_LIST"  ]] || JSON_LIST="$1"
 [[ -e "$JSON_LIST"  ]] || die "NOT FOUND FILE $JSON_LIST"
 
