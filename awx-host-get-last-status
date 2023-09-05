@@ -1,0 +1,359 @@
+#!/bin/bash
+
+# This script comes with ABSOLUTELY NO WARRANTY, use at own risk
+# Copyright (C) 2023 Osiris Alejandro Gomez <osiux@osiux.com>
+# Copyright (C) 2023 Osiris Alejandro Gomez <osiris@gcoop.coop>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+
+# shellcheck disable=SC1090
+# shellcheck disable=SC1091
+# shellcheck source=/dev/null
+
+DIR_BIN="$(dirname "$0")" && source "$DIR_BIN/awx-common"
+
+function usage()
+{
+cat << EOF
+Usage:
+
+\`\`\`bash
+
+  $BIN HOSTS_LIST
+
+\`\`\`
+
+Get the last status hosts with summary and all inventory hostanmes in
+hosts file.
+
+Example
+
+\`\`\`bash
+
+  $BIN hosts
+
+	## OVERVIEW
+
+	| TOTAL | STATUS      |
+	|-------|-------------|
+	|     3 | SUCCESS     |
+	|     0 | FAILED      |
+	|     0 | UNREACHABLE |
+	|     0 | UNKNOWN     |
+	|     0 | REVIEW      |
+	|-------|-------------|
+	|     3 | TOTAL HOSTS |
+
+	## SUCCESS
+
+	| inventory_hostname | hostname |          IP |        macaddress | last_status |             last_success |                 last_failed |            last_unreachable |               last_activity |
+	|--------------------|----------|-------------|-------------------|-------------|--------------------------|-----------------------------|-----------------------------|-----------------------------|
+	| wst-dev01          | wst01dev | 10.0.10.101 | e8:d8:d1:57:71:96 |     SUCCESS | 1234 2023-08-11T15:06:09 |                           - |                           - |                           - |
+	| wst-lab01          | wst01lab | 10.0.20.101 | 38:22:e2:23:c4:9e |     SUCCESS | 1234 2023-08-11T15:06:09 |                           - |                           - |                           - |
+	| wst-prd03          | wst03prd | 10.10.1.103 | 38:22:e2:23:a2:b1 |     SUCCESS | 1234 2023-08-11T15:06:09 |                           - |                           - |                           - |
+
+\`\`\`
+EOF
+exit 0
+}
+
+[[ "$1" =~ ^[-]+(h|help) ]] && usage
+
+[[ -n "$HOSTS_LIST" ]] || HOSTS_LIST='hosts'
+[[ -n "$HOSTS_CSV"  ]] || HOSTS_CSV='hosts.csv'
+[[ -z "$1"          ]] || HOSTS_LIST="$1"
+[[ -e "$HOSTS_LIST" ]] || die "NOT FOUND FILE $HOSTS_LIST"
+[[ -s "$HOSTS_LIST" ]] || die "EMPTY FILE $HOSTS_LIST"
+[[ -n "$SHOW_URL"   ]] || SHOW_URL=0
+[[ -n "$TEMPLATE"   ]] || TEMPLATE='.*'
+[[ -z "$2"          ]] || TEMPLATE="$2"
+
+[[ -n "$LABEL_HOST"             ]] || LABEL_HOST='inventory_hostname'
+[[ -n "$LABEL_NAME"             ]] || LABEL_NAME='hostname'
+[[ -n "$LABEL_IP"               ]] || LABEL_IP='IP'
+[[ -n "$LABEL_MAC"              ]] || LABEL_MAC='macaddress'
+[[ -n "$LABEL_LAST_STATUS"      ]] || LABEL_LAST_STATUS='last_status'
+[[ -n "$LABEL_LAST_SUCCESS"     ]] || LABEL_LAST_SUCCESS='last_success'
+[[ -n "$LABEL_LAST_FAILED"      ]] || LABEL_LAST_FAILED='last_failed'
+[[ -n "$LABEL_LAST_UNREACHABLE" ]] || LABEL_LAST_UNREACHABLE='last_unreachable'
+[[ -n "$LABEL_LAST_ACTIVITY"    ]] || LABEL_LAST_ACTIVITY='last_activity'
+
+COL_A_L="${#LABEL_HOST}"
+COL_A="$(wc -L "$HOSTS_LIST" | awk '{print $1}')"
+[[ "$COL_A" -lt "$COL_A_L" ]] && COL_A="$COL_A_L"
+
+COL_B=11
+COL_C=15
+COL_D=17
+COL_E=12
+COL_F=27
+COL_G=27
+COL_H=27
+COL_I=27
+
+recent_jobs()
+{
+  local HOST RESULTS
+
+  HOST="$1"
+  RECENT="$(grep -l "$HOST" awx-job-results-*.log 2>/dev/null || true)"
+
+  if [[ -z "$RECENT" ]]
+  then
+
+    awx-host-get-recent-jobs "$HOST" \
+      | grep -E "$TEMPLATE"          \
+      | while read -r H _ ID _ _ _ _
+      do
+
+        RESULTS="awx-job-results-$ID.log"
+        [[ -e "$RESULTS" ]] || awx-job-stdout "$ID" > "$RESULTS"
+
+      done
+
+  fi
+}
+
+last_status()
+{
+  local HOST STATUS
+
+  HOST="$1"
+  STATUS="$2"
+
+  grep -l "$STATUS:.*$HOST" awx-job-results-*.log \
+    | while read -r i
+      do
+        echo "$(echo "$i" | cut -d- -f4-)" "$(grep STARTED: "$i")"
+      done | sed 's/.log.*STARTED://g' \
+        | sort -k2 -r \
+        | head -1 \
+        | while read -r ID DATE
+          do
+
+            if [[ "$SHOW_URL" -eq 1 ]]
+            then
+              printf "[%s](%s) %s" \
+                "$ID" \
+                "$(get_url 'playbook' "$ID")" \
+                "$DATE"
+            else
+              printf "%s %s" "$ID" "$DATE"
+            fi
+
+          done
+}
+
+last_success()
+{
+  last_status "$1" SUCCESS
+}
+
+last_failed()
+{
+  last_status "$1" FAILED
+}
+
+last_unreachable()
+{
+  last_status "$1" UNREACHABLE
+}
+
+last_activity()
+{
+  local LOG
+  local HOST
+
+  HOST="$1"
+  LOG="activity-$HOST.diff"
+
+  # EXIT WHEN NOT FOUND LOG
+  [[ -e "$LOG" ]] || return
+
+  grep 'awx_inventory TIMESTAMP' "$LOG" \
+    | sort -k6 -r \
+    | head -1 \
+    | awk '{print $3,$6}' \
+    | cut -d= -f2,3 | sed 's/TIMESTAMP=//g'
+}
+
+title()
+{
+
+    printf "| %-*s | %*s | %*s | %*s | %*s | %*s | %*s | %*s | %*s |\\n" \
+           "$COL_A" "$LABEL_HOST"              \
+           "$COL_B" "$LABEL_NAME"              \
+           "$COL_C" "$LABEL_IP"                \
+           "$COL_D" "$LABEL_MAC"               \
+           "$COL_E" "$LABEL_LAST_STATUS"       \
+           "$COL_F" "$LABEL_LAST_SUCCESS"      \
+           "$COL_G" "$LABEL_LAST_FAILED"       \
+           "$COL_H" "$LABEL_LAST_UNREACHABLE"  \
+           "$COL_I" "$LABEL_LAST_ACTIVITY"
+}
+
+get_total()
+{
+  local TOTAL
+
+  TOTAL="$(wc -l "$1" 2>/dev/null)"
+  TOTAL="${TOTAL%% *}"
+
+  echo "$((TOTAL-STATUS_DIFF))"
+}
+
+header()
+{
+  title
+  title | sed 's/[^|]/-/g'
+}
+
+overview_title()
+{
+  printf "| %*s | %-*s |\\n" "$TOTAL_WIDTH" 'TOTAL' 11 'STATUS'
+}
+
+overview_div()
+{
+  overview_title | sed 's/[^|]/-/g'
+}
+
+overview_total()
+{
+  printf "| %*d | %-*s |\\n" \
+    "$TOTAL_WIDTH" "$TOTAL_HOSTS" \
+    11 'TOTAL HOSTS'
+}
+
+overview_status()
+{
+
+for STATUS in SUCCESS FAILED UNREACHABLE UNKNOWN REVIEW
+do
+  TOTAL_STATUS="$(get_total "$STATUS.md")"
+  printf "| %*d | %-*s |\\n" "$TOTAL_WIDTH" "$TOTAL_STATUS" 11 "$STATUS"
+done
+
+}
+
+overview()
+{
+
+TOTAL_HOSTS="$(wc -l "$HOSTS_LIST")"
+TOTAL_HOSTS="${TOTAL_HOSTS%% *}"
+TOTAL_WIDTH="$(echo "$TOTAL_HOSTS" | wc -L)"
+
+[[ "$TOTAL_WIDTH" -lt 5 ]] && TOTAL_WIDTH=5
+
+printf "\\n## %s\\n\\n" 'OVERVIEW'
+overview_title
+overview_div
+overview_status
+overview_div
+overview_total
+
+}
+
+for STATUS in SUCCESS FAILED UNREACHABLE UNKNOWN REVIEW
+do
+  header > "$STATUS.md"
+done
+
+STATUS_DIFF="$(wc -l 'SUCCESS.md')"
+STATUS_DIFF="${STATUS_DIFF%% *}"
+
+if [[ ! -e "$HOSTS_CSV" ]]
+then
+  printf "NOT FOUND CSV, INITIALIZE %s\\n" "$HOSTS_CSV"
+  true > "$HOSTS_CSV"
+fi
+
+while read -r H _
+do
+
+  CSV="$(grep -w "$H" "$HOSTS_CSV")"
+
+  if [[ -z "$CSV" ]]
+  then
+    printf "GET CSV FROM HOST %s\\n" "$H"
+    INVENTORY="${H%%-*}"
+    [[ "${#INVENTORY}" -gt 3 ]] && INVENTORY="${H:0:3}"
+    awx-host-get-csv "$H" "$INVENTORY" >> "$HOSTS_CSV"
+  fi
+
+  CSV="$(grep -w "$H" "$HOSTS_CSV")"
+
+  echo "$CSV" | tr -d "'" | tr ',' ' ' | while read -r HOST NAME IP MAC _
+  do
+
+    recent_jobs "$HOST"
+
+    LAST_SUCCESS="$(last_success         "$HOST")"
+    LAST_FAILED="$(last_failed           "$HOST")"
+    LAST_UNREACHABLE="$(last_unreachable "$HOST")"
+    LAST_ACTIVITY="$(last_activity       "$HOST")"
+
+    if [[ -z "$LAST_SUCCESS" ]]
+    then
+      if [[ -z "$LAST_FAILED" ]]
+      then
+        if [[ -z "$LAST_UNREACHABLE" ]]
+        then
+          LAST_STATUS='UNKNOWN'
+        else
+          LAST_STATUS='UNREACHABLE'
+        fi
+      else
+        LAST_STATUS='FAILED'
+      fi
+    else
+      LAST_STATUS='SUCCESS'
+    fi
+
+    [[ -z "$LAST_SUCCESS"     ]] && LAST_SUCCESS='-'
+    [[ -z "$LAST_FAILED"      ]] && LAST_FAILED='-'
+    [[ -z "$LAST_UNREACHABLE" ]] && LAST_UNREACHABLE='-'
+    [[ -z "$LAST_ACTIVITY"    ]] && LAST_ACTIVITY='-'
+    [[ -z "$LAST_STATUS"      ]] && LAST_STATUS='REVIEW'
+
+    printf "%s %s\\n" "$LAST_SUCCESS"     'SUCCESS'     > "$HOST.status"
+    printf "%s %s\\n" "$LAST_FAILED"      'FAILED'      >>"$HOST.status"
+    printf "%s %s\\n" "$LAST_UNREACHABLE" 'UNREACHABLE' >>"$HOST.status"
+
+    # last status based on date of execution
+    LAST_STATUS="$(sort -r "$HOST.status" | grep -v '^\-' | head -1 | awk '{print $3}')"
+    OUTPUT="${LAST_STATUS}.md"
+
+    printf "| %-*s | %*s | %*s | %*s | %*s | %*s | %*s | %*s | %*s |\\n" \
+           "$COL_A" "$HOST"              \
+           "$COL_B" "$NAME"              \
+           "$COL_C" "$IP"                \
+           "$COL_D" "$MAC"               \
+           "$COL_E" "$LAST_STATUS"       \
+           "$COL_F" "$LAST_SUCCESS"      \
+           "$COL_G" "$LAST_FAILED"       \
+           "$COL_H" "$LAST_UNREACHABLE"  \
+           "$COL_I" "$LAST_ACTIVITY"     >> "$OUTPUT"
+
+  done
+done < "$HOSTS_LIST"
+
+overview
+
+for STATUS in SUCCESS FAILED UNREACHABLE UNKNOWN REVIEW
+do
+  [[ "$(get_total "$STATUS.md")" -eq 0 ]] && continue
+  printf "\\n## %s\\n\\n" "$STATUS"
+  cat "$STATUS.md"
+done
