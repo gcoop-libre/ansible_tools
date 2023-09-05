@@ -107,6 +107,7 @@ exit 0
 IDS="$(mktemp)"
 FIRST="$(mktemp)"
 JSON_LIST="activity-$HOST_NAME.lst"
+OUTPUT_DIFF="${JSON_LIST//.lst/.diff}"
 AFTER="$(mktemp --suffix .json)"
 BEFORE="$(mktemp --suffix .json)"
 
@@ -187,7 +188,8 @@ then
   printf "\\n## ACTIVITY STREAM JSON FILES LIST: %s\\n\\n" "$JSON_LIST"
   cat "$JSON_LIST"
 
-  awx-activity-stream-json-diff "$JSON_LIST"
+  awx-activity-stream-json-diff "$JSON_LIST" > "$OUTPUT_DIFF" \
+    && cat "$OUTPUT_DIFF"
 
 fi
 
