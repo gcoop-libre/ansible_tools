@@ -26,9 +26,22 @@ function usage()
 {
 cat << EOF
 Usage:
-  $BIN
 
-Description
+\`\`\`bash
+
+  $BIN JOB_ID
+
+\`\`\`
+
+Get _stdout_ of _job_.
+
+Example:
+
+\`\`\`bash
+
+  $BIN 1234
+
+\`\`\`
 
 EOF
 exit 0
@@ -36,8 +49,7 @@ exit 0
 
 [[ "$1" =~ ^[-]+(h|help) ]] && usage
 
-[[ -z "$1" ]] && die "EMPTY JOB_ID"
-
-JOB_ID="$1"
+[[ -n "$JOB_ID" ]] || JOB_ID="$1"
+[[ -z "$JOB_ID" ]] && die "EMPTY JOB_ID"
 
 awx-cli job stdout "$JOB_ID"
