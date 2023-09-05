@@ -71,15 +71,18 @@ exit 0
 [[ -n "$REGEX_RESULT" ]] || REGEX_RESULT=': ok=.*changed=.*unreachable=.*failed=.*skipped=.*rescued=.*ignored=.*'
 [[ -n "$REGEX_RECAP"  ]] || REGEX_RECAP='^PLAY RECAP [\*]+$'
 
-TMP="$(mktemp)"
+STDOUT="job_$JOB_ID.txt"
 LOG="$(mktemp)"
 HOSTS_SUCCESS="$JOB_ID-succes"
 HOSTS_FAILED="$JOB_ID-failed"
 HOSTS_UNREACHABLE="$JOB_ID-unreachable"
 
-awx-cli job stdout --outfile "$TMP" "$JOB_ID" >/dev/null || die "FAILED GET STDOUT"
-[[ -s "$TMP"  ]] || die "EMPTY FILE $TMP"
+if [[ ! -e "$STDOUT" ]]
+then
+  awx-cli job stdout --outfile "$STDOUT" "$JOB_ID" >/dev/null || die "FAILED GET STDOUT"
+fi
 
+[[ -s "$STDOUT"  ]] || die "EMPTY FILE $STDOUT"
 JSON="$JOB_ID.json"
 awx-cli job get -f json "$JOB_ID" > "$JSON"   || die "FAILED GET JSON"
 
@@ -109,10 +112,10 @@ printf "%*s: %s\\n"  "$MAX" 'FINISHED'   "$FINISHED"
 printf "%*s: %s\\n"  "$MAX" 'ELAPSED'    "$ELAPSED"
 printf "%*s: %s\\n"  "$MAX" 'USERNAME'   "$CREATED_BY"
 
-RECAP="$(grep -nE "REGEX_RECAP" "$TMP" | cut -d ':' -f1)"
+RECAP="$(grep -nE "$REGEX_RECAP" "$STDOUT" | cut -d ':' -f1)"
 RECAP="$((RECAP+1))"
 
-tail -n +$RECAP "$TMP" | grep -E "$REGEX_RESULT" > "$LOG"
+tail -n +$RECAP "$STDOUT" | grep -E "$REGEX_RESULT" > "$LOG"
 grep -E ': ok=.*failed=[1-9]+' "$LOG" \
   | awk '{print $1}'                  > "$HOSTS_FAILED"
 
