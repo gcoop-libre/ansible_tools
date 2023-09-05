@@ -91,7 +91,11 @@ STDOUT_LINES="$(wc -l "$STDOUT" | cut -d ' ' -f1)"
 [[ "$STDOUT_LINES" -lt 10 ]] && die "INVALID $STDOUT VERY FEW LINES"
 
 JSON="$JOB_ID.json"
-awx-cli job get -f json "$JOB_ID" > "$JSON"   || die "FAILED GET JSON"
+
+if [[ ! -e "$JSON" ]]
+then
+  awx-cli job get -f json "$JOB_ID" > "$JSON" || die "FAILED GET JSON"
+fi
 
 [[ -s "$JSON" ]] || die "EMPTY FILE $JSON"
 
