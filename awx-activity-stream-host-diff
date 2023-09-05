@@ -181,7 +181,10 @@ do
   bareta "$N" "$TOTAL_IDS" "$START" "$MSG"
 
   JSON="activity-$ID.json"
-  awx-cli activity_stream get "$ID" -f json > "$JSON"
+
+  grep -q "$JSON" "$JSON_LIST" && continue
+
+  [[ -s "$JSON" ]] || awx-cli activity_stream get "$ID" -f json >"$JSON"
 
   H_NAME="$(jq -r '.summary_fields.host[].name' "$JSON")"
 
