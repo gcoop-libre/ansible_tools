@@ -113,7 +113,8 @@ BEFORE="$(mktemp --suffix .json)"
 
 printf "ACTOR: %s\\n"      "$ACTOR"
 printf "OPERATION: %s\\n"  "$OPERATION"
-printf "LIST LIMIT: %s\\n"  "$LIST_LIMIT"
+printf "LIST LIMIT: %s\\n" "$LIST_LIMIT"
+printf "LIST SIZE: %s\\n"  "$LIST_SIZE"
 
 awx-cli activity_stream list \
   --operation "$OPERATION"   \
