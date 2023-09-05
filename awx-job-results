@@ -68,7 +68,7 @@ exit 0
 [[ -z "$1"            ]] || JOB_ID="$1"
 [[ -z "$JOB_ID"       ]] && die "EMPTY JOB_ID"
 [[ -n "$MAX"          ]] || MAX=12
-[[ -n "$REGEX_RESULT" ]] || REGEX_RESULT='ok=.*changed=.*unreachable=.*failed=.*skipped=.*rescued=.*ignored=.*'
+[[ -n "$REGEX_RESULT" ]] || REGEX_RESULT=': ok=.*changed=.*unreachable=.*failed=.*skipped=.*rescued=.*ignored=.*'
 [[ -n "$REGEX_RECAP"  ]] || REGEX_RECAP='^PLAY RECAP [\*]+$'
 
 TMP="$(mktemp)"
