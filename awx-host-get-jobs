@@ -1,0 +1,113 @@
+#!/bin/bash
+
+# This script comes with ABSOLUTELY NO WARRANTY, use at own risk
+# Copyright (C) 2020 Osiris Alejandro Gomez <osiris@gcoop.coop>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+
+# shellcheck disable=SC1090
+# shellcheck disable=SC1091
+# shellcheck source=/dev/null
+
+DIR_BIN="$(dirname "$0")" && source "$DIR_BIN/awx-common"
+
+function usage()
+{
+cat << EOF
+Usage:
+
+\`\`\`bash
+
+  $BIN HOST [INVENTORY]
+
+\`\`\`
+
+Get Job Host Summaries List using \`curl\`.
+
+Example:
+
+\`\`\`bash
+
+  $BIN wst01n01 wst
+
+ 1352 2023-08-27T10:42:21      failed 05:40:18 wst_chk_mac_v0.1.1
+ 1330 2023-08-17T16:37:32  successful 00:00:37 wst_wol_v1.0.1
+ 1726 2023-08-08T14:07:38      failed 00:02:26 wst_adm_v1.5.0
+
+\`\`\`
+
+EOF
+exit 0
+}
+
+[[ "$1" =~ ^[-]+(h|help) ]] && usage
+
+[[ -n "$HOST"            ]] || HOST="$1"
+[[ -z "$HOST"            ]] && die "EMPTY HOST"
+[[ -n "$PREFIX"          ]] || PREFIX="${HOST//-*/}"
+[[ -n "$INVENTORY"       ]] || INVENTORY="${PREFIX,,}"
+[[ -z "$2"               ]] || INVENTORY="$2"
+[[ -z "$INVENTORY"       ]] && die "EMPTY INVENTORY"
+[[ -n "$HOST_ID"         ]] || HOST_ID="$(host_get_id "$INVENTORY" "$HOST")"
+[[ -z "$HOST_ID"         ]] && die "EMPTY HOST_ID"
+[[ -n "$ONLY_SUCCESSFUL" ]] || ONLY_SUCCESSFUL=0
+[[ -n "$EXCLUDE_JOBS"    ]] || EXCLUDE_JOBS='(EXCLUDE|REGEX)'
+
+awx_cfg_read
+
+[[ -z "$AWX_CFG_USER" ]] && die "EMPTY AWX_CFG_USER"
+[[ -z "$AWX_CFG_PASS" ]] && die "EMPTY AWX_CFG_PASS"
+[[ -z "$AWX_CFG_HOST" ]] && die "EMPTY AWX_CFG_HOST"
+
+AWX_CFG_HOST="$(echo "$AWX_CFG_HOST" | sed 's/\/$//g')"
+
+JSON="$(mktemp --suffix .json)"
+
+curl -k -s --user "$AWX_CFG_USER:$AWX_CFG_PASS"             \
+  "$AWX_CFG_HOST/api/v2/hosts/$HOST_ID/job_host_summaries/" \
+  | jq -r .                                                 > "$JSON"
+
+[[ -s "$JSON"  ]] || die "EMPTY JSON $JSON"
+[[ -n "$LIMIT" ]] || LIMIT="$(jq -r .count "$JSON")"
+
+JQ='.results[] | "\(.job) \(.created)"'
+
+jq -r "$JQ" "$JSON" | while read -r JOB_ID CREATED
+do
+
+  FIELDS=".results[].summary_fields.job"
+  FIELDS+=" | select(.id == $JOB_ID)"
+
+  if [[ "$ONLY_SUCCESSFUL" -eq 1 ]]
+  then
+    FIELDS+=" | select(.status == \"successful\")"
+  fi
+
+  FIELDS+=" | \"\(.status) \(.elapsed) \(.name)\""
+  DATE="${CREATED%%T*}"
+  TIME="${CREATED##*T}"
+  TIME="${TIME:0:8}"
+
+  jq -r "$FIELDS" "$JSON"      \
+    | grep -vE "$EXCLUDE_JOBS" \
+    | while read -r STATUS SEC NAME
+      do
+        ELAPSED="$(date -d "@$SEC" -u +'%T')"
+        printf "%7s %sT%s %11s %s %s\\n" \
+               "$JOB_ID" "$DATE" "$TIME" "$STATUS" "$ELAPSED" "$NAME"
+      done
+
+done | head -n "$LIMIT"
+
+rm -f "$JSON"
