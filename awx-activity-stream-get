@@ -1,0 +1,168 @@
+#!/bin/bash
+
+# This script comes with ABSOLUTELY NO WARRANTY, use at own risk
+# Copyright (C) 2023 Osiris Alejandro Gomez <osiux@osiux.com>
+# Copyright (C) 2023 Osiris Alejandro Gomez <osiris@gcoop.coop>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+
+# shellcheck disable=SC1091
+
+[[ -n "$BASH_DEBUG" ]] && set -x
+
+DIR_BIN="$(dirname "$0")" && source "$DIR_BIN/awx-common"
+
+function usage()
+{
+cat << EOF
+Usage:
+
+\`\`\`
+
+  $BIN [LIST_LIMIT]
+
+\`\`\`
+
+Get _activity stream_ and save file list
+\`activity-stream-timestamp.lst\` of _JSONs_ filenames
+(\`activity-id.json\`).
+
+By default the limit of search activity streams is \`100\`, you can
+redefine as second argument or using \`LIST_LIMIT\` environtment
+variable
+
+By default the _username_ filter is \`awx_inventory\`, you can redefine
+using \`ACTOR\` environtment variable.
+
+By default the _operation_ filter is \`update\`, you can redefine using
+\`OPERATION\` environtment variable.
+
+Example:
+
+\`\`\`
+
+  $BIN
+
+\`\`\`
+
+EOF
+exit 0
+}
+
+find_last_activity()
+{
+
+find . -type f -iname 'activity-*.json' \
+  | grep -E 'activity-[0-9]+.json'      \
+  | sort -nr                            \
+  | head -1                             \
+  | grep -Eo '[0-9]+'
+
+}
+
+[[ "$1" =~ ^[-]+(h|help) ]] && usage
+
+[[ -n "$OPERATION"  ]] || OPERATION='update'
+[[ -n "$OBJECT1"    ]] || OBJECT1='host'
+[[ -n "$ACTOR"      ]] || ACTOR='awx_inventory'
+[[ -n "$LIST_LIMIT" ]] || LIST_LIMIT='100'
+[[ -n "$LIST_SIZE"  ]] || LIST_SIZE=200
+[[ -z "$2"          ]] || LIST_LIMIT="$2"
+
+IDS="$(mktemp)"
+FIRST="$(mktemp)"
+JSON_LIST="activity-stream-$(date +'%s').lst"
+
+printf "ACTOR: %s\\n"      "$ACTOR"
+printf "OPERATION: %s\\n"  "$OPERATION"
+printf "LIST LIMIT: %s\\n" "$LIST_LIMIT"
+printf "LIST SIZE: %s\\n"  "$LIST_SIZE"
+
+awx-cli activity_stream list \
+  --operation "$OPERATION"   \
+  --object1 "$OBJECT1"       \
+  --actor "$ACTOR"           \
+  --format json              \
+  --page-size 1              > "$FIRST"
+
+TOTAL_ACTIVITY="$(jq -r .count "$FIRST")"
+LAST_ACTIVITY="$(jq -r .results[].id "$FIRST")"
+LAST_ACTIVITY_CACHED="$(find_last_activity)"
+
+printf "TOTAL RECORDS: %s\\n" "$TOTAL_ACTIVITY"
+printf "LAST ACTIVITY ID: %s\\n" "$LAST_ACTIVITY"
+printf "LAST ACTIVITY ID CACHED: %s\\n" "$LAST_ACTIVITY_CACHED"
+
+[[ "$LIST_LIMIT" -gt "$LIMIT" ]] && LIST_PAGES="$((LIST_LIMIT/LIST_SIZE))"
+[[ "$LIST_PAGES" -eq 0        ]] && LIST_PAGES=1
+
+true > "$IDS"
+MSG='PROCESS RECORDS'
+START="$(LC_ALL=en_US.UTF8 date +'%s')"
+
+printf "TOTAL PAGES: %s x %s\\n" "$LIST_PAGES" "$LIST_SIZE"
+
+for PAGE in $(seq 1 "$LIST_PAGES")
+do
+
+  bareta "$PAGE" "$LIST_PAGES" "$START" "$MSG"
+
+  awx-cli activity_stream list \
+    --operation "$OPERATION"   \
+    --object1 "$OBJECT1"       \
+    --actor "$ACTOR"           \
+    --format id                \
+    --page-size "$LIST_SIZE"   \
+    --page "$PAGE"             \
+    | tr ' ' '\n'              >> "$IDS"
+
+done
+
+printf "\\n"
+
+TOTAL_IDS="$(wc -l "$IDS")"
+TOTAL_IDS="${TOTAL_IDS%% *}"
+printf "TOTAL IDS FOUND: %s\\n" "$TOTAL_IDS"
+
+true > "$JSON_LIST"
+
+N=0
+MSG="PROCESS ACTIVITY STREAMS"
+START="$(LC_ALL=en_US.UTF8 date +%s)"
+
+while read -r ID
+do
+
+  N="$((N+1))"
+  bareta "$N" "$TOTAL_IDS" "$START" "$MSG"
+
+  JSON="activity-$ID.json"
+  [[ -s "$JSON" ]] || awx-cli activity_stream get "$ID" -f json >"$JSON"
+  echo "$JSON" >> "$JSON_LIST"
+
+done < "$IDS"
+
+printf "\\n"
+TOTAL_JSON_LIST="$(wc -l "$JSON_LIST")"
+TOTAL_JSON_LIST="${TOTAL_JSON_LIST%% *}"
+printf "TOTAL IDS %s\\n" "$TOTAL_JSON_LIST"
+
+if [[ -s "$JSON_LIST" ]]
+then
+
+  printf "\\n## ACTIVITY STREAM JSON FILES LIST: %s\\n\\n" "$JSON_LIST"
+
+fi
+
+rm -f "$IDS" 2>/dev/null
