@@ -83,6 +83,13 @@ then
 fi
 
 [[ -s "$STDOUT"  ]] || die "EMPTY FILE $STDOUT"
+
+PLAY_LINES="$(grep -c '^PLAY' "$STDOUT")"
+[[ "$PLAY_LINES"   -eq  0 ]] && die "INVALID $STDOUT NOT FOUND PLAYS"
+
+STDOUT_LINES="$(wc -l "$STDOUT" | cut -d ' ' -f1)"
+[[ "$STDOUT_LINES" -lt 10 ]] && die "INVALID $STDOUT VERY FEW LINES"
+
 JSON="$JOB_ID.json"
 awx-cli job get -f json "$JOB_ID" > "$JSON"   || die "FAILED GET JSON"
 
