@@ -201,7 +201,6 @@ if [[ -s "$JSON_LIST" ]]
 then
 
   printf "\\n## ACTIVITY STREAM JSON FILES LIST: %s\\n\\n" "$JSON_LIST"
-  cat "$JSON_LIST"
 
   awx-activity-stream-json-diff "$JSON_LIST" > "$OUTPUT_DIFF" \
     && cat "$OUTPUT_DIFF"
