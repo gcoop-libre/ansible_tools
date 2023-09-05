@@ -30,7 +30,7 @@ Usage:
 
 \`\`\`
 
-  $BIN HOST_REGEX [LIST_LIMIT]
+  $BIN HOST_NAME [LIST_LIMIT]
 
 \`\`\`
 
@@ -98,16 +98,15 @@ exit 0
 [[ -n "$OPERATION"  ]] || OPERATION='update'
 [[ -n "$OBJECT1"    ]] || OBJECT1='host'
 [[ -n "$ACTOR"      ]] || ACTOR='awx_inventory'
-[[ -n "$HOST_REGEX" ]] || HOST_REGEX="$1"
-[[ -z "$HOST_REGEX" ]] && die "EMPTY HOST_REGEX"
+[[ -n "$HOST_NAME"  ]] || HOST_NAME="$1"
+[[ -z "$HOST_NAME"  ]] && die "EMPTY HOSTNAME"
 [[ -n "$LIST_LIMIT" ]] || LIST_LIMIT='100'
 [[ -n "$LIST_SIZE"  ]] || LIST_SIZE=200
 [[ -z "$2"          ]] || LIST_LIMIT="$2"
 
 IDS="$(mktemp)"
 FIRST="$(mktemp)"
-HOST_NAME="$(echo "$HOST_REGEX" | tr -d '[:punct:]')"
-JSON_LIST="activity-$HOST_NAME-$(date +'%s').json"
+JSON_LIST="activity-$HOST_NAME.lst"
 AFTER="$(mktemp --suffix .json)"
 BEFORE="$(mktemp --suffix .json)"
 
@@ -171,16 +170,16 @@ do
   JSON="activity-$ID.json"
   awx-cli activity_stream get "$ID" -f json > "$JSON"
 
-  HOST_NAME="$(jq -r '.summary_fields.host[].name' "$JSON")"
+  H_NAME="$(jq -r '.summary_fields.host[].name' "$JSON")"
 
-  [[ "$HOST_NAME" =~ $HOST_REGEX ]] && echo "$JSON" >> "$JSON_LIST"
+  [[ "$H_NAME" = "$HOST_NAME" ]] && echo "$JSON" >> "$JSON_LIST"
 
 done < "$IDS"
 
 printf "\\n"
 TOTAL_JSON_LIST="$(wc -l "$JSON_LIST")"
 TOTAL_JSON_LIST="${TOTAL_JSON_LIST%% *}"
-printf "TOTAL IDS MATCHING WITH HOST REGEX $HOST_REGEX: %s\\n" "$TOTAL_JSON_LIST"
+printf "TOTAL IDS MATCHING WITH HOST REGEX $HOST_NAME: %s\\n" "$TOTAL_JSON_LIST"
 
 if [[ -s "$JSON_LIST" ]]
 then
