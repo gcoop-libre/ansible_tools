@@ -136,6 +136,8 @@ grep -E ': ok=.*unreachable=[1-9]+' "$LOG" \
 grep -E ': ok=[1-9]+.*unreachable=0.*failed=0' "$LOG" \
   | awk '{print $1}'                                  > "$HOSTS_SUCCESS"
 
+# delete failed hosts from HOSTS_SUCCESS"
+grep -vf "$HOSTS_FAILED" "$HOSTS_SUCCESS" | sponge "$HOSTS_SUCCESS"
 
 TOTAL_SUCCESS="$(wc -l "$HOSTS_SUCCESS")"
 TOTAL_SUCCESS="${TOTAL_SUCCESS%% *}"
