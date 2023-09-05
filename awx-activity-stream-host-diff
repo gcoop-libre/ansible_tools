@@ -157,7 +157,18 @@ TOTAL_IDS="$(wc -l "$IDS")"
 TOTAL_IDS="${TOTAL_IDS%% *}"
 printf "TOTAL IDS FOUND: %s\\n" "$TOTAL_IDS"
 
-true > "$JSON_LIST"
+if [[ -e "$JSON_LIST" ]]
+then
+  if [[ -s "$JSON_LIST" ]]
+  then
+    TOTAL_JSON="$(wc -l "$JSON_LIST")"
+    TOTAL_JSON="${TOTAL_JSON%% *}"
+    printf "CACHED IDS: %s\\n" "$TOTAL_JSON"
+    grep -Eo '[0-9]+' "$JSON_LIST" >> "$IDS"
+  fi
+else
+  true > "$JSON_LIST"
+fi
 
 N=0
 MSG="PROCESS ACTIVITY STREAMS"
