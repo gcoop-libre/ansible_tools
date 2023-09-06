@@ -1,0 +1,125 @@
+#!/bin/bash
+
+# This script comes with ABSOLUTELY NO WARRANTY, use at own risk
+# Copyright (C) 2023 Osiris Alejandro Gomez <osiux@osiux.com>
+# Copyright (C) 2023 Osiris Alejandro Gomez <osiris@gcoop.coop>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+
+die()
+{
+  echo >&2 "$1"
+  exit 1
+}
+
+function usage()
+{
+cat << EOF
+Usage:
+
+\`\`\`bash
+
+  $BIN HOSTS_LIST [JOB_TEMPLATE]
+
+\`\`\`
+
+Return a summary of recents jobs of each host in host list file and
+filter by job_template.
+
+  inventory_hostname status job_id started template
+
+Example:
+
+\`\`\`bash
+
+	$BIN hosts
+
+		wst-dev01 SUCCESS 185400 2023-08-17T16:58:12 wst_wol_v1.0.1
+		wst-dev01 SUCCESS 184515 2023-08-11T15:06:09 wst_adm_v1.5.0
+		wst-dev01 SUCCESS 184513 2023-08-11T15:02:50 wst_wol_v1.0.1
+		wst-dev01 SUCCESS 183758 2023-08-08T15:16:36 wst_adm_v1.5.0
+		wst-prd01 SUCCESS 185402 2023-08-17T16:58:54 wst_wol_v1.0.1
+		wst-prd01 SUCCESS 184515 2023-08-11T15:06:09 wst_adm_v1.5.0
+		wst-prd01 SUCCESS 184513 2023-08-11T15:02:50 wst_wol_v1.0.1
+		wst-prd01 SUCCESS 183758 2023-08-08T15:16:36 wst_adm_v1.5.0
+
+	$BIN hosts wst_wol
+
+		wst-dev01 SUCCESS 185400 2023-08-17T16:58:12 wst_wol_v1.0.1
+		wst-dev01 SUCCESS 184513 2023-08-11T15:02:50 wst_wol_v1.0.1
+		wst-prd01 SUCCESS 185402 2023-08-17T16:58:54 wst_wol_v1.0.1
+		wst-prd01 SUCCESS 184513 2023-08-11T15:02:50 wst_wol_v1.0.1
+
+\`\`\`
+
+EOF
+exit 0
+}
+
+RECENTS="$(mktemp)"
+
+if [[ ! -t 0 ]]
+then
+
+  true > "$RECENTS"
+
+  while IFS= read -r PIPED_INPUT
+  do
+    echo "$PIPED_INPUT" >> "$RECENTS"
+  done
+
+fi
+
+[[ "$1" =~ ^[-]+(h|help) ]] && usage
+
+[[ -n "$HOST_LIST"    ]] || HOST_LIST='hosts'
+[[ -z "$1"            ]] || HOST_LIST="$1"
+[[ -z "$HOST_LIST"    ]] && HOST_LIST="$RECENTS"
+[[ -e "$HOST_LIST"    ]] || die "NOT FOUND HOST LIST FILE $HOST_LIST"
+[[ -s "$HOST_LIST"    ]] || die "EMPTY HOST LIST FILE $HOST_LIST"
+[[ -n "$JOB_TEMPLATE" ]] || JOB_TEMPLATE=".*"
+[[ -z "$2"            ]] || JOB_TEMPLATE="$2"
+
+JOBS_FILTERED="$(mktemp)"
+
+while read -r HOST
+do
+
+  JOBS_ALL="awx-recent-jobs-$HOST.log"
+  [[ -s "$JOBS" ]] || awx-host-get-recent-jobs "$HOST" > "$JOBS_ALL"
+
+  grep "$JOB_TEMPLATE" "$JOBS_ALL" > "$JOBS_FILTERED"
+  TOTAL_RECENT="$(wc -l "$JOBS_FILTERED")"
+  TOTAL_RECENT="${TOTAL_RECENT%% *}"
+
+  [[ "$TOTAL_RECENT" -eq 0 ]] && continue
+
+  while read -r _ _ ID _ _ _ TEMPLATE
+  do
+
+    RESULTS="awx-job-results-$ID.log"
+    [[ -s "$RESULTS" ]] || awx-job-results "$ID" > "$RESULTS"
+
+    STATUS="$(awk "/$HOST/ {print \$1}" "$RESULTS" | grep -v 'LIMIT')"
+    STATUS="${STATUS//:}"
+    STARTED="$(awk '/STARTED:/ {print $2}' "$RESULTS")"
+
+    printf "%s %12s %s %s %s\\n" \
+           "$HOST" "$STATUS" "$ID" "$STARTED" "$TEMPLATE"
+
+  done < "$JOBS_FILTERED"
+
+ done < "$HOST_LIST"
+
+ rm -f "$JOBS_FILTERED"
