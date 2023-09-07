@@ -1,0 +1,256 @@
+#!/bin/bash
+
+# This script comes with ABSOLUTELY NO WARRANTY, use at own risk
+# Copyright (C) 2023 Osiris Alejandro Gomez <osiux@osiux.com>
+# Copyright (C) 2023 Osiris Alejandro Gomez <osiris@gcoop.coop>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+
+# shellcheck disable=SC1090
+# shellcheck disable=SC1091
+# shellcheck source=/dev/null
+
+[[ -n "$BASH_DEBUG" ]] && set -x
+
+DIR_BIN="$(dirname "$0")" && source "$DIR_BIN/awx-common"
+
+function usage()
+{
+
+cat << EOF
+Usage:
+
+\`\`\`bash
+
+  $BIN FILE
+
+\`\`\`
+
+Get first column from file, iterate and identify asset type, find
+dependencies and show table with: _job_template_, _project_, _branch_,
+_playbook_, _inventory_ and _limit_.
+
+Example:
+
+\`\`\`bash
+
+  $BIN deploy/update.awx
+
+	|      _job_template_  |                          _project_  |  _branch_  |       _playbook_  |  _inventory_  |  _limit_  |
+	|----------------------|-------------------------------------|------------|-------------------|---------------|-----------|
+	|                   -  |                  inventory_v0.7.15  |   v0.7.15  |                -  |            -  |        -  |
+	|                   -  |                  inventory_v0.7.15  |   v0.7.15  |                -  |            -  |        -  |
+	|                   -  |  ansible_freeipa_sssd_tools_v0.9.0  |    v0.9.0  |                -  |            -  |        -  |
+	|  ipa_srv_str_v0.2.2  |  ansible_freeipa_sssd_tools_v0.9.0  |    v0.9.0  |  tests/start.yml  |          ipa  |      ipa  |
+	|  ipa_sss_crn_v0.1.1  |  ansible_freeipa_sssd_tools_v0.9.0  |    v0.9.0  |   tests/cron.yml  |          ipa  |      lab  |
+	|  ipa_sss_log_v0.1.0  |  ansible_freeipa_sssd_tools_v0.9.0  |    v0.9.0  |    tests/log.yml  |          ipa  |      lab  |
+	|  ipa_sss_tol_v0.9.0  |  ansible_freeipa_sssd_tools_v0.9.0  |    v0.9.0  |   tests/test.yml  |          ipa  |      lab  |
+
+	echo ipa_srv_str_v0.2.2 | $BIN
+
+	|      _job_template_  |                          _project_  |  _branch_  |       _playbook_  |  _inventory_  |  _limit_  |
+	|----------------------|-------------------------------------|------------|-------------------|---------------|-----------|
+	|  ipa_srv_str_v0.2.2  |  ansible_freeipa_sssd_tools_v0.9.0  |    v0.9.0  |  tests/start.yml  |          ipa  |      ipa  |
+
+\`\`\`
+
+EOF
+exit 0
+}
+
+TMPI="$(mktemp)"
+TMPO="$(mktemp)"
+
+if [[ ! -t 0 ]]
+then
+
+  true > "$TMPI"
+
+  while IFS= read -r PIPED_INPUT
+  do
+    echo "$PIPED_INPUT" >> "$TMPI"
+  done
+
+fi
+
+[[ "$1" =~ ^[-]+(h|help) ]] && usage
+
+[[ -n "$LIST" ]] || LIST="$1"
+[[ -z "$LIST" ]] && LIST="$TMPI"
+[[ -e "$LIST" ]] || die "NOT FOUND FILE $LIST"
+[[ -s "$LIST" ]] || die "EMPTY FILE $LIST"
+
+while read -r JSON _
+do
+
+  if [[ ! "$JSON" =~ .*/.*\.json ]]
+  then
+
+    NAME="$JSON"
+
+    if [[ "$NAME" =~ [a-z]{3}_[a-z]{3}.*v[0-9]+\.[0-9]+\.[0-9] ]]
+    then
+      FILE="job_template/$NAME.json"
+    else
+      FILE="project/$NAME.json"
+    fi
+
+    if [[ "$NAME" =~ inventory_v[0-9]+\.[0-9]+\.[0-9] ]]
+    then
+      FILE="inventory/$NAME.json"
+    fi
+
+  else
+
+    FILE="$JSON"
+    ASSET_TYPE="$(jq -r '.[].asset_type' "$FILE")"
+    NAME='-'
+
+    [[ "$ASSET_TYPE" = 'job_template' ]] \
+      && NAME="$(basename "$FILE" .json || true)"
+
+  fi
+
+  if [[ ! -e "$FILE" ]]
+  then
+    stderror "NOT FOUND FILE $FILE"
+    continue
+  fi
+
+  ASSET_TYPE="$(jq -r '.[].asset_type' "$FILE")"
+
+  if [[ "$ASSET_TYPE" = 'job_template' ]]
+  then
+    PROJECT="$(jq   -r '.[] | .project'   "$FILE" 2>/dev/null || true)"
+    PLAYBOOK="$(jq  -r '.[] | .playbook'  "$FILE" 2>/dev/null || true)"
+    INVENTORY="$(jq -r '.[] | .inventory' "$FILE" 2>/dev/null || true)"
+    LIMIT="$(jq     -r '.[] | .limit'     "$FILE" 2>/dev/null || true)"
+    SOURCE_PATH='-'
+    JSON_PROJECT="project/$PROJECT.json"
+  fi
+
+  if [[ "$ASSET_TYPE" = 'inventory' ]]
+  then
+    JQ='.[].asset_relation.inventory_source[].source_project'
+    PROJECT="$(jq -r . "$JQ" "$FILE" || true)"
+    JSON_PROJECT="project/$PROJECT.json"
+    INVENTORY="$(jq -r '.[].name' "$FILE" || true)"
+    JQ_SRC_PATH='.[].asset_relation.inventory_source[].source_path'
+    SOURCE_PATH="$(jq -r "$JQ_SRC_PATH" "$FILE" || true)"
+    LIMIT='-'
+    NAME='-'
+    PLAYBOOK='-'
+  fi
+
+  if [[ "$ASSET_TYPE" = 'project' ]]
+  then
+    PROJECT="$(jq -r '.[].name' "$FILE")"
+    JSON_PROJECT="$FILE"
+    INVENTORY='-'
+    SOURCE_PATH='-'
+    LIMIT='-'
+    PLAYBOOK='-'
+  fi
+
+  if [[ -e "$JSON_PROJECT" ]]
+  then
+    BRANCH="$(jq -r '.[].scm_branch' "$JSON_PROJECT" 2>/dev/null || true)"
+  fi
+
+  [[ -z "$NAME"        ]] && NAME='-'
+  [[ -z "$PROJECT"     ]] && PROJECT='-'
+  [[ -z "$BRANCH"      ]] && BRANCH='-'
+  [[ -z "$PLAYBOOK"    ]] && PLAYBOOK='-'
+  [[ -z "$INVENTORY"   ]] && INVENTORY='-'
+  [[ -z "$LIMIT"       ]] && LIMIT='-'
+  [[ -z "$SOURCE_PATH" ]] && SOURCE_PATH='-'
+
+  printf "%s %s %s %s %s %s %s\\n" \
+         "$NAME"                   \
+         "$PROJECT"                \
+         "$BRANCH"                 \
+         "$PLAYBOOK"               \
+         "$INVENTORY"              \
+         "$LIMIT"                  \
+         "$SOURCE_PATH"
+
+done < "$LIST" | sort -u > "$TMPO"
+
+[[ -n "$TIT_A" ]] || TIT_A='_job_template_'
+[[ -n "$TIT_B" ]] || TIT_B='_project_'
+[[ -n "$TIT_C" ]] || TIT_C='_branch_'
+[[ -n "$TIT_D" ]] || TIT_D='_playbook_'
+[[ -n "$TIT_E" ]] || TIT_E='_inventory_'
+[[ -n "$TIT_F" ]] || TIT_F='_limit_'
+[[ -n "$TIT_G" ]] || TIT_G='_source_path_'
+
+WID_A="$(echo "$TIT_A" | wc -L)"
+WID_B="$(echo "$TIT_B" | wc -L)"
+WID_C="$(echo "$TIT_C" | wc -L)"
+WID_D="$(echo "$TIT_D" | wc -L)"
+WID_E="$(echo "$TIT_E" | wc -L)"
+WID_F="$(echo "$TIT_F" | wc -L)"
+WID_G="$(echo "$TIT_G" | wc -L)"
+
+COL_A="$(awk '{print $1}' "$TMPO" | wc -L)"
+COL_B="$(awk '{print $2}' "$TMPO" | wc -L)"
+COL_C="$(awk '{print $3}' "$TMPO" | wc -L)"
+COL_D="$(awk '{print $4}' "$TMPO" | wc -L)"
+COL_E="$(awk '{print $5}' "$TMPO" | wc -L)"
+COL_F="$(awk '{print $6}' "$TMPO" | wc -L)"
+COL_G="$(awk '{print $7}' "$TMPO" | wc -L)"
+
+[[ "$COL_A" -lt "$WID_A" ]] && COL_A="$WID_A"
+[[ "$COL_B" -lt "$WID_B" ]] && COL_B="$WID_B"
+[[ "$COL_C" -lt "$WID_C" ]] && COL_C="$WID_C"
+[[ "$COL_D" -lt "$WID_D" ]] && COL_D="$WID_D"
+[[ "$COL_E" -lt "$WID_E" ]] && COL_E="$WID_E"
+[[ "$COL_F" -lt "$WID_F" ]] && COL_F="$WID_F"
+[[ "$COL_G" -lt "$WID_G" ]] && COL_G="$WID_G"
+
+printf "|  %*s  |  %*s  |  %*s  |  %*s  |  %*s  |  %*s  |  %*s  |\\n" \
+       "$COL_A" "$TIT_A"                                              \
+       "$COL_B" "$TIT_B"                                              \
+       "$COL_C" "$TIT_C"                                              \
+       "$COL_D" "$TIT_D"                                              \
+       "$COL_E" "$TIT_E"                                              \
+       "$COL_F" "$TIT_F"                                              \
+       "$COL_G" "$TIT_G"
+
+printf "|  %*s  |  %*s  |  %*s  |  %*s  |  %*s  |  %*s  |  %*s  |\\n" \
+       "$COL_A" ' '                                                   \
+       "$COL_B" ' '                                                   \
+       "$COL_C" ' '                                                   \
+       "$COL_D" ' '                                                   \
+       "$COL_E" ' '                                                   \
+       "$COL_F" ' '                                                   \
+       "$COL_G" ' '                                                   \
+       | tr ' ' '-'
+
+while read -r A B C D E F G
+do
+
+printf "| \`%*s\` | \`%*s\` | \`%*s\` | \`%*s\` | \`%*s\` | \`%*s\` | \`%*s\` |\\n" \
+       "$COL_A" "$A"                                                                \
+       "$COL_B" "$B"                                                                \
+       "$COL_C" "$C"                                                                \
+       "$COL_D" "$D"                                                                \
+       "$COL_E" "$E"                                                                \
+       "$COL_F" "$F"                                                                \
+       "$COL_G" "$G"
+
+done < "$TMPO" | sort
+
+rm -f "$TMPI"
+rm -f "$TMPO"
