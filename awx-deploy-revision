@@ -68,6 +68,17 @@ EOF
 exit 0
 }
 
+eof_nl_verify()
+{
+  local FILE
+
+  FILE="$1"
+  [[ -s "$1" ]] || return
+
+  N="$(tail -c1 "$FILE";echo -n N)"
+  [[ "$N" != $'\nN' ]] && die "NO NEWLINE AT THE END OF FILE $FILE"
+}
+
 [[ -e "$AWX_CFG" ]] || die "NOT FOUND .tower_cli.cfg TRY awx-config"
 
 AWX_DIR="$1"
@@ -188,8 +199,7 @@ fi
 [[ -e "$DEPLOY_FILE"    ]] || echo "NOT FOUND FILE $DEPLOY_FILE"
 [[ -z "$ORGANIZATION"   ]] && ORGANIZATION="$DEFAULT_ORGANIZATION"
 
-N="$(tail -c1 "$DEPLOY_FILE";echo -n N)"
-[[ "$N" != $'\nN' ]] && die "NO NEWLINE AT THE END OF FILE $DEPLOY_FILE"
+eof_nl_verify "$DEPLOY_FILE"
 
 # EXIT IMMEDIATELY IF A COMMAND EXITS WITH A NON-ZERO STATUS
 set -e
