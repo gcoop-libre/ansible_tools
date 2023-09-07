@@ -30,13 +30,13 @@ Usage:
 
 \`\`\`
 
-  $BIN HOST_NAME [LIST_LIMIT]
+  $BIN [LIST_LIMIT]
 
 \`\`\`
 
-Get _activity stream_ of one or more _host_ filter by _regex_ and save
-file list of _JSONs_ filenames with changes and invoke
-\`awx-activity-stream-json-diff\` command to show differences.
+Get _activity stream_ and save file list
+\`activity-stream-timestamp.lst\` of _JSONs_ filenames
+(\`activity-id.json\`).
 
 By default the limit of search activity streams is \`100\`, you can
 redefine as second argument or using \`LIST_LIMIT\` environtment
@@ -52,37 +52,7 @@ Example:
 
 \`\`\`
 
-  $BIN wst14
-
-	ACTOR: awx_inventory
-	OPERATION: update
-	LIST LIMIT SIZE: 100
-	TOTAL IDS FOUND: 39
-	PROCESS ACTIVITY STREAMS [*************************************************] 100% ETA 0s Elapsed 42s
-	TOTAL IDS MATCHING WITH HOST REGEX wst14: 2
-
-	## ACTIVITY STREAM JSON FILES LIST: activity-wst14-1689265367.json
-
-	activity-57685.json
-	activity-52994.json
-
-	## ACTIVITY ID=57685 OPERATION=update ACTOR=awx_inventory TIMESTAMP=2023-07-11T21:14:26 HOST=wst14dev DESCRIPTION=imported
-
-	### VARIABLES CHANGED
-
-	{                                                               {
-		"ansible_host": "10.12.153.109",                            |   "ansible_host": "10.12.153.93",
-		"primary_macaddress": "2e:7c:0f:25:de:30"                   |   "primary_macaddress": "06:a4:59:a8:e0:ea"
-	}                                                               }
-
-	## ACTIVITY ID=52994 OPERATION=update ACTOR=awx_inventory TIMESTAMP=2023-05-17T21:36:09 HOST=wst14dev DESCRIPTION=imported
-
-	### VARIABLES CHANGED
-
-	---                                                           | {
-	ansible_host: 10.12.153.109                                   |   "ansible_host": "10.12.153.109",
-																																>   "primary_macaddress": "2e:7c:0f:25:de:30"
-																																> }
+  $BIN
 
 \`\`\`
 
@@ -90,26 +60,29 @@ EOF
 exit 0
 }
 
+find_last_activity()
+{
+
+find . -type f -iname 'activity-*.json' \
+  | grep -E 'activity-[0-9]+.json'      \
+  | sort -nr                            \
+  | head -1                             \
+  | grep -Eo '[0-9]+'
+
+}
+
 [[ "$1" =~ ^[-]+(h|help) ]] && usage
 
-[[ -n "$DIFF"       ]] || DIFF='diff -y'
-[[ -n "$DELTA"      ]] || DELTA="$(command -v delta || true)"
-[[ -z "$DELTA"      ]] || DIFF="$DELTA --paging never --side-by-side"
 [[ -n "$OPERATION"  ]] || OPERATION='update'
 [[ -n "$OBJECT1"    ]] || OBJECT1='host'
 [[ -n "$ACTOR"      ]] || ACTOR='awx_inventory'
-[[ -n "$HOST_NAME"  ]] || HOST_NAME="$1"
-[[ -z "$HOST_NAME"  ]] && die "EMPTY HOSTNAME"
 [[ -n "$LIST_LIMIT" ]] || LIST_LIMIT='100'
 [[ -n "$LIST_SIZE"  ]] || LIST_SIZE=200
 [[ -z "$2"          ]] || LIST_LIMIT="$2"
 
 IDS="$(mktemp)"
 FIRST="$(mktemp)"
-JSON_LIST="activity-$HOST_NAME.lst"
-OUTPUT_DIFF="${JSON_LIST//.lst/.diff}"
-AFTER="$(mktemp --suffix .json)"
-BEFORE="$(mktemp --suffix .json)"
+JSON_LIST="activity-stream-$(date +'%s').lst"
 
 printf "ACTOR: %s\\n"      "$ACTOR"
 printf "OPERATION: %s\\n"  "$OPERATION"
@@ -124,7 +97,12 @@ awx-cli activity_stream list \
   --page-size 1              > "$FIRST"
 
 TOTAL_ACTIVITY="$(jq -r .count "$FIRST")"
+LAST_ACTIVITY="$(jq -r .results[].id "$FIRST")"
+LAST_ACTIVITY_CACHED="$(find_last_activity)"
+
 printf "TOTAL RECORDS: %s\\n" "$TOTAL_ACTIVITY"
+printf "LAST ACTIVITY ID: %s\\n" "$LAST_ACTIVITY"
+printf "LAST ACTIVITY ID CACHED: %s\\n" "$LAST_ACTIVITY_CACHED"
 
 [[ "$LIST_LIMIT" -gt "$LIMIT" ]] && LIST_PAGES="$((LIST_LIMIT/LIST_SIZE))"
 [[ "$LIST_PAGES" -eq 0        ]] && LIST_PAGES=1
@@ -157,18 +135,7 @@ TOTAL_IDS="$(wc -l "$IDS")"
 TOTAL_IDS="${TOTAL_IDS%% *}"
 printf "TOTAL IDS FOUND: %s\\n" "$TOTAL_IDS"
 
-if [[ -e "$JSON_LIST" ]]
-then
-  if [[ -s "$JSON_LIST" ]]
-  then
-    TOTAL_JSON="$(wc -l "$JSON_LIST")"
-    TOTAL_JSON="${TOTAL_JSON%% *}"
-    printf "CACHED IDS: %s\\n" "$TOTAL_JSON"
-    grep -Eo '[0-9]+' "$JSON_LIST" >> "$IDS"
-  fi
-else
-  true > "$JSON_LIST"
-fi
+true > "$JSON_LIST"
 
 N=0
 MSG="PROCESS ACTIVITY STREAMS"
@@ -181,30 +148,21 @@ do
   bareta "$N" "$TOTAL_IDS" "$START" "$MSG"
 
   JSON="activity-$ID.json"
-
-  grep -q "$JSON" "$JSON_LIST" && continue
-
   [[ -s "$JSON" ]] || awx-cli activity_stream get "$ID" -f json >"$JSON"
-
-  H_NAME="$(jq -r '.summary_fields.host[].name' "$JSON")"
-
-  [[ "$H_NAME" = "$HOST_NAME" ]] && echo "$JSON" >> "$JSON_LIST"
+  echo "$JSON" >> "$JSON_LIST"
 
 done < "$IDS"
 
 printf "\\n"
 TOTAL_JSON_LIST="$(wc -l "$JSON_LIST")"
 TOTAL_JSON_LIST="${TOTAL_JSON_LIST%% *}"
-printf "TOTAL IDS MATCHING WITH HOST REGEX $HOST_NAME: %s\\n" "$TOTAL_JSON_LIST"
+printf "TOTAL IDS %s\\n" "$TOTAL_JSON_LIST"
 
 if [[ -s "$JSON_LIST" ]]
 then
 
   printf "\\n## ACTIVITY STREAM JSON FILES LIST: %s\\n\\n" "$JSON_LIST"
 
-  awx-activity-stream-json-diff "$JSON_LIST" > "$OUTPUT_DIFF" \
-    && cat "$OUTPUT_DIFF"
-
 fi
 
-rm -f "$IDS" "$AFTER" "$BEFORE" 2>/dev/null
+rm -f "$IDS" 2>/dev/null

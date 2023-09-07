@@ -1,0 +1,92 @@
+#!/bin/bash
+
+# This script comes with ABSOLUTELY NO WARRANTY, use at own risk
+# Copyright (C) 2023 Osiris Alejandro Gomez <osiux@osiux.com>
+# Copyright (C) 2023 Osiris Alejandro Gomez <osiris@gcoop.coop>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+
+# shellcheck disable=SC1091
+
+[[ -n "$BASH_DEBUG" ]] && set -x
+
+DIR_BIN="$(dirname "$0")" && source "$DIR_BIN/awx-common"
+
+function usage()
+{
+cat << EOF
+Usage:
+
+\`\`\`
+
+  $BIN HOST_REGEX [LIST_LIMIT]
+
+\`\`\`
+
+Find _activity stream_ of one or more _host_ in \`activity-*.json\`
+files and generate activity-host.lst for each host.
+
+Example:
+
+\`\`\`
+
+  $BIN hosts-1234-unreachable
+
+	SAVE 0 ACTIVITIES FOR HOST wst-dev01 IN activity-wst-dev01.lst
+	SAVE 0 ACTIVITIES FOR HOST wst-lab01 IN activity-wst-lab01.lst
+	SAVE 0 ACTIVITIES FOR HOST wst-prd03 IN activity-wst-prd03.lst
+	SAVE 0 ACTIVITIES FOR HOST wst-prd04 IN activity-wst-prd04.lst
+	SAVE 0 ACTIVITIES LIST IN activity-1234-unreachable.lst
+
+\`\`\`
+
+EOF
+exit 0
+}
+
+[[ "$1" =~ ^[-]+(h|help) ]] && usage
+
+[[ -n "$HOSTS"  ]] || HOSTS="$1"
+[[ -z "$HOSTS"  ]] && die "UNDEFINED HOSTS"
+[[ -e "$HOSTS"  ]] || die "NOT FOUND FILE $HOSTS"
+[[ -s "$HOSTS"  ]] || die "EMPTY FILE $HOSTS"
+[[ -n "$OUTPUT" ]] || OUTPUT="activity-$(basename "$HOSTS").lst"
+
+TMP="$(mktemp)"
+
+true > "$OUTPUT"
+
+while read -r HOST
+do
+
+  LST="activity-$HOST.lst"
+  grep -l "$HOST" activity-*.json > "$TMP"
+  TOTAL="$(wc -l "$TMP")"
+  TOTAL="${TOTAL%% *}"
+
+  [[ "$TOTAL" -eq 0 ]] && continue
+
+  printf "SAVE %s ACTIVITIES FOR HOST %s IN %s\\n" \
+         "$TOTAL" "$HOST" "$LST"
+
+  echo "$LST" >> "$OUTPUT"
+  cp -f "$TMP" "$LST"
+
+done < "$HOSTS"
+
+TOTAL_ACTIVITIES="$(wc -l "$OUTPUT")"
+TOTAL_ACTIVITIES="${TOTAL_ACTIVITIES%% *}"
+printf "SAVE %s ACTIVITIES LIST IN %s\\n" "$TOTAL_ACTIVITIES" "$OUTPUT"
+
+rm -f "$TMP"

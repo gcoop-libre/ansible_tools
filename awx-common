@@ -633,6 +633,7 @@ function get_url()
 {
   local P
 
+  [[ "$1" = 'playbook'     ]] && P='#/jobs/playbook/'
   [[ "$1" = 'project'      ]] && P='#/projects/'
   [[ "$1" = 'job_template' ]] && P='#/templates/job_template'
   [[ "$1" = 'workflow'     ]] && P='#/templates/workflow_job_template'

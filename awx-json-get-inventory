@@ -20,7 +20,7 @@
 # shellcheck disable=SC1091
 # shellcheck source=/dev/null
 
-DIR_BIN=$(dirname "$0") && source "$DIR_BIN/awx-common"
+DIR_BIN="$(dirname "$0")" && source "$DIR_BIN/awx-common"
 
 function usage()
 {
@@ -29,17 +29,19 @@ Usage:
 
 \`\`\`bash
 
-  $BIN JOB_ID
+  $BIN JSON
 
 \`\`\`
 
-Get _stdout_ of _job_.
+Get _inventory_ from _job_template_ or _workflow_ \`.json\`.
 
 Example:
 
 \`\`\`bash
 
-  $BIN 1234
+  $BIN job_template/ipa_sss_syn_v0.1.0.json
+
+  ipa
 
 \`\`\`
 
@@ -49,7 +51,10 @@ exit 0
 
 [[ "$1" =~ ^[-]+(h|help) ]] && usage
 
-[[ -n "$JOB_ID" ]] || JOB_ID="$1"
-[[ -z "$JOB_ID" ]] && die "EMPTY JOB_ID"
+[[ -n "$JSON" ]] || JSON="$1"
+[[ -z "$JSON" ]] && die "EMPTY JSON"
+[[ -e "$JSON" ]] || die "NOT FOUND FILE $JSON"
+[[ -s "$JSON" ]] || die "EMPTY FILE $JSON"
+[[ -n "$JQ"   ]] || JQ='.[] | .inventory'
 
-awx-cli job stdout "$JOB_ID"
+jq -r "$JQ" "$JSON"

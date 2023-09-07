@@ -68,20 +68,34 @@ exit 0
 [[ -z "$1"            ]] || JOB_ID="$1"
 [[ -z "$JOB_ID"       ]] && die "EMPTY JOB_ID"
 [[ -n "$MAX"          ]] || MAX=12
-[[ -n "$REGEX_RESULT" ]] || REGEX_RESULT='ok=.*changed=.*unreachable=.*failed=.*skipped=.*rescued=.*ignored=.*'
+[[ -n "$REGEX_RESULT" ]] || REGEX_RESULT=': ok=.*changed=.*unreachable=.*failed=.*skipped=.*rescued=.*ignored=.*'
 [[ -n "$REGEX_RECAP"  ]] || REGEX_RECAP='^PLAY RECAP [\*]+$'
 
-TMP="$(mktemp)"
+STDOUT="job_$JOB_ID.txt"
 LOG="$(mktemp)"
-SUCCESS="$(mktemp)"
-FAILED="$(mktemp)"
-UNREACHABLE="$(mktemp)"
+HOSTS_SUCCESS="$JOB_ID-succes"
+HOSTS_FAILED="$JOB_ID-failed"
+HOSTS_UNREACHABLE="$JOB_ID-unreachable"
 
-awx-cli job stdout --outfile "$TMP" "$JOB_ID" >/dev/null || die "FAILED GET STDOUT"
-[[ -s "$TMP"  ]] || die "EMPTY FILE $TMP"
+if [[ ! -e "$STDOUT" ]]
+then
+  awx-cli job stdout --outfile "$STDOUT" "$JOB_ID" >/dev/null || die "FAILED GET STDOUT"
+fi
+
+[[ -s "$STDOUT"  ]] || die "EMPTY FILE $STDOUT"
+
+PLAY_LINES="$(grep -c '^PLAY' "$STDOUT")"
+[[ "$PLAY_LINES"   -eq  0 ]] && die "INVALID $STDOUT NOT FOUND PLAYS"
+
+STDOUT_LINES="$(wc -l "$STDOUT" | cut -d ' ' -f1)"
+[[ "$STDOUT_LINES" -lt 10 ]] && die "INVALID $STDOUT VERY FEW LINES"
 
 JSON="$JOB_ID.json"
-awx-cli job get -f json "$JOB_ID" > "$JSON"   || die "FAILED GET JSON"
+
+if [[ ! -e "$JSON" ]]
+then
+  awx-cli job get -f json "$JOB_ID" > "$JSON" || die "FAILED GET JSON"
+fi
 
 [[ -s "$JSON" ]] || die "EMPTY FILE $JSON"
 
@@ -92,7 +106,8 @@ STATUS="$(jq -r '.status' "$JSON")"
 FAILED="$(jq -r '.failed' "$JSON")"
 STARTED="$(jq -r '.started' "$JSON" | cut -d '.' -f1)"
 FINISHED="$(jq -r '.finished' "$JSON" | cut -d '.' -f1)"
-ELAPSED="$(jq -r '.elapsed' "$JSON" | cut -d '.' -f1)"
+SECONDS="$(jq -r '.elapsed' "$JSON" | cut -d '.' -f1)"
+ELAPSED="($SECONDS) $(date -d "@$SECONDS" -u +'%T')"
 INVENTORY="$(jq -r '.summary_fields.inventory.name' "$JSON" | cut -d . -f1)"
 CREATED_BY="$(jq -r '.summary_fields.created_by.username' "$JSON" | cut -d . -f1)"
 
@@ -108,29 +123,32 @@ printf "%*s: %s\\n"  "$MAX" 'FINISHED'   "$FINISHED"
 printf "%*s: %s\\n"  "$MAX" 'ELAPSED'    "$ELAPSED"
 printf "%*s: %s\\n"  "$MAX" 'USERNAME'   "$CREATED_BY"
 
-RECAP="$(grep -nE "REGEX_RECAP" "$TMP" | cut -d ':' -f1)"
+RECAP="$(grep -nE "$REGEX_RECAP" "$STDOUT" | cut -d ':' -f1)"
 RECAP="$((RECAP+1))"
 
-tail -n +$RECAP "$TMP" | grep -E "$REGEX_RESULT" > "$LOG"
+tail -n +$RECAP "$STDOUT" | grep -E "$REGEX_RESULT" > "$LOG"
+grep -E ': ok=.*failed=[1-9]+' "$LOG" \
+  | awk '{print $1}'                  > "$HOSTS_FAILED"
 
-grep -E 'ok=[1-9]+.*unreachable=0' "$LOG" \
-  | awk '{print $1}'                      > "$SUCCESS"
+grep -E ': ok=.*unreachable=[1-9]+' "$LOG" \
+  | awk '{print $1}'                       > "$HOSTS_UNREACHABLE"
 
-grep -w 'ok=0.*unreachable=1' "$LOG" \
-  | awk '{print $1}'                 > "$UNREACHABLE"
+grep -E ': ok=[1-9]+.*unreachable=0.*failed=0' "$LOG" \
+  | awk '{print $1}'                                  > "$HOSTS_SUCCESS"
 
-grep -w 'failed=1' "$LOG" \
-  | awk '{print $1}'      > "$FAILED"
+# delete failed hosts from HOSTS_SUCCESS"
+grep -vf "$HOSTS_FAILED" "$HOSTS_SUCCESS" | sponge "$HOSTS_SUCCESS"
 
-TOTAL_SUCCESS="$(wc -l "$SUCCESS")"
+TOTAL_SUCCESS="$(wc -l "$HOSTS_SUCCESS")"
 TOTAL_SUCCESS="${TOTAL_SUCCESS%% *}"
-TOTAL_FAILED="$(wc -l "$FAILED")"
+TOTAL_FAILED="$(wc -l "$HOSTS_FAILED")"
 TOTAL_FAILED="${TOTAL_FAILED%% *}"
-TOTAL_UNREACHABLE="$(wc -l "$UNREACHABLE")"
+TOTAL_UNREACHABLE="$(wc -l "$HOSTS_UNREACHABLE")"
 TOTAL_UNREACHABLE="${TOTAL_UNREACHABLE%% *}"
 
-printf "%*s: %s %s\\n" "$MAX" 'SUCCESS'     "$TOTAL_SUCCESS"     "$(tr '\n' ':' < "$SUCCESS"     | sed 's/:$//g')"
-printf "%*s: %s %s\\n" "$MAX" 'FAILED'      "$TOTAL_FAILED"      "$(tr '\n' ':' < "$FAILED"      | sed 's/:$//g')"
-printf "%*s: %s %s\\n" "$MAX" 'UNREACHABLE' "$TOTAL_UNREACHABLE" "$(tr '\n' ':' < "$UNREACHABLE" | sed 's/:$//g')"
+printf "%*s: %s %s\\n" "$MAX" 'SUCCESS'     "$TOTAL_SUCCESS"     "$(tr '\n' ':' < "$HOSTS_SUCCESS"     | sed 's/:$//g')"
+printf "%*s: %s %s\\n" "$MAX" 'FAILED'      "$TOTAL_FAILED"      "$(tr '\n' ':' < "$HOSTS_FAILED"      | sed 's/:$//g')"
+printf "%*s: %s %s\\n" "$MAX" 'UNREACHABLE' "$TOTAL_UNREACHABLE" "$(tr '\n' ':' < "$HOSTS_UNREACHABLE" | sed 's/:$//g')"
 
-rm -f "$LOG" "$TMP" "$JSON" "$SUCCESS" "$FAILED" "$UNREACHABLE"
+wc -l "$HOSTS_SUCCESS" "$HOSTS_FAILED" "$HOSTS_UNREACHABLE"
+rm -f "$LOG"

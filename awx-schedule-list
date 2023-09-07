@@ -1,0 +1,173 @@
+#!/bin/bash
+
+# This script comes with ABSOLUTELY NO WARRANTY, use at own risk
+# Copyright (C) 2020 Osiris Alejandro Gomez <osiris@gcoop.coop>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+
+# shellcheck disable=SC1090
+# shellcheck disable=SC1091
+# shellcheck source=/dev/null
+# shellcheck disable=SC2086
+# shellcheck disable=SC2089
+# shellcheck disable=SC2090
+
+[[ -n "$BASH_DEBUG" ]] && set -x
+
+DIR_BIN="$(dirname "$0")" && source "$DIR_BIN/awx-common"
+
+function usage()
+{
+cat << EOF
+Usage:
+
+\`\`\`bash
+
+  $BIN JOB_TEMPLATE NAME
+
+\`\`\`
+
+Modify schedule to run _job_template_.
+
+\`\`\`bash
+
+  $BIN wst_wol_all_v0.1.0 WoL all Workstations
+
+\`\`\`
+
+EOF
+exit 0
+}
+
+[[ "$1" =~ ^[-]+(h|help) ]] && usage
+
+clean_date()
+{
+  local DATE
+
+  DATE="$1"
+  DATE="${DATE:0:19}"
+  DATE="${DATE//T/ }"
+  DATE="${DATE//Z/}"
+
+  echo "$DATE"
+}
+
+[[ -n "$REGEX_FILTER" ]] || REGEX_FILTER='^[0-9]+'
+[[ -z "$1"            ]] || REGEX_FILTER="$1"
+[[ -n "$TIT_A"        ]] || TIT_A='_sid_'
+[[ -n "$TIT_B"        ]] || TIT_B='_stated_'
+[[ -n "$TIT_C"        ]] || TIT_C='_dtstart_'
+[[ -n "$TIT_D"        ]] || TIT_D='_next_run_'
+[[ -n "$TIT_E"        ]] || TIT_E='_created_'
+[[ -n "$TIT_F"        ]] || TIT_F='_modified_'
+[[ -n "$TIT_G"        ]] || TIT_G='_tid_'
+[[ -n "$TIT_H"        ]] || TIT_H='_template_'
+[[ -n "$TIT_I"        ]] || TIT_I='_inventory_'
+[[ -n "$TIT_J"        ]] || TIT_J='_limit_'
+[[ -n "$TIT_K"        ]] || TIT_K='_name_'
+[[ -n "$COL_A"        ]] || COL_A=5
+[[ -n "$COL_B"        ]] || COL_B=9
+[[ -n "$COL_C"        ]] || COL_C=19
+[[ -n "$COL_D"        ]] || COL_D=19
+[[ -n "$COL_E"        ]] || COL_E=19
+[[ -n "$COL_F"        ]] || COL_F=19
+[[ -n "$COL_G"        ]] || COL_G=5
+[[ -n "$COL_H"        ]] || COL_H=18
+[[ -n "$COL_I"        ]] || COL_I=12
+[[ -n "$COL_J"        ]] || COL_J=12
+[[ -n "$COL_K"        ]] || COL_K=45
+
+JQ='"'
+JQ+=' \(.id)'
+JQ+=' \(.enabled)'
+JQ+=' \(.dtstart)'
+JQ+=' \(.next_run)'
+JQ+=' \(.created)'
+JQ+=' \(.modified)'
+JQ+=' \(.summary_fields.unified_job_template.id)'
+JQ+=' \(.summary_fields.unified_job_template.name)'
+JQ+=' \(.summary_fields.inventory.name)'
+JQ+=' \(.limit)'
+JQ+=' \(.name)'
+JQ+=' "'
+
+printf "|  %*s  |  %*s  |  %*s  |  %*s  |  %*s  |  %*s  |  %*s  |  %*s  |  %*s  |  %*s  |  %*s  |\\n" \
+       "$COL_A" "$TIT_A"                                              \
+       "$COL_B" "$TIT_B"                                              \
+       "$COL_C" "$TIT_C"                                              \
+       "$COL_D" "$TIT_D"                                              \
+       "$COL_E" "$TIT_E"                                              \
+       "$COL_F" "$TIT_F"                                              \
+       "$COL_G" "$TIT_G"                                              \
+       "$COL_H" "$TIT_H"                                              \
+       "$COL_I" "$TIT_I"                                              \
+       "$COL_J" "$TIT_J"                                              \
+       "$COL_K" "$TIT_K"
+
+printf "|  %*s  |  %*s  |  %*s  |  %*s  |  %*s  |  %*s  |  %*s  |  %*s  |  %*s  |  %*s  |  %*s  |\\n" \
+       "$COL_A" ' '                                                   \
+       "$COL_B" ' '                                                   \
+       "$COL_C" ' '                                                   \
+       "$COL_D" ' '                                                   \
+       "$COL_E" ' '                                                   \
+       "$COL_F" ' '                                                   \
+       "$COL_G" ' '                                                   \
+       "$COL_H" ' '                                                   \
+       "$COL_I" ' '                                                   \
+       "$COL_J" ' '                                                   \
+       "$COL_K" ' '                                                   \
+       | tr ' ' '-'
+
+awx-cli schedule list | grep -E "$REGEX_FILTER" | while read -r SID _
+do
+
+  JSON="schedule-$SID.json"
+
+  awx-cli schedule get -f json "$SID" > "$JSON"
+
+  if [[ ! -s "$JSON" ]]
+  then
+    echo >&2 "EMPTY FILE $JSON"
+    continue
+  fi
+
+  #                                    A  B       C       D        E       F        G      H        I         J     K
+	jq -r  "$JQ" "$JSON" | while read -r ID ENABLED DTSTART NEXT_RUN CREATED MODIFIED TPL_ID TPL_NAME INVENTORY LIMIT NAME
+	do
+
+		DTSTART="$(clean_date "$DTSTART")"
+		NEXT_RUN="$(clean_date "$NEXT_RUN")"
+		CREATED="$(clean_date "$CREATED")"
+		MODIFIED="$(clean_date "$MODIFIED")"
+		ENABLED="${ENABLED//true/enabled}"
+		ENABLED="${ENABLED//false/disabled}"
+
+    #             A         B         C         D         E         F         G         H         I         J         K
+    printf "| \`%*s\` | \`%*s\` | \`%*s\` | \`%*s\` | \`%*s\` | \`%*s\` | \`%*s\` | \`%*s\` | \`%*s\` | \`%*s\` | \`%*s\` |\\n" \
+					 "$COL_A" "$ID"        \
+					 "$COL_B" "$ENABLED"   \
+					 "$COL_C" "$DTSTART"   \
+					 "$COL_D" "$NEXT_RUN"  \
+					 "$COL_E" "$CREATED"   \
+					 "$COL_F" "$MODIFIED"  \
+					 "$COL_G" "$TPL_ID"    \
+					 "$COL_H" "$TPL_NAME"  \
+					 "$COL_I" "$INVENTORY" \
+					 "$COL_J" "$LIMIT"     \
+					 "$COL_K" "$NAME"
+
+	done
+
+done
