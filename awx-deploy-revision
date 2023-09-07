@@ -77,6 +77,7 @@ DEPLOY_TYPE='update'
 [[ -n "$REGEX_REVISION"  ]] || REGEX_REVISION='(master|release|hotfix|tag)'
 [[ -n "$DONT_PULL"       ]] || DONT_PULL=0
 [[ -n "$DONT_FETCH_TAGS" ]] || DONT_FETCH_TAGS=0
+[[ -n "$DONT_FETCH"      ]] || DONT_FETCH=0
 [[ -n "$DOC_CHECK"       ]] || DOC_CHECK=1
 [[ -n "$DOC_CLONE"       ]] || DOC_CLONE=1
 [[ -n "$DOC_CLEAN"       ]] || DOC_CLEAN=0
@@ -133,8 +134,11 @@ cd "$AWX_DIR"              || die "FAILED TO CHANGE TO AWX DIR"
 [[ -d '.git'            ]] || die "NOT FOUND GIT REPOSITORY"
 CURRENT_BRANCH="$(git branch --no-color | grep '^\* ' | cut -d ' ' -f2)"
 
-printf "GIT FETCH ALL\\n"
-git fetch --all            || die "FAILED TO FECTH"
+if [[ "$DONT_FETCH" -eq 0 ]]
+then
+  printf "GIT FETCH ALL\\n"
+  git fetch --all            || die "FAILED TO FECTH"
+fi
 
 if [[ "$CURRENT_BRANCH" != "$REVISION" ]]
 then
