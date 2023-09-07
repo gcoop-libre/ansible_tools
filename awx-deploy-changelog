@@ -76,6 +76,7 @@ DEPLOY_FILE="$DEPLOY_DIR/${DEPLOY_TYPE}.awx"
 SCHEDULE_FILE="$DEPLOY_DIR/schedule.awx"
 GRANT_FILE="$DEPLOY_DIR/grant.awx"
 REVOKE_FILE="$DEPLOY_DIR/revoke.awx"
+DELETE_FILE="$DEPLOY_DIR/delete.awx"
 
 cd "$AWX_DIR"          || die "FAILED TO CHANGE TO $AWX_DIR"
 [[ -d '.git'        ]] || die "NOT FOUND GIT REPOSITORY"
@@ -362,6 +363,33 @@ function generate_revoke()
   generate_permissions 'revoke' "$REVOKE_FILE"
 }
 
+function generate_delete()
+{
+
+	[[ -e "$DELETE_FILE" ]] || return
+	[[ -s "$DELETE_FILE" ]] || return
+
+	printf "\\n### %s\\n\\n" 'DELETE'
+
+  printf "| %-20s | %-40s | %-45s |\n" \
+          'resource_type'              \
+          'resource_name'              \
+          'extra'
+  printf "| %-20s | %-40s | %-45s |\n" \
+            ' ' ' ' ' ' | sed 's/ /-/g'
+
+  while read -r RESOURCE_TYPE RESOURCE_NAME RESOURCE_EXTRA
+  do
+
+    printf "| %-20s | \`%-38s\` | %-45s |\n" \
+						"_${RESOURCE_TYPE}_"             \
+						"$RESOURCE_NAME"                 \
+						"_${RESOURCE_EXTRA}_"
+
+  done < "$DELETE_FILE"
+
+}
+
 function generate_revision()
 {
 
@@ -406,6 +434,7 @@ generate_groups
 generate_schedule
 generate_grant
 generate_revoke
+generate_delete
 
 rm -f "$TMP"
 
