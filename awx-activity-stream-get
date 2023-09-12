@@ -75,7 +75,6 @@ find . -type f -iname 'activity-*.json' \
 
 [[ -n "$OPERATION"  ]] || OPERATION='update'
 [[ -n "$OBJECT1"    ]] || OBJECT1='host'
-[[ -n "$ACTOR"      ]] || ACTOR='awx_inventory'
 [[ -n "$LIST_LIMIT" ]] || LIST_LIMIT='100'
 [[ -n "$LIST_SIZE"  ]] || LIST_SIZE=200
 [[ -z "$2"          ]] || LIST_LIMIT="$2"
@@ -89,12 +88,25 @@ printf "OPERATION: %s\\n"  "$OPERATION"
 printf "LIST LIMIT: %s\\n" "$LIST_LIMIT"
 printf "LIST SIZE: %s\\n"  "$LIST_SIZE"
 
-awx-cli activity_stream list \
-  --operation "$OPERATION"   \
-  --object1 "$OBJECT1"       \
-  --actor "$ACTOR"           \
-  --format json              \
-  --page-size 1              > "$FIRST"
+if [[ -z "$ACTOR" ]]
+then
+
+  awx-cli activity_stream list \
+    --operation "$OPERATION"   \
+    --object1 "$OBJECT1"       \
+    --format json              \
+    --page-size 1              > "$FIRST"
+
+else
+
+  awx-cli activity_stream list \
+    --operation "$OPERATION"   \
+    --object1 "$OBJECT1"       \
+    --actor "$ACTOR"           \
+    --format json              \
+    --page-size 1              > "$FIRST"
+
+fi
 
 TOTAL_ACTIVITY="$(jq -r .count "$FIRST")"
 LAST_ACTIVITY="$(jq -r .results[].id "$FIRST")"
@@ -118,14 +130,29 @@ do
 
   bareta "$PAGE" "$LIST_PAGES" "$START" "$MSG"
 
-  awx-cli activity_stream list \
-    --operation "$OPERATION"   \
-    --object1 "$OBJECT1"       \
-    --actor "$ACTOR"           \
-    --format id                \
-    --page-size "$LIST_SIZE"   \
-    --page "$PAGE"             \
-    | tr ' ' '\n'              >> "$IDS"
+  if [[ -z "$ACTOR" ]]
+  then
+
+    awx-cli activity_stream list \
+      --operation "$OPERATION"   \
+      --object1 "$OBJECT1"       \
+      --format id                \
+      --page-size "$LIST_SIZE"   \
+      --page "$PAGE"             \
+      | tr ' ' '\n'              >> "$IDS"
+
+  else
+
+    awx-cli activity_stream list \
+      --operation "$OPERATION"   \
+      --object1 "$OBJECT1"       \
+      --actor "$ACTOR"           \
+      --format id                \
+      --page-size "$LIST_SIZE"   \
+      --page "$PAGE"             \
+      | tr ' ' '\n'              >> "$IDS"
+
+  fi
 
 done
 
