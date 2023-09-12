@@ -1,0 +1,126 @@
+#!/bin/bash
+
+# This script comes with ABSOLUTELY NO WARRANTY, use at own risk
+# Copyright (C) 2023 Osiris Alejandro Gomez <osiux@osiux.com>
+# Copyright (C) 2023 Osiris Alejandro Gomez <osiris@gcoop.coop>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+
+BIN="$(basename "$0")"
+
+function die()
+{
+  echo >&2 "$1"
+  exit 1
+}
+
+function usage()
+{
+cat << EOF
+Usage:
+
+\`\`\`bash
+
+  $BIN JOB_ID
+
+\`\`\`
+
+Get the standard output of a _job_ and generates a list with the last
+execution status of each _host_, by default it processes the \`FAILED\`
+and \`UNREACHABLE\` status.
+
+Example:
+
+\`\`\`bash
+
+  $BIN 1234
+
+  ## OVERVIEW
+
+  | TOTAL | STATUS      |
+  |-------|-------------|
+  |     0 | SUCCESS     |
+  |     0 | FAILED      |
+  |     5 | UNREACHABLE |
+  |     0 | UNKNOWN     |
+  |     0 | REVIEW      |
+  |-------|-------------|
+  |     5 | TOTAL HOSTS |
+
+  ## UNREACHABLE
+
+  | inventory_hostname | hostname |          IP |        macaddress | last_status |         last_unreachable |
+  |--------------------|----------|-------------|-------------------|-------------|--------------------------|
+  | wst-dev01          | wst01dev | 10.10.0.101 | 38:22:e2:2c:31:37 | UNREACHABLE | 1234 2023-08-11T15:06:09 |
+  | wst-lab01          | wst01lab | 10.10.2.101 | 38:22:e2:20:10:30 | UNREACHABLE | 1234 2023-08-11T15:06:09 |
+  | wst-prd03          | wst03prd |  10.0.1.103 | e0:4f:43:ea:37:50 | UNREACHABLE | 1234 2023-08-11T15:06:09 |
+  | wst-prd04          | wst04prd |  10.0.1.104 | e0:4f:43:ea:37:65 | UNREACHABLE | 1234 2023-08-11T15:06:09 |
+
+\`\`\`
+
+EOF
+exit 0
+}
+
+[[ "$1" =~ ^[-]+(h|help) ]] && usage
+
+[[ -n "$JOB_ID"         ]] || JOB_ID="$1"
+[[ -z "$JOB_ID"         ]] && die "EMPYT JOB_ID"
+[[ "$JOB_ID" =~ ^[0-9]+ ]] || die "INVALID JOB_ID"
+[[ -n "$STDOUT"         ]] || STDOUT="job_${JOB_ID}.txt"
+[[ -e "$STDOUT"         ]] || awx-job-stdout "$JOB_ID" > "$STDOUT"
+[[ -s "$STDOUT"         ]] || die "EMPTY FILE $STDOUT"
+[[ -e "$STDOUT"         ]] || die "NOT FOUND FILE $STDOUT"
+[[ -n "$RESULTS"        ]] || RESULTS="awx-job-results-$JOB_ID.log"
+[[ -e "$RESULTS"        ]] || awx-job-results "$JOB_ID" | tee "$RESULTS"
+[[ -n "$JOB_MD"         ]] || JOB_MD="${JOB_ID}.md"
+[[ -n "$STATUSES"       ]] || STATUSES='failed unreachable'
+
+read -r -a A_STATUS <<< "$STATUSES"
+true > "$JOB_MD"
+
+for STATUS in "${A_STATUS[@]}"
+do
+
+  FILE="$JOB_ID-$STATUS"
+
+  if [[ ! -e "$FILE" ]]
+  then
+    echo >&2 "NOT FOUND FILE $FILE"
+    continue
+  fi
+
+  awx-activity-stream-host-find "$FILE"
+
+  ACTIVITIES="activity-$JOB_ID-$STATUS.lst"
+
+  while read -r LIST
+  do
+
+    awx-activity-stream-json-diff "$LIST"
+
+  done < "$ACTIVITIES"
+
+  while read -r HOST
+  do
+
+    LIST_SIZE=1 LIST_LIMIT=1 awx-activity-stream-host-diff "$HOST"
+
+  done < "$FILE"
+
+  awx-host-get-last-status "$FILE" >> "$JOB_MD"
+
+done
+
+cat "$JOB_MD"
