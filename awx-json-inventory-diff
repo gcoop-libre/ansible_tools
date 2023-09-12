@@ -1,0 +1,293 @@
+#!/bin/bash
+
+# This script comes with ABSOLUTELY NO WARRANTY, use at own risk
+# Copyright (C) 2023 Osiris Alejandro Gomez <osiux@osiux.com>
+# Copyright (C) 2023 Osiris Alejandro Gomez <osiris@gcoop.coop>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+
+# shellcheck disable=SC1090
+# shellcheck disable=SC1091
+# shellcheck source=/dev/null
+
+[[ -n "$BASH_DEBUG" ]] && set -x
+
+BIN="$(basename "$0")"
+RED="$(tput setaf 196)"
+NORMAL="$(tput sgr0)"
+
+stderror ()
+{
+  echo >&2 "$1"
+}
+
+die ()
+{
+  stderror "${RED}[ERROR] $1 $NORMAL"
+  [[ "$ERROR_SHOW_USAGE" -eq 1 ]] && usage
+  exit 1
+}
+
+function usage()
+{
+cat << EOF
+Usage:
+
+\`\`\`bash
+
+  $BIN OLD_JSON NEW_JSON ITEM [SUBITEM] [KEY]
+
+\`\`\`
+
+Compare _items_, _subitems_ and values in specific _key_ of two _JSON_
+_inventory_ files.
+
+Example:
+
+\`\`\`bash
+
+  $BIN inventory/prd.json inventory/dev.json dev variables
+
+  ## SHOW SIDE BY SIDE DIFF BETWEEN inventory/prd.json AND inventory/dev.json ITEM=variables
+
+  ----------------------------------------------------------------------------------------------------------------
+  iso_file: vm-2020-10-27.iso               |  iso_file: vm-2022-08-16.iso
+  ----------------------------------------------------------------------------------------------------------------
+
+  $BIN inventory/prd.json inventory/dev.json dev inventory_source
+
+  ## SHOW SIDE BY SIDE DIFF BETWEEN inventory/prd.json AND inventory/dev.json ITEM=inventory_source
+
+  ----------------------------------------------------------------------------------------------------------------
+    source_project: inventory_v0.9.0        |   source_project: inventory_v0.24.0
+  ----------------------------------------------------------------------------------------------------------------
+
+  $BIN inventory/prd.json inventory/dev.json dev groups
+
+  ## SHOW SIDE BY SIDE DIFF BETWEEN inventory/prd.json AND inventory/dev.json ITEM=groups
+
+  ----------------------------------------------------------------------------------------------------------------
+                  > lab
+                  > dev
+                  > prd
+                  > tst
+                  > stg
+  ----------------------------------------------------------------------------------------------------------------
+
+  $BIN inventory/prd.json inventory/dev.json group lab variables
+
+  ## SHOW SIDE BY SIDE DIFF BETWEEN inventory/prd.json AND inventory/dev.json ITEM=group SUBITEM=lab KEY=variables
+
+  ----------------------------------------------------------------------------------------------------------------
+                       >  hostname_suffix: lab
+                       >  network: '{{ subnet }}.0'
+                       >  subnet: 10.12.51
+  ----------------------------------------------------------------------------------------------------------------
+
+  $BIN inventory/prd.json inventory/dev.json group dev variables
+
+  ## SHOW SIDE BY SIDE DIFF BETWEEN inventory/prd.json AND inventory/dev.json ITEM=group SUBITEM=dev KEY=variables
+
+  ----------------------------------------------------------------------------------------------------------------
+                       >  hostname_suffix: dev
+                       >  network: '{{ subnet }}.0'
+                       >  subnet: 10.12.72
+  ----------------------------------------------------------------------------------------------------------------
+
+  $BIN inventory/prd.json inventory/dev.json groups_hosts
+
+  ## SHOW SIDE BY SIDE DIFF BETWEEN inventory/prd.json AND inventory/dev.json ITEM=groups_hosts
+
+  ----------------------------------------------------------------------------------------------------------------
+                  > lab 1
+                  > dev 1
+                  > prd 1
+                  > tst 1
+                  > stg 1
+  prn 304         | prn 309
+  ----------------------------------------------------------------------------------------------------------------
+
+  $BIN inventory/prd.json inventory/dev.json group lab hosts
+
+  ## SHOW SIDE BY SIDE DIFF BETWEEN inventory/prd.json AND inventory/dev.json ITEM=group SUBITEM=lab KEY=hosts
+
+  ----------------------------------------------------------------------------------------------------------------
+                  > - sprn01lab
+  ----------------------------------------------------------------------------------------------------------------
+
+  $BIN inventory/prd.json inventory/dev.json group dev hosts
+
+  ## SHOW SIDE BY SIDE DIFF BETWEEN inventory/prd.json AND inventory/dev.json ITEM=group SUBITEM=dev KEY=hosts
+
+  ----------------------------------------------------------------------------------------------------------------
+                  > - sprn01dev
+  ----------------------------------------------------------------------------------------------------------------
+
+  $BIN inventory/prd.json inventory/dev.json group prn hosts
+
+  ## SHOW SIDE BY SIDE DIFF BETWEEN inventory/prd.json AND inventory/dev.json ITEM=group SUBITEM=prn KEY=hosts
+
+  ----------------------------------------------------------------------------------------------------------------
+                  > - sprn01lab
+                  > - sprn01dev
+                  > - sprn01prd
+                  > - sprn01tst
+                  > - sprn01stg
+  ----------------------------------------------------------------------------------------------------------------
+
+\`\`\`
+
+EOF
+exit 0
+}
+
+repeat_string()
+{
+  printf "%*s" "$1" ' ' | tr ' ' "$2"
+  printf "\\n"
+}
+
+div()
+{
+  repeat_string "$COLUMNS" '-'
+}
+
+[[ "$1" =~ ^[-]+(h|help) ]] && usage
+
+[[ -n "$OLD_JSON"       ]] || OLD_JSON="$1"
+[[ -n "$NEW_JSON"       ]] || NEW_JSON="$2"
+[[ -z "$OLD_JSON"       ]] && die "EMPTY OLD JSON FILE"
+[[ -z "$NEW_JSON"       ]] && die "EMPTY NEW JSON FILE"
+[[ -e "$OLD_JSON"       ]] || die "NOT FOUND FILE $OLD_JSON"
+[[ -e "$NEW_JSON"       ]] || die "NOT FOUND FILE $NEW_JSON"
+[[ -n "$ITEM"           ]] || ITEM="$3"
+[[ -n "$SUBITEM"        ]] || SUBITEM="$4"
+[[ -n "$KEY"            ]] || KEY="$5"
+[[ -z "$ITEM"           ]] && die "EMPTY ITEM"
+[[ -n "$DIFF_WIDTH_MIN" ]] || DIFF_WIDTH_MIN=100
+[[ -n "$DIFF_WIDTH_MAX" ]] || DIFF_WIDTH_MAX=200
+[[ -n "$DIFF_WIDTH"     ]] || DIFF_WIDTH='160'
+[[ -n "$DIFF_OPTS"      ]] || DIFF_OPTS='-y --suppress-common-lines'
+[[ -n "$DIFF_CMD"       ]] || DIFF_CMD="diff $DIFF_OPTS"
+[[ -n "$DELTA_OPTS"     ]] || DELTA_OPTS='--paging never --side-by-side'
+[[ -n "$DELTA"          ]] || DELTA="$(command -v delta || true)"
+[[ -z "$DELTA"          ]] || DIFF_CMD="$DELTA $DELTA_OPTS"
+
+OLD_ASSET_TYPE="$(jq -r '.[].asset_type' "$OLD_JSON")"
+NEW_ASSET_TYPE="$(jq -r '.[].asset_type' "$NEW_JSON")"
+
+[[ "$OLD_ASSET_TYPE" = 'inventory' ]] \
+  || die "INVALID ASSET TYPE IN $OLD_JSON"
+
+[[ "$NEW_ASSET_TYPE" = 'inventory' ]] \
+  || die "INVALID ASSET TYPE IN $NEW_JSON"
+
+OLD_YAML="$(mktemp --suffix .yml)"
+NEW_YAML="$(mktemp --suffix .yml)"
+OLD_TEMP="$(mktemp)"
+NEW_TEMP="$(mktemp)"
+DFF_TEMP="$(mktemp)"
+
+case "$ITEM" in
+  name)
+    JQ='.[] | .name,.organization'
+    ;;
+  variables)
+    JQ=".[].variables"
+    ;;
+  group)
+    [[ -z "$SUBITEM" ]] && die "EMPTY SUBITEM"
+    [[ -z "$KEY"     ]] && die "EMPTY KEY"
+    JQ=".[].asset_relation.group[] | select(.name == \"$SUBITEM\") | .$KEY"
+    ;;
+  groups)
+    JQ=".[].asset_relation.group[].name"
+    ;;
+  groups_hosts)
+    JQ=".[].asset_relation.group[].name"
+    ;;
+  inventory_source)
+    JQ=".[].asset_relation.inventory_source"
+    ;;
+  *)
+    exit 1
+    ;;
+esac
+
+if [[ "$ITEM" =~ (groups|groups_hosts) ]]
+then
+  jq -r "$JQ" "$OLD_JSON" | sort > "$OLD_YAML"
+  jq -r "$JQ" "$NEW_JSON" | sort > "$NEW_YAML"
+else
+  jq -r "$JQ" "$OLD_JSON" | yq --sort-keys -y . > "$OLD_YAML"
+  jq -r "$JQ" "$NEW_JSON" | yq --sort-keys -y . > "$NEW_YAML"
+fi
+
+TMP="$(mktemp)"
+
+if [[ "$ITEM" = 'groups_hosts' ]]
+then
+
+  while read -r GROUP
+  do
+    JQ=".[].asset_relation.group[] | select(.name == \"$GROUP\") | .hosts | length"
+    TOTAL="$(jq -r "$JQ" "$OLD_JSON" | sort)"
+    printf "%s %s\\n" "$GROUP" "$TOTAL"
+  done < "$OLD_YAML" > "$TMP" && mv -f "$TMP" "$OLD_YAML"
+
+  while read -r GROUP
+  do
+    JQ=".[].asset_relation.group[] | select(.name == \"$GROUP\") | .hosts | length"
+    TOTAL="$(jq -r "$JQ" "$NEW_JSON" | sort)"
+    printf "%s %s\\n" "$GROUP" "$TOTAL"
+  done < "$NEW_YAML" > "$TMP" && mv -f "$TMP" "$NEW_YAML"
+
+fi
+
+if diff "$OLD_YAML" "$NEW_YAML" >/dev/null
+then
+  MSG="NOTHING TO DO $OLD_JSON AND $NEW_JSON ARE EQUAL"
+  DIFF_RUN=0
+else
+  MSG="SHOW SIDE BY SIDE DIFF BETWEEN $OLD_JSON AND $NEW_JSON"
+  DIFF_RUN=1
+fi
+
+[[ -z "$ITEM"    ]] || MSG+=" ITEM=$ITEM"
+[[ -z "$SUBITEM" ]] || MSG+=" SUBITEM=$SUBITEM"
+[[ -z "$KEY"     ]] || MSG+=" KEY=$KEY"
+
+printf "\\n## %s\\n\\n" "$MSG"
+
+[[ "$DIFF_RUN" -eq 0 ]] && exit 0
+
+DIFF_WIDTH_OLD="$(wc -L "$OLD_YAML" | awk '{print $1}')"
+DIFF_WIDTH_NEW="$(wc -L "$NEW_YAML" | awk '{print $1}')"
+
+if [[ "$DIFF_WIDTH_OLD" -ge "$DIFF_WIDTH_NEW" ]]
+then
+  DIFF_WIDTH="$((DIFF_WIDTH_OLD*2))"
+else
+  DIFF_WIDTH="$((DIFF_WIDTH_NEW*2))"
+fi
+
+[[ "$DIFF_WIDTH" -lt 72         ]] && DIFF_WIDTH="$DIFF_WIDTH_MIN"
+[[ "$DIFF_WIDTH" -gt "$COLUMNS" ]] && DIFF_WIDTH="$DIFF_WIDTH_MAX"
+[[ -z "$DELTA"                  ]] && DIFF_CMD+=" -W $DIFF_WIDTH"
+
+div
+bash -c "$DIFF_CMD $OLD_YAML $NEW_YAML" || true
+div
+
+rm -f "$OLD_YAML" "$NEW_YAML" "$OLD_TEMP" "$NEW_TEMP" "$DFF_TEMP"
