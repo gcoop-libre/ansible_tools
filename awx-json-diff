@@ -1,0 +1,186 @@
+#!/bin/bash
+
+# This script comes with ABSOLUTELY NO WARRANTY, use at own risk
+# Copyright (C) 2023 Osiris Alejandro Gomez <osiux@osiux.com>
+# Copyright (C) 2023 Osiris Alejandro Gomez <osiris@gcoop.coop>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+
+# shellcheck disable=SC1090
+# shellcheck disable=SC1091
+# shellcheck source=/dev/null
+
+[[ -n "$BASH_DEBUG" ]] && set -x
+
+BIN="$(basename "$0")"
+RED="$(tput setaf 196)"
+NORMAL="$(tput sgr0)"
+
+stderror ()
+{
+  echo >&2 "$1"
+}
+
+die ()
+{
+  stderror "${RED}[ERROR] $1 $NORMAL"
+  [[ "$ERROR_SHOW_USAGE" -eq 1 ]] && usage
+  exit 1
+}
+
+function usage()
+{
+cat << EOF
+Usage:
+
+\`\`\`bash
+
+  $BIN OLD_JSON NEW_JSON
+
+\`\`\`
+
+Compare _variables_ and _hosts_ of each _group_ that differ in both
+_JSON_ files by invoking the \`awx-json-inventory-diff\` command when
+the files are of type _inventory_.
+
+It also detects and compares when the number of _hosts_ differs between
+_JSON_ files for the same group.
+
+\`\`\`bash
+
+
+  $BIN inventory/prd.json inventory/dev.json
+
+  ## SHOW SIDE BY SIDE DIFF BETWEEN inventory/prd.json AND inventory/dev.json ITEM=groups_hosts
+
+  ------------------------------------------------------------------------------------------------------------
+                  > lab 1
+                  > dev 1
+                  > prd 1
+                  > tst 1
+                  > stg 1
+  prn 304         | prn 309
+  ------------------------------------------------------------------------------------------------------------
+
+  ## SHOW SIDE BY SIDE DIFF BETWEEN inventory/prd.json AND inventory/dev.json ITEM=group SUBITEM=lab KEY=hosts
+
+  ------------------------------------------------------------------------------------------------------------
+                  > - sprn01lab
+  ------------------------------------------------------------------------------------------------------------
+
+  ## SHOW SIDE BY SIDE DIFF BETWEEN inventory/prd.json AND inventory/dev.json ITEM=group SUBITEM=dev KEY=hosts
+
+  ------------------------------------------------------------------------------------------------------------
+                  > - sprn01dev
+  ------------------------------------------------------------------------------------------------------------
+
+  ## SHOW SIDE BY SIDE DIFF BETWEEN inventory/prd.json AND inventory/dev.json ITEM=group SUBITEM=prd KEY=hosts
+
+  ------------------------------------------------------------------------------------------------------------
+                  > - sprn01prd
+  ------------------------------------------------------------------------------------------------------------
+
+  ## SHOW SIDE BY SIDE DIFF BETWEEN inventory/prd.json AND inventory/dev.json ITEM=group SUBITEM=tst KEY=hosts
+
+  ------------------------------------------------------------------------------------------------------------
+                  > - sprn01tst
+  ------------------------------------------------------------------------------------------------------------
+
+  ## SHOW SIDE BY SIDE DIFF BETWEEN inventory/prd.json AND inventory/dev.json ITEM=group SUBITEM=stg KEY=hosts
+
+  ------------------------------------------------------------------------------------------------------------
+                  > - sprn01stg
+  ------------------------------------------------------------------------------------------------------------
+
+  ## SHOW SIDE BY SIDE DIFF BETWEEN inventory/prd.json AND inventory/dev.json ITEM=group SUBITEM=prn KEY=hosts
+
+  ------------------------------------------------------------------------------------------------------------
+                  > - sprn01lab
+                  > - sprn01dev
+                  > - sprn01prd
+                  > - sprn01tst
+                  > - sprn01stg
+  ------------------------------------------------------------------------------------------------------------
+
+\`\`\`
+
+EOF
+exit 0
+}
+
+function diff_clean()
+{
+
+grep -E '(<|>|\|)' "$1"  \
+      | tr '\t' ' '      \
+      | sed 's/^ \+//g'  \
+      | sed 's/> /\n/g'  \
+      | sed 's/< /\n/g'  \
+      | sed 's/| /\n/g'  \
+      | grep -vE '^$'    \
+      | awk '{print $1}' \
+      | sort -u
+
+}
+
+[[ "$1" =~ ^[-]+(h|help) ]] && usage
+
+[[ -n "$OLD_JSON"   ]] || OLD_JSON="$1"
+[[ -n "$NEW_JSON"   ]] || NEW_JSON="$2"
+[[ -z "$OLD_JSON"   ]] && die "EMPTY OLD JSON FILE"
+[[ -z "$NEW_JSON"   ]] && die "EMPTY NEW JSON FILE"
+[[ -e "$OLD_JSON"   ]] || die "NOT FOUND FILE $OLD_JSON"
+[[ -e "$NEW_JSON"   ]] || die "NOT FOUND FILE $NEW_JSON"
+
+OLD_ASSET_TYPE="$(jq -r '.[].asset_type' "$OLD_JSON")"
+OLD_TMP="$(mktemp)"
+NEW_TMP="$(mktemp)"
+DFF_TMP="$(mktemp)"
+OUTPUT="$(mktemp)"
+
+case "$OLD_ASSET_TYPE" in
+
+  inventory)
+
+    for ITEM in name variables inventory_source groups
+    do
+      awx-json-inventory-diff "$OLD_JSON" "$NEW_JSON" "$ITEM"
+    done
+
+    JQ=".[].asset_relation.group[].name"
+    jq -r "$JQ" "$OLD_JSON" > "$OLD_TMP"
+    jq -r "$JQ" "$NEW_JSON" > "$NEW_TMP"
+    grep -vf "$OLD_TMP" "$NEW_TMP" > "$DFF_TMP"
+    grep -vf "$NEW_TMP" "$OLD_TMP" >>"$DFF_TMP"
+
+    sort -u "$DFF_TMP" | while read -r SUBITEM
+    do
+      awx-json-inventory-diff "$OLD_JSON" "$NEW_JSON" \
+        group "$SUBITEM" variables
+    done
+
+    awx-json-inventory-diff "$OLD_JSON" "$NEW_JSON" groups_hosts \
+      | tee "$OUTPUT"
+
+    diff_clean "$OUTPUT" | while read -r GROUP
+    do
+      awx-json-inventory-diff "$OLD_JSON" "$NEW_JSON" \
+        group "$GROUP" hosts
+    done
+
+    ;;
+
+esac
+
+rm -f "$OLD_TMP" "$NEW_TMP" "$DFF_TMP"
