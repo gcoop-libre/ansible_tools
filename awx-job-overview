@@ -60,8 +60,8 @@ JSON="job-${JOB_ID}.json"
 
 [[ -z "$2" ]] || TOTAL="$2"
 
-[[ ! -e "$JSON" ]] && awx-cli job get "$JOB_ID" -f json > "$JSON"
-[[ ! -s "$JSON" ]] && die "EMPTY JSON $JSON"
+[[ -e "$JSON" ]] || awx-cli job get "$JOB_ID" -f json > "$JSON"
+[[ -s "$JSON" ]] || die "EMPTY JSON $JSON"
 
 ELAPSED="$(jq -r .elapsed  "$JSON")"
 FINISHED="$(jq -r .finished "$JSON")"
