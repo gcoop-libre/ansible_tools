@@ -70,8 +70,6 @@ awx_cfg_read
 [[ -z "$AWX_CFG_PASS" ]] && die "EMPTY AWX_CFG_PASS"
 [[ -z "$AWX_CFG_HOST" ]] && die "EMPTY AWX_CFG_HOST"
 
-AWX_CFG_HOST="$(echo "$AWX_CFG_HOST" | sed 's/\/$//g')"
-
 JSON="$(mktemp --suffix .json)"
 
 curl -k -s --user "$AWX_CFG_USER:$AWX_CFG_PASS"             \
