@@ -17,6 +17,47 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
+[[ -n "$BASH_DEBUG" ]] && set -x
+
+BIN="$(basename "$0")"
+
+function usage()
+{
+cat << EOF
+Usage:
+
+\`\`\`bash
+
+  $BIN TEAM
+
+\`\`\`
+
+List users in a team.
+
+Example:
+
+\`\`\`bash
+
+  $BIN devops
+
+  ## GET USERS FROM TEAM devops WITH TEAM_ID 1
+
+  alice
+  bob
+  charlie
+
+\`\`\`
+
+EOF
+exit 0
+}
+
+function die()
+{
+  echo >&2 "$1"
+  exit 1
+}
+
 function awx_config()
 {
   awk -F= "/$1/ {print \$2}" "$HOME/.tower_cli.cfg"
@@ -25,23 +66,44 @@ function awx_config()
 function team_related()
 {
   AWX_URL="$AWX_HOST/api/v2/teams/$1/$2/"
-  curl -s --user "$AWX_USER:$AWX_PASS" "$AWX_URL"
+  curl -s --user "$AWX_USER:$AWX_PASS" "$AWX_URL" > "$TEAM_USERS"
+  CURL_RC="$?"
+  # README https://everything.curl.dev/usingcurl/returns
+  [[ "$CURL_RC" -eq 0 ]] || die "CURL EXIT WITH ERROR CODE $CURL_RC"
+  [[ -s "$TEAM_USERS" ]] || die "NOT FOUND USERS IN TEAM_ID $1"
 }
 
 function team_users()
 {
-  team_related "$1" users        \
-    | jq -r .results[].username  \
-    | while read -r USERNAME;do echo "$USERNAME";done | sort
+  team_related "$1" users
+  jq -r '.results[].username' "$TEAM_USERS" > "$TMP"
+
+  [[ -s "$TMP" ]] || die "NOT FOUND USERS IN TEAM_ID $1"
+
+  printf "## GET USERS FROM TEAM %s WITH TEAM_ID %s\\n\\n" \
+         "$TEAM" "$TEAM_ID" 1>&2
+
+  while read -r USERNAME
+  do
+    echo "$USERNAME"
+  done < "$TMP" | sort
 }
 
+[[ "$1" =~ ^[-]+(h|help) ]] && usage
+
 AWX_HOST="$(awx_config host)"
+AWX_HOST="${AWX_HOST%/}"
 AWX_USER="$(awx_config username)"
 AWX_PASS="$(awx_config password)"
-TEAM="$1"
 
-[[ -z "$TEAM"    ]] && exit 1
-TEAM_ID="$(awx-cli team get -n "$TEAM" -f id)"
-[[ -z "$TEAM_ID" ]] && exit 1
+[[ -n "$TEAM"    ]] || TEAM="$1"
+[[ -z "$TEAM"    ]] && die "EMPTY TEAM"
+[[ -n "$TEAM_ID" ]] || TEAM_ID="$(awx-cli team get -n "$TEAM" -f id)"
+[[ -z "$TEAM_ID" ]] && die "EMPTY TEAM ID"
+
+TEAM_USERS="$TEAM-users.json"
+TMP="$(mktemp)"
 
 team_users "$TEAM_ID"
+
+rm -f "$TMP"
