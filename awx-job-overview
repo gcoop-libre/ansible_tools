@@ -74,6 +74,7 @@ FINISH="$(date -d "$FINISHED" +'%T')"
 MINUTES="$(date -d "1970-01-01 +$ELAPSED seconds" +%T)"
 START="$(date -d "$STARTED" +'%T')"
 
+INVENTORY="$(jq -r .summary_fields.inventory.name "$JSON")"
 JOB_TEMPLATE="$(jq -r .summary_fields.job_template.name "$JSON")"
 
 if [[ -n "$TOTAL" ]]
@@ -81,7 +82,7 @@ then
   PERCENT="$(echo "scale=2;($ELAPSED/$TOTAL)*100" | bc) %"
 fi
 # FIXME calculate limit witdh column
-printf "| %s | %-30s | %10s | %8s | %8s | %s | %s | %s | %s | %-60s |\n" \
+printf "| %s | %-30s | %10s | %8s | %8s | %s | %s | %s | %s | %s | %-60s |\n" \
        "$JOB_ID"   \
        "$JOB_TEMPLATE" \
        "$STATUS"   \
@@ -91,4 +92,5 @@ printf "| %s | %-30s | %10s | %8s | %8s | %s | %s | %s | %s | %-60s |\n" \
        "$START"    \
        "$FINISH"   \
        "$MINUTES"  \
+       "$INVENTORY" \
        "$LIMIT"
