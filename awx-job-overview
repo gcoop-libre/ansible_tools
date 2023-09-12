@@ -56,7 +56,7 @@ PERCENT=''
 [[ -z "$1" ]] && die "EMPTY JOB_ID"
 JOB_ID="$1"
 
-JSON="${JOB_ID}.json"
+JSON="job-${JOB_ID}.json"
 
 [[ -z "$2" ]] || TOTAL="$2"
 
