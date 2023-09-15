@@ -51,7 +51,7 @@ exit 0
 
 NAME="$(basename "$JSON" .json)"
 NUMBER="$(echo "$NAME" | grep -Eo '[0-9]+\.[0-9]+\.[0-9]+')"
-NEW_NUMBER="$(bump-version "$NUMBER" "$VERSION")"
+NEW_NUMBER="$(bump-version "$NUMBER" "${VERSION^^}")"
 
 # FIXME NEW_NAME="$(echo "$NAME" | sed "s/$NUMBER/$NEW_NUMBER/g")"
 NEW_JSON="$(echo "$JSON" | sed "s/$NUMBER/$NEW_NUMBER/g")"
