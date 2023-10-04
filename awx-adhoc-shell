@@ -49,14 +49,12 @@ exit 0
 
 [[ "$1" =~ ^[-]+(h|help) ]] && usage
 
-[[ -z "$1" ]] && die "EMPTY INVENTORY"
-INVENTORY="$1"
-
-[[ -z "$2" ]] && die "EMPTY LIMIT"
-LIMIT="$2"
-
-[[ -z "$3" ]] && die "EMPTY MODULE_ARGS"
-MODULE_ARGS="$3"
+[[ -n "$INVENTORY"   ]] || INVENTORY="$1"
+[[ -z "$INVENTORY"   ]] && die "EMPTY INVENTORY"
+[[ -n "$LIMIT"       ]] || LIMIT="$2"
+[[ -z "$LIMIT"       ]] && die "EMPTY LIMIT"
+[[ -n "$MODULE_ARGS" ]] || MODULE_ARGS="$3"
+[[ -z "$MODULE_ARGS" ]] && die "EMPTY MODULE_ARGS"
 
 [[ -n "$BECOME"                 ]] || BECOME='true'
 [[ -n "$JOB_TYPE"               ]] || JOB_TYPE='run'
@@ -66,7 +64,7 @@ MODULE_ARGS="$3"
 [[ -n "$INVENTORY_SSH_CREDENTIAL" ]] || INVENTORY_SSH_CREDENTIAL="${!INVENTORY_CREDENTIAL}"
 [[ -z "$INVENTORY_SSH_CREDENTIAL" ]] && INVENTORY_SSH_CREDENTIAL="$DEFAULT_SSH_CREDENTIAL"
 
-if [[ "$LIMIT" = 'nolimit' ]]
+if [[ "$LIMIT" = 'all' ]]
 then
 
 awx-cli ad_hoc launch                         \
