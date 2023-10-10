@@ -44,6 +44,8 @@ Modify schedule to run _job_template_.
 
   $BIN wst_wol_all_v0.1.0 WoL all Workstations
 
+  SCHEDULE_LIMIT=dev $BIN wst_wol_all_v0.1.0 WoL all Developers Workstations
+
 \`\`\`
 
 EOF
@@ -70,7 +72,9 @@ then
   [[ -n "$DEFAULT_SCHEDULE_LIMIT" ]] && LIMIT="$DEFAULT_SCHEDULE_LIMIT"
 fi
 
+[[ -n "$SCHEDULE_LIMIT" ]] && LIMIT="$SCHEDULE_LIMIT"
 [[ -n "$LIMIT" ]] && LIMIT="--limit $LIMIT"
+[[ "$LIMIT" = 'all' ]] && unset LIMIT
 
 if [[ -n "$EXTRA_JSON" ]]
 then
