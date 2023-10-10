@@ -110,6 +110,15 @@ EOF
     RRULE="$(cat "$EXTRA_RRULE")"
   fi
 
+  CLEAN_LIMIT="$(echo "${LIMIT##* }" | tr '!:' '-' | tr -d ' ')"
+  EXTRA_RRULE="schedule/$JOB_TEMPLATE-${CLEAN_LIMIT}.rrule"
+
+  if [[ -e "$EXTRA_RRULE" ]]
+  then
+    echo "USING EXTRA_RRULE FROM $EXTRA_RRULE"
+    RRULE="$(cat "$EXTRA_RRULE")"
+  fi
+
 fi
 
 if command -v rrule-validate >/dev/null;then rrule-validate "$RRULE";fi
