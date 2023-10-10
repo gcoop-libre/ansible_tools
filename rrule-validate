@@ -63,5 +63,8 @@ SS="${TIME:4:2}"
 HOUR="$HH:$MM:$SS"
 validate "$HOUR"
 
-echo "DSTART=$DSTART DATE=$DATE TIME=$TIME FREQ=$FREQ INTERVAL=$INTERVAL"
+FREQ="$(echo "$RRULE" | grep -Eo 'FREQ=[A-Z]+;' | awk '{print $2}')"
+INTERVAL="$(echo "$RRULE" | grep -Eo 'INTERVAL=[0-9]+;' | awk '{print $2}')"
+
+echo "DTSTART=$DTSTART DATE=$DATE TIME=$TIME FREQ=$FREQ INTERVAL=$INTERVAL"
 echo "NO ERRORS FOUND IN RRULE: $RRULE"
