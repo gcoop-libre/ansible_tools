@@ -300,13 +300,21 @@ printf "| %-24s | %-25s | %-32s | %-100s |\n"   \
 printf "| %-24s | %-25s | %-32s | %-100s |\n"   \
         ' ' ' ' ' ' ' ' | sed 's/ /-/g'
 
-sort "$SCHEDULE_FILE" | while read -r SCHEDULE_JOB NAME
+sort "$SCHEDULE_FILE" | while read -r SCHEDULE_JOB SCHEDULE_LIMIT NAME
 do
   JOB_RRULE="schedule/$SCHEDULE_JOB.rrule"
   JOB_EXTRA="schedule/$SCHEDULE_JOB.json"
 
   [[ -e "$JOB_RRULE" ]] && SCHEDULE_RRULE="$(cat "$JOB_RRULE")"
   [[ -e "$JOB_EXTRA" ]] && SCHEDULE_EXTRA="$(jq -c . "$JOB_EXTRA")"
+
+  CLEAN_LIMIT="$(echo "${SCHEDULE_LIMIT##* }" | tr '!:' '-' | tr -d ' ')"
+  EXTRA_RRULE="schedule/$SCHEDULE_JOB-${CLEAN_LIMIT}.rrule"
+
+  if [[ -e "$EXTRA_RRULE" ]]
+  then
+    SCHEDULE_RRULE="$(cat "$EXTRA_RRULE")"
+  fi
 
   printf "| \`%-22s\` | _%-23s_ | \`%-30s\` | \`%-98s\` |\n" \
          "$SCHEDULE_JOB" "$NAME" "${SCHEDULE_EXTRA//,/, }" "$SCHEDULE_RRULE"
