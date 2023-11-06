@@ -65,7 +65,7 @@ exit 0
 
 function percentage()
 {
-  echo "$1" "$2" | awk '{printf "%0d",($1/$2)*100}'
+  echo "$1" "$2" | awk '{printf "%0d",int(($1/$2)*100+0.5)}'
 }
 
 [[ "$1" =~ ^[-]+(h|help) ]] && usage
