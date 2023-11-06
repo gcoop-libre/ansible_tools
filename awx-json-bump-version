@@ -30,11 +30,40 @@ Usage:
 
 \`\`\`bash
 
-  $BIN JSON
+  $BIN JSON [VERSION]
 
-$(code)
+\`\`\`
 
 Increment semantic version in \`.json\` file.
+By default VERSION is PATCH, you can define MAJOR or MINOR.
+
+Examples:
+
+\`\`\`bash
+
+  # $BIN project/ansible_generic_v0.3.0.json
+
+  BUMP VERSION FROM project/ansible_generic_v0.3.0.json TO project/ansible_generic_v0.3.1.json
+
+      "name": "ansible_generic_v0.3.0",             |         "name": "ansible_generic_v0.3.1",
+      "scm_branch": "v0.3.0",                       |         "scm_branch": "v0.3.1",
+
+
+  # $BIN project/ansible_generic_v0.3.0.json MINOR
+
+  BUMP VERSION FROM project/ansible_generic_v0.3.0.json TO project/ansible_generic_v0.4.0.json
+
+      "name": "ansible_generic_v0.3.0",             |         "name": "ansible_generic_v0.4.0",
+      "scm_branch": "v0.3.0",                       |         "scm_branch": "v0.4.0",
+
+  # $BIN project/ansible_generic_v0.3.0.json MAJOR
+
+  BUMP VERSION FROM project/ansible_generic_v0.3.0.json TO project/ansible_generic_v1.0.0.json
+
+      "name": "ansible_generic_v0.3.0",             |         "name": "ansible_generic_v1.0.0",
+      "scm_branch": "v0.3.0",                       |         "scm_branch": "v1.0.0",
+
+\`\`\`
 
 EOF
 exit 0
