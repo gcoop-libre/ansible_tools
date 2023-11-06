@@ -19,8 +19,9 @@
 # shellcheck disable=SC1090
 # shellcheck disable=SC1091
 # shellcheck source=/dev/null
+# shellcheck disable=SC2183
 
-DIR_BIN=$(dirname "$0") && source "$DIR_BIN/awx-common"
+DIR_BIN="$(dirname "$0")" && source "$DIR_BIN/awx-common"
 
 function usage()
 {
@@ -60,6 +61,11 @@ Example
 \`\`\`
 EOF
 exit 0
+}
+
+function percentage()
+{
+  echo "$1" "$2" | awk '{printf "%0d",($1/$2)*100}'
 }
 
 [[ "$1" =~ ^[-]+(h|help) ]] && usage
@@ -145,10 +151,17 @@ TOTAL_FAILED="$(wc -l "$HOSTS_FAILED")"
 TOTAL_FAILED="${TOTAL_FAILED%% *}"
 TOTAL_UNREACHABLE="$(wc -l "$HOSTS_UNREACHABLE")"
 TOTAL_UNREACHABLE="${TOTAL_UNREACHABLE%% *}"
+TOTAL_HOSTS="$((TOTAL_SUCCESS + TOTAL_FAILED + TOTAL_UNREACHABLE))"
 
-printf "%*s: %s %s\\n" "$MAX" 'SUCCESS'     "$TOTAL_SUCCESS"     "$(tr '\n' ':' < "$HOSTS_SUCCESS"     | sed 's/:$//g')"
-printf "%*s: %s %s\\n" "$MAX" 'FAILED'      "$TOTAL_FAILED"      "$(tr '\n' ':' < "$HOSTS_FAILED"      | sed 's/:$//g')"
-printf "%*s: %s %s\\n" "$MAX" 'UNREACHABLE' "$TOTAL_UNREACHABLE" "$(tr '\n' ':' < "$HOSTS_UNREACHABLE" | sed 's/:$//g')"
+PCT_SUCCESS="$(percentage "$TOTAL_SUCCESS" "$TOTAL_HOSTS")"
+PCT_FAILED="$(percentage "$TOTAL_FAILED" "$TOTAL_HOSTS")"
+PCT_UNREACHABLE="$(percentage "$TOTAL_UNREACHABLE" "$TOTAL_HOSTS")"
+PCT_TOTAL="$(percentage "$TOTAL_HOSTS" "$TOTAL_HOSTS")"
+MAX_HOSTS="${#TOTAL_HOSTS}"
 
-wc -l "$HOSTS_SUCCESS" "$HOSTS_FAILED" "$HOSTS_UNREACHABLE"
+printf "%*s: %*s (%3d%%) %s\\n" "$MAX" 'SUCCESS'     "$MAX_HOSTS" "$TOTAL_SUCCESS"     "$PCT_SUCCESS"     "$(tr '\n' ':' < "$HOSTS_SUCCESS"     | sed 's/:$//g')"
+printf "%*s: %*s (%3d%%) %s\\n" "$MAX" 'FAILED'      "$MAX_HOSTS" "$TOTAL_FAILED"      "$PCT_FAILED"      "$(tr '\n' ':' < "$HOSTS_FAILED"      | sed 's/:$//g')"
+printf "%*s: %*s (%3d%%) %s\\n" "$MAX" 'UNREACHABLE' "$MAX_HOSTS" "$TOTAL_UNREACHABLE" "$PCT_UNREACHABLE" "$(tr '\n' ':' < "$HOSTS_UNREACHABLE" | sed 's/:$//g')"
+printf "%*s: %*s (%3d%%) %s\\n" "$MAX" 'TOTAL'       "$MAX_HOSTS" "$TOTAL_HOSTS"       "$PCT_TOTAL"
+
 rm -f "$LOG"
