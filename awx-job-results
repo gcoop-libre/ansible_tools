@@ -85,7 +85,7 @@ HOSTS_UNREACHABLE="$JOB_ID-unreachable"
 
 if [[ ! -e "$STDOUT" ]]
 then
-  awx-cli job stdout --outfile "$STDOUT" "$JOB_ID" >/dev/null || die "FAILED GET STDOUT"
+  awx-cli job stdout --outfile "$STDOUT" "$JOB_ID" >/dev/null || die "FAILED GET STDOUT JOB_ID $JOB_ID"
 fi
 
 [[ -s "$STDOUT"  ]] || die "EMPTY FILE $STDOUT"
