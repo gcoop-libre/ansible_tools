@@ -692,6 +692,30 @@ yaml_host_vars()
 
 }
 
+file_expired()
+{
+  local DIFF EXPIRED FILE MODIFIED NOW
+
+  EXPIRED=1
+  FILE="$1"
+  MODIFIED=0
+  NOW="$(date +%s)"
+
+  [[ -n "$EXPIRE_CACHE" ]] || EXPIRE_CACHE="$2"
+  [[ -z "$EXPIRE_CACHE" ]] && EXPIRE_CACHE=86400
+
+  [[ -s "$FILE" ]] || rm -f "$FILE" 2>/dev/null
+  [[ -e "$FILE" ]] && MODIFIED="$(stat -c %Y "$FILE")"
+
+  DIFF="$((NOW - MODIFIED))"
+
+  [[ "$DIFF" -gt "$EXPIRE_CACHE" ]] && EXPIRED=0
+
+  # RC 0 = EXPIRED
+  # RC 1 = NOT_EXPIRED
+  return "$EXPIRED"
+}
+
 ssh_config()
 {
 
