@@ -748,6 +748,40 @@ job_host_summaries()
   # FIXME ADD PAGINATE AND GET ALL RESULTS
 }
 
+function awx_job_stdout()
+{
+  local CURL_DIE CURL_ERR CURL_OPT CURL_OUT CURL_URL CURL_USR JOB_ID
+
+  JOB_ID="$1"
+  awx_cfg_read
+
+  [[ -z "$AWX_CFG_USER" ]] && die "EMPTY AWX_CFG_USER"
+  [[ -z "$AWX_CFG_PASS" ]] && die "EMPTY AWX_CFG_PASS"
+  [[ -z "$AWX_CFG_HOST" ]] && die "EMPTY AWX_CFG_HOST"
+  [[ -n "$CURL_OUT"     ]] || CURL_OUT="job_$JOB_ID.txt"
+  [[ -n "$SHOW_ANSI"    ]] || SHOW_ANSI=1
+
+  CURL_API="$AWX_CFG_HOST/api/v2"
+  CURL_URL="$CURL_API/jobs/$JOB_ID/stdout/?format=txt_download"
+  CURL_USR="$AWX_CFG_USER:$AWX_CFG_PASS"
+
+  # FIXME ADD CACHE FOR CURL_OUT
+  [[ -e "$CURL_OUT" ]] && return 0
+
+  CURL_OPT="-k -s -w %{http_code} --user $CURL_USR -o $CURL_OUT"
+
+  # shellcheck disable=SC2086
+  CURL_ERR="$(curl $CURL_OPT $CURL_URL)"
+
+  if [[ "$CURL_ERR" -ne 200 ]]
+  then
+    CURL_MSG="$(head -1 "$CURL_OUT")"
+    CURL_DIE="FAILED STDOUT $JOB_ID WITH ERROR $CURL_ERR $CURL_MSG"
+    rm -f "$CURL_OUT"
+    die "$CURL_DIE"
+  fi
+}
+
 ssh_config()
 {
 
