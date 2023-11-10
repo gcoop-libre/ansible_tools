@@ -748,6 +748,21 @@ job_host_summaries()
   # FIXME ADD PAGINATE AND GET ALL RESULTS
 }
 
+function host_get_jobs()
+{
+  local HOST HOST_JOBS
+
+  HOST="$1"
+  HOST_JOBS="host_$HOST.jobs"
+  [[ -n "$STATUS_TPL_INCLUDE" ]] || STATUS_TPL_INCLUDE='.*'
+
+  if file_expired "$HOST_JOBS"
+  then
+    awx-host-get-jobs "$HOST" \
+      | grep -E "$STATUS_TPL_INCLUDE" > "$HOST_JOBS"
+  fi
+}
+
 function awx_job_stdout()
 {
   local CURL_DIE CURL_ERR CURL_OPT CURL_OUT CURL_URL CURL_USR JOB_ID
