@@ -716,6 +716,38 @@ file_expired()
   return "$EXPIRED"
 }
 
+job_host_summaries()
+{
+  local CURL_URL CURL_USR CURL_WOT HOST HOST_ID JSON
+
+  HOST_ID="$1"
+  HOST="$2"
+  JSON="host_$HOST.json"
+
+  if ! file_expired "$JSON"
+  then
+    return
+  fi
+
+  awx_cfg_read
+
+  [[ -z "$AWX_CFG_USER" ]] && die "EMPTY AWX_CFG_USER"
+  [[ -z "$AWX_CFG_PASS" ]] && die "EMPTY AWX_CFG_PASS"
+  [[ -z "$AWX_CFG_HOST" ]] && die "EMPTY AWX_CFG_HOST"
+
+  CURL_URL="$AWX_CFG_HOST/api/v2/hosts/$HOST_ID/job_host_summaries/"
+  CURL_USR="$AWX_CFG_USER:$AWX_CFG_PASS"
+  CURL_WOT='%{http_code}'
+
+  CURL_ERR="$(curl -ksw "$CURL_WOT" -u "$CURL_USR" -o "$JSON" "$CURL_URL")"
+  [[ "$CURL_ERR" -eq 200 ]] \
+    || die "FAILED GET JSON FOR $HOST WITH ERROR $CURL_ERR"
+
+  jq -r . "$JSON" | sponge "$JSON"
+
+  # FIXME ADD PAGINATE AND GET ALL RESULTS
+}
+
 ssh_config()
 {
 
