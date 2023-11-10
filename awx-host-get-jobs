@@ -64,17 +64,8 @@ exit 0
 [[ -n "$ONLY_SUCCESSFUL" ]] || ONLY_SUCCESSFUL=0
 [[ -n "$EXCLUDE_JOBS"    ]] || EXCLUDE_JOBS='(EXCLUDE|REGEX)'
 
-awx_cfg_read
-
-[[ -z "$AWX_CFG_USER" ]] && die "EMPTY AWX_CFG_USER"
-[[ -z "$AWX_CFG_PASS" ]] && die "EMPTY AWX_CFG_PASS"
-[[ -z "$AWX_CFG_HOST" ]] && die "EMPTY AWX_CFG_HOST"
-
-JSON="$(mktemp --suffix .json)"
-
-curl -k -s --user "$AWX_CFG_USER:$AWX_CFG_PASS"             \
-  "$AWX_CFG_HOST/api/v2/hosts/$HOST_ID/job_host_summaries/" \
-  | jq -r .                                                 > "$JSON"
+JSON="host_$HOST.json"
+job_host_summaries "$HOST_ID" "$HOST"
 
 [[ -s "$JSON"  ]] || die "EMPTY JSON $JSON"
 [[ -n "$LIMIT" ]] || LIMIT="$(jq -r .count "$JSON")"
@@ -107,5 +98,3 @@ do
       done
 
 done | head -n "$LIMIT"
-
-rm -f "$JSON"
