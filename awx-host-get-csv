@@ -54,19 +54,24 @@ exit 0
 
 [[ "$1" =~ ^[-]+(h|help) ]] && usage
 
-[[ -z "$1" ]] && die 'EMPTY HOST'
+[[ -n "$HOST"      ]] || HOST="$1"
+[[ -z "$HOST"      ]] && die 'EMPTY HOST'
+[[ -z "$2"         ]] || INVENTORY="$2"
+[[ -n "$OUTPUT"    ]] || OUTPUT="host_$HOST.csv"
 
-HOST="$1"
-PREFIX="${HOST//-*/}"
-INVENTORY="${PREFIX,,}"
+if [[ -z "$INVENTORY" ]]
+then
+  [[ -n "$PREFIX" ]] || PREFIX="${HOST//-*/}"
+  INVENTORY="${PREFIX,,}"
+  [[ "$INVENTORY" = "$HOST" ]] && unset INVENTORY
+fi
 
-[[ -z "$2" ]] || INVENTORY="$2"
-[[ -n "$OUTPUT" ]] || OUTPUT="$HOST.csv"
+[[ -z "$INVENTORY" ]] && die "EMPTY INVENTORY"
 
 JSON="$(mktemp --suffix .json)"
 YAML="$(mktemp --suffix .yml)"
 
-if [[ -e "$OUTPUT" ]]
+if ! file_expired "$OUTPUT"
 then
   cat "$OUTPUT"
   exit 0
@@ -108,14 +113,12 @@ fi
 [[ -z "$H_DESCRIPTION" ]] && H_DESCRIPTION="$V_NAME"
 [[ -z "$H_DESCRIPTION" ]] && H_DESCRIPTION='null'
 
-echo "$H_NAME $H_DESCRIPTION $V_HOST $V_PMAC $V_SERIAL" \
-  | while read -r NAME DESCRIPTION IP MAC SERIAL
-    do
-
-      printf "'%s','%s','%s','%s','%s'\\n" \
-             "$NAME" "$DESCRIPTION" "$IP" "$MAC" "$SERIAL"
-
-    done | tee "$OUTPUT"
+printf "'%s','%s','%s','%s','%s'\\n" \
+       "$H_NAME"                     \
+       "$H_DESCRIPTION"              \
+       "$V_HOST"                     \
+       "$V_PMAC"                     \
+       "$V_SERIAL"                   | tee "$OUTPUT"
 
 rm -f "$JSON"
 rm -f "$YAML"
