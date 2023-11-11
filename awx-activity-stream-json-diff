@@ -116,14 +116,32 @@ do
   OPERATION="$(jq -r '.operation' "$JSON")"
   ACTOR="$(jq -r '.summary_fields.actor.username' "$JSON")"
   OBJECT1="$(jq -r .object1 "$JSON")"
+  OBJECT2="$(jq -r .object2 "$JSON")"
   HOST_NAME="$(jq -r '.summary_fields.host[].name' "$JSON" 2>/dev/null)"
   HOST_DESCRIPTION="$(jq -r '.summary_fields.host[].description' "$JSON" 2>/dev/null)"
   GROUP_NAME="$(jq -r '.summary_fields.group[].name' "$JSON" 2>/dev/null)"
   GROUP_DESCRIPTION="$(jq -r '.summary_fields.group[].description' "$JSON" 2>/dev/null)"
+  INVENTORY_NAME="$(jq -r '.summary_fields.inventory[].name' "$JSON" 2>/dev/null)"
+  INVENTORY_DESCRIPTION="$(jq -r '.summary_fields.inventory[].description' "$JSON" 2>/dev/null)"
+  USER_NAME="$(jq -r '.summary_fields.user[].username' "$JSON" 2>/dev/null)"
+  USER_DESCRIPTION="$(jq -r '"\(.summary_fields.user[].first_name) \(.summary_fields.user[].last_name)"' "$JSON" 2>/dev/null)"
   OBJ1_VAR_NAME="${OBJECT1^^}_NAME"
   OBJ1_VAR_DESC="${OBJECT1^^}_DESCRIPTION"
   OBJ1_NAME="${!OBJ1_VAR_NAME}"
   OBJ1_DESC="${!OBJ1_VAR_DESC}"
+
+  # shellcheck disable=SC2236
+  if [[ ! -z "$OBJECT2" ]]
+  then
+    OBJ2_VAR_NAME="${OBJECT2^^}_NAME"
+    OBJ2_VAR_DESC="${OBJECT2^^}_DESCRIPTION"
+    OBJ2_NAME="${!OBJ2_VAR_NAME}"
+    OBJ2_DESC="${!OBJ2_VAR_DESC}"
+    if [[ "$OPERATION" = 'associate' ]]
+    then
+      OBJ1_DESC="$OBJECT2 $OBJ2_NAME"
+    fi
+  fi
 
   TIMESTAMP="$(jq -r '.timestamp' "$JSON")"
   TIMESTAMP="${TIMESTAMP%%.*}"
