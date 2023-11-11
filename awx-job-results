@@ -83,12 +83,7 @@ HOSTS_SUCCESS="job_$JOB_ID.success"
 HOSTS_FAILED="job_$JOB_ID.failed"
 HOSTS_UNREACHABLE="job_$JOB_ID.unreachable"
 
-if [[ ! -e "$STDOUT" ]]
-then
-  awx-cli job stdout --outfile "$STDOUT" "$JOB_ID" >/dev/null || die "FAILED GET STDOUT JOB_ID $JOB_ID"
-fi
-
-[[ -s "$STDOUT"  ]] || die "EMPTY FILE $STDOUT"
+awx_job_stdout "$JOB_ID"
 
 PLAY_LINES="$(grep -c '^PLAY' "$STDOUT")"
 [[ "$PLAY_LINES"   -eq  0 ]] && die "INVALID $STDOUT NOT FOUND PLAYS"
