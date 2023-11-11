@@ -76,8 +76,10 @@ exit 0
 [[ -e "$HOSTS_LIST" ]] || die "NOT FOUND FILE $HOSTS_LIST"
 [[ -s "$HOSTS_LIST" ]] || die "EMPTY FILE $HOSTS_LIST"
 [[ -n "$SHOW_URL"   ]] || SHOW_URL=0
-[[ -n "$TEMPLATE"   ]] || TEMPLATE='.*'
-[[ -z "$2"          ]] || TEMPLATE="$2"
+[[ -n "$STATUS_TPL_INCLUDE" ]] || STATUS_TPL_INCLUDE='.*'
+[[ -z "$2"                  ]] || STATUS_TPL_INCLUDE="$2"
+[[ -n "$STATUS_TPL_EXCLUDE" ]] || STATUS_TPL_EXCLUDE='wst_wol_'
+[[ -z "$3"                  ]] || STATUS_TPL_EXCLUDE="$2"
 
 [[ -n "$LABEL_HOST"             ]] || LABEL_HOST='inventory_hostname'
 [[ -n "$LABEL_NAME"             ]] || LABEL_NAME='hostname'
