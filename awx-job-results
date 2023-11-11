@@ -100,6 +100,8 @@ then
   [[ "$LAST_ERR" = 'HTTP 403' ]] && exit 0
 fi
 
+[[ -s "$JSON" ]] || rm -f "$JSON"
+
 if [[ ! -e "$JSON" ]]
 then
   awx-cli job get -f json "$JOB_ID" > "$JSON" || die "FAILED GET JSON"
