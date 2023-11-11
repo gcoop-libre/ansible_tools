@@ -267,9 +267,6 @@ do
 
   if [[ -z "$CSV" ]]
   then
-    printf "GET CSV FROM HOST %s\\n" "$H"
-    INVENTORY="${H%%-*}"
-    [[ "${#INVENTORY}" -gt 3 ]] && INVENTORY="${H:0:3}"
     awx-host-get-csv "$H" "$INVENTORY" >> "$HOSTS_CSV"
   fi
 
