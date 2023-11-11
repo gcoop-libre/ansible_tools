@@ -102,29 +102,6 @@ COL_G=27
 COL_H=27
 COL_I=27
 
-recent_jobs()
-{
-  local HOST RESULTS
-
-  HOST="$1"
-  RECENT="$(grep -l "$HOST" awx-job-results-*.log 2>/dev/null || true)"
-
-  if [[ -z "$RECENT" ]]
-  then
-
-    awx-host-get-recent-jobs "$HOST" \
-      | grep -E "$TEMPLATE"          \
-      | while read -r H _ ID _ _ _ _
-      do
-
-        RESULTS="awx-job-results-$ID.log"
-        [[ -e "$RESULTS" ]] || awx-job-stdout "$ID" > "$RESULTS"
-
-      done
-
-  fi
-}
-
 last_status()
 {
   local HOST STATUS
