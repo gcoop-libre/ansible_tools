@@ -164,4 +164,8 @@ printf "%*s: %*s (%3d%%) %s\\n" "$MAX" 'FAILED'      "$MAX_HOSTS" "$TOTAL_FAILED
 printf "%*s: %*s (%3d%%) %s\\n" "$MAX" 'UNREACHABLE' "$MAX_HOSTS" "$TOTAL_UNREACHABLE" "$PCT_UNREACHABLE" "$(tr '\n' ':' < "$HOSTS_UNREACHABLE" | sed 's/:$//g')"
 printf "%*s: %*s (%3d%%) %s\\n" "$MAX" 'TOTAL'       "$MAX_HOSTS" "$TOTAL_HOSTS"       "$PCT_TOTAL"
 
+[[ -s "$HOSTS_SUCCESS"     ]] || rm -f "$HOSTS_SUCCESS"
+[[ -s "$HOSTS_FAILED"      ]] || rm -f "$HOSTS_FAILED"
+[[ -s "$HOSTS_UNREACHABLE" ]] || rm -f "$HOSTS_UNREACHABLE"
+
 rm -f "$LOG"
