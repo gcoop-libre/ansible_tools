@@ -92,6 +92,13 @@ STDOUT_LINES="$(wc -l "$STDOUT" | cut -d ' ' -f1)"
 [[ "$STDOUT_LINES" -lt 10 ]] && die "INVALID $STDOUT VERY FEW LINES"
 
 JSON="job_$JOB_ID.json"
+JSON_ERR="job_$JOB_ID.error"
+
+if [[ -e "$JSON_ERR" ]]
+then
+  LAST_ERR="$(grep -Eo 'HTTP 403' "$JSON_ERR")"
+  [[ "$LAST_ERR" = 'HTTP 403' ]] && exit 0
+fi
 
 if [[ ! -e "$JSON" ]]
 then
