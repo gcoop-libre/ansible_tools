@@ -118,8 +118,10 @@ last_status()
   grep -l "$STATUS:.*$HOST" job_*.results \
     | while read -r i
       do
-        echo "$(echo "$i" | cut -d- -f4-)" "$(grep STARTED: "$i")"
-      done | sed 's/.log.*STARTED://g' \
+        grep -qE "TEMPLATE: $STATUS_TPL_EXCLUDE" "$i" && continue
+        # GET MOST RECENT JOB ID ORDER BY DATE DESC
+        echo "$(echo "$i" | grep -Eo '[0-9]+')" "$(grep STARTED: "$i")"
+      done | sed 's/STARTED://g' \
         | sort -k2 -r \
         | head -1 \
         | while read -r ID DATE
