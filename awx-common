@@ -763,6 +763,65 @@ function host_get_jobs()
   fi
 }
 
+function recent_jobs()
+{
+  local HOST HOST_GREP HOST_JOBS JOB_ID_EXCLUDE JOBS_COUNT JOBS_MSG JOBS_START JOBS_TOTAL RESULTS
+
+  HOST="$1"
+  [[ -z "$HOST" ]] && return 1
+
+  JOB_ID_EXCLUDE="$2"
+  [[ -z "$JOB_ID_EXCLUDE" ]] && JOB_ID_EXCLUDE='JOB_ID_EXCLUDE'
+
+  HOST_JOBS="host_$HOST.jobs"
+  HOST_GREP="host_$HOST.grep"
+
+  [[ -n "$HOSTS_WIDTH" ]] || HOSTS_WIDTH="$3"
+  [[ -n "$TOTAL_WIDTH" ]] || TOTAL_WIDTH="$4"
+  [[ -z "$HOSTS_WIDTH" ]] || HOSTS_WIDTH="${#HOST}"
+
+  host_get_jobs "$HOST"
+
+  [[ -n "$STATUS_TPL_INCLUDE" ]] || STATUS_TPL_INCLUDE='.*'
+  [[ -n "$STATUS_TPL_EXCLUDE" ]] || STATUS_TPL_EXCLUDE='EXCLUDE_REGEX'
+
+  # Exclude JOB ID from host_list to prevent loop
+  grep -E "$STATUS_TPL_INCLUDE" "$HOST_JOBS" \
+    | grep -vE "$STATUS_TPL_EXCLUDE"         \
+    | grep -vE "^ $JOB_ID_EXCLUDE "          > "$HOST_GREP"
+
+  JOBS_TOTAL="$(wc -l "$HOST_JOBS")"
+  JOBS_TOTAL="${JOBS_TOTAL%% *}"
+  JOBS_START="$(date +%s)"
+  JOBS_COUNT=0
+
+  JOBS_WIDTH="${#JOBS_TOTAL}"
+  [[ "$JOBS_WIDTH" -lt "$TOTAL_WIDTH" ]] && JOBS_WIDTH="$TOTAL_WIDTH"
+
+  while read -r ID _date_time _status _duration JOB_TPL
+  do
+
+    JOBS_COUNT="$((JOBS_COUNT+1))"
+
+    if [[ -n "$STATUS_TPL_EXCLUDE" ]]
+    then
+      [[ "$JOB_TPL" =~ $STATUS_TPL_EXCLUDE ]] && continue
+    fi
+
+    RESULTS="job_$ID.results"
+    JOBS_MSG="$(printf "PROCESS JOB  %*s (%*s/%*s)" "$HOSTS_WIDTH" "$ID" "$JOBS_WIDTH" "$JOBS_COUNT" "$JOBS_WIDTH" "$JOBS_TOTAL")"
+
+    bareta "$JOBS_COUNT" "$JOBS_TOTAL" "$JOBS_START" "$JOBS_MSG"
+
+    if file_expired "$RESULTS"
+    then
+      awx-job-results "$ID" > "$RESULTS"
+      [[ -s "$RESULTS" ]] || rm -f "$RESULTS"
+    fi
+
+  done < "$HOST_GREP"
+}
+
 function awx_job_stdout()
 {
   local CURL_DIE CURL_ERR CURL_OPT CURL_OUT CURL_URL CURL_USR JOB_ID
