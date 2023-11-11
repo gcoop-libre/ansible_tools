@@ -260,6 +260,8 @@ then
   true > "$HOSTS_CSV"
 fi
 
+TMP_CSV="$(mktemp)"
+
 while read -r H _
 do
 
@@ -271,8 +273,9 @@ do
   fi
 
   CSV="$(grep -w "$H" "$HOSTS_CSV")"
+  echo "$CSV" | tr -d "'" | tr ',' ' ' > "$TMP_CSV"
 
-  echo "$CSV" | tr -d "'" | tr ',' ' ' | while read -r HOST NAME IP MAC _
+  while read -r HOST NAME IP MAC _
   do
 
     recent_jobs "$HOST"
@@ -328,7 +331,8 @@ do
            "$COL_H" "$LAST_UNREACHABLE"  \
            "$COL_I" "$LAST_ACTIVITY"     >> "$OUTPUT"
 
-  done
+  done < "$TMP_CSV"
+
 done < "$HOSTS_LIST"
 
 overview
@@ -339,3 +343,5 @@ do
   printf "\\n## %s\\n\\n" "$STATUS"
   cat "$STATUS.md"
 done
+
+rm -f "$TMP_CSV"
