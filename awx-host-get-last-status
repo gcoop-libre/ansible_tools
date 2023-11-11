@@ -157,7 +157,7 @@ last_activity()
   local HOST
 
   HOST="$1"
-  LOG="activity-$HOST.diff"
+  LOG="activity_$HOST.diff"
 
   # EXIT WHEN NOT FOUND LOG
   [[ -e "$LOG" ]] || return
