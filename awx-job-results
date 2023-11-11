@@ -91,7 +91,7 @@ PLAY_LINES="$(grep -c '^PLAY' "$STDOUT")"
 STDOUT_LINES="$(wc -l "$STDOUT" | cut -d ' ' -f1)"
 [[ "$STDOUT_LINES" -lt 10 ]] && die "INVALID $STDOUT VERY FEW LINES"
 
-JSON="job-$JOB_ID.json"
+JSON="job_$JOB_ID.json"
 
 if [[ ! -e "$JSON" ]]
 then
