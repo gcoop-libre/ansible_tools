@@ -304,12 +304,13 @@ do
     [[ -z "$LAST_ACTIVITY"    ]] && LAST_ACTIVITY='-'
     [[ -z "$LAST_STATUS"      ]] && LAST_STATUS='REVIEW'
 
-    printf "%s %s\\n" "$LAST_SUCCESS"     'SUCCESS'     > "$HOST.status"
-    printf "%s %s\\n" "$LAST_FAILED"      'FAILED'      >>"$HOST.status"
-    printf "%s %s\\n" "$LAST_UNREACHABLE" 'UNREACHABLE' >>"$HOST.status"
+    HOST_STATUS="host_$H.status"
 
+    printf "%s %s\\n" "$LAST_SUCCESS"     'SUCCESS'     > "$HOST_STATUS"
+    printf "%s %s\\n" "$LAST_FAILED"      'FAILED'      >>"$HOST_STATUS"
+    printf "%s %s\\n" "$LAST_UNREACHABLE" 'UNREACHABLE' >>"$HOST_STATUS"
     # last status based on date of execution
-    LAST_STATUS="$(sort -r "$HOST.status" | grep -v '^\-' | head -1 | awk '{print $3}')"
+    LAST_STATUS="$(sort -r "$HOST_STATUS" | grep -v '^\-' | head -1 | awk '{print $3}')"
     OUTPUT="${LAST_STATUS}.md"
 
     printf "| %-*s | %*s | %*s | %*s | %*s | %*s | %*s | %*s | %*s |\\n" \
