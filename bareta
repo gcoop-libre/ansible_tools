@@ -79,11 +79,11 @@ STATUS_SECONDS="$((STATUS_ESTIMATED-STATUS_ELAPSED))"
 
 [[ "$STATUS_ACTUAL" -eq "$STATUS_TOTAL" ]] && STATUS_SECONDS=0
 
-printf "%s "  "$STATUS_MSG"
-printf "%-*s" "$STATUS_PERCENT" '[' | tr ' ' "$STATUS_BAR"
-printf "%*s %3d%% ETA %s Elapsed %s\r" \
-       $((51-STATUS_PERCENT))          \
-       "]"                             \
-       "$((STATUS_PERCENT*2))"         \
-       "${STATUS_SECONDS//-/}s"        \
-       "${STATUS_ELAPSED}s"
+printf "%s "  "$STATUS_MSG"                                1>&2
+printf "%-*s" "$STATUS_PERCENT" '[' | tr ' ' "$STATUS_BAR" 1>&2
+printf "%*s %3d%% ETA %s Elapsed %s\r"                     \
+       $((51-STATUS_PERCENT))                              \
+       "]"                                                 \
+       "$((STATUS_PERCENT*2))"                             \
+       "${STATUS_SECONDS//-/}s"                            \
+       "${STATUS_ELAPSED}s"                                1>&2
