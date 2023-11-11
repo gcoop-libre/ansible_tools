@@ -82,7 +82,7 @@ exit 0
 [[ -e "$STDOUT"         ]] || awx-job-stdout "$JOB_ID" > "$STDOUT"
 [[ -s "$STDOUT"         ]] || die "EMPTY FILE $STDOUT"
 [[ -e "$STDOUT"         ]] || die "NOT FOUND FILE $STDOUT"
-[[ -n "$RESULTS"        ]] || RESULTS="awx-job-results-$JOB_ID.log"
+[[ -n "$RESULTS"        ]] || RESULTS="job_$JOB_ID.results"
 [[ -e "$RESULTS"        ]] || awx-job-results "$JOB_ID" | tee "$RESULTS"
 [[ -n "$JOB_MD"         ]] || JOB_MD="${JOB_ID}.md"
 [[ -n "$STATUSES"       ]] || STATUSES='failed unreachable'
