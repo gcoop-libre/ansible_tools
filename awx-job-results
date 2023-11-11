@@ -104,7 +104,11 @@ fi
 
 if [[ ! -e "$JSON" ]]
 then
-  awx-cli job get -f json "$JOB_ID" > "$JSON" || die "FAILED GET JSON"
+  if ! awx-cli job get -f json "$JOB_ID" > "$JSON" 2> "$JSON_ERR"
+  then
+    [[ -s "$JSON" ]] || rm -f "$JSON"
+    die "FAILED GET JOB $JOB_ID AND WRITE JSON $JSON $(head -1 "$JSON_ERR")"
+  fi
 fi
 
 [[ -s "$JSON" ]] || die "EMPTY FILE $JSON"
