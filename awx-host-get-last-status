@@ -278,12 +278,12 @@ do
   while read -r HOST NAME IP MAC _
   do
 
-    recent_jobs "$HOST"
+    recent_jobs "$H"
 
-    LAST_SUCCESS="$(last_success         "$HOST")"
-    LAST_FAILED="$(last_failed           "$HOST")"
-    LAST_UNREACHABLE="$(last_unreachable "$HOST")"
-    LAST_ACTIVITY="$(last_activity       "$HOST")"
+    LAST_SUCCESS="$(last_success         "$H")"
+    LAST_FAILED="$(last_failed           "$H")"
+    LAST_UNREACHABLE="$(last_unreachable "$H")"
+    LAST_ACTIVITY="$(last_activity       "$H")"
 
     if [[ -z "$LAST_SUCCESS" ]]
     then
@@ -321,7 +321,7 @@ do
     OUTPUT="${LAST_STATUS}.md"
 
     printf "| %-*s | %*s | %*s | %*s | %*s | %*s | %*s | %*s | %*s |\\n" \
-           "$COL_A" "$HOST"              \
+           "$COL_A" "$H"                 \
            "$COL_B" "$NAME"              \
            "$COL_C" "$IP"                \
            "$COL_D" "$MAC"               \
