@@ -113,7 +113,7 @@ last_status()
   HOST="$1"
   STATUS="$2"
 
-  grep -l "$STATUS:.*$HOST" awx-job-results-*.log \
+  grep -l "$STATUS:.*$HOST" job_*.results \
     | while read -r i
       do
         echo "$(echo "$i" | cut -d- -f4-)" "$(grep STARTED: "$i")"
