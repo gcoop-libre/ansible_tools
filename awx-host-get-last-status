@@ -89,6 +89,10 @@ exit 0
 [[ -n "$LABEL_LAST_UNREACHABLE" ]] || LABEL_LAST_UNREACHABLE='last_unreachable'
 [[ -n "$LABEL_LAST_ACTIVITY"    ]] || LABEL_LAST_ACTIVITY='last_activity'
 
+TOTAL_HOSTS="$(wc -l "$HOSTS_LIST")"
+TOTAL_HOSTS="${TOTAL_HOSTS%% *}"
+TOTAL_WIDTH="$(echo "$TOTAL_HOSTS" | wc -L)"
+
 COL_A_L="${#LABEL_HOST}"
 COL_A="$(wc -L "$HOSTS_LIST" | awk '{print $1}')"
 [[ "$COL_A" -lt "$COL_A_L" ]] && COL_A="$COL_A_L"
@@ -226,10 +230,6 @@ done
 
 overview()
 {
-
-TOTAL_HOSTS="$(wc -l "$HOSTS_LIST")"
-TOTAL_HOSTS="${TOTAL_HOSTS%% *}"
-TOTAL_WIDTH="$(echo "$TOTAL_HOSTS" | wc -L)"
 
 [[ "$TOTAL_WIDTH" -lt 5 ]] && TOTAL_WIDTH=5
 
