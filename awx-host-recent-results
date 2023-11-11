@@ -108,7 +108,7 @@ do
   while read -r _ _ ID _ _ _ TEMPLATE
   do
 
-    RESULTS="awx-job-results-$ID.log"
+    RESULTS="job_$ID.results"
     [[ -s "$RESULTS" ]] || awx-job-results "$ID" > "$RESULTS"
 
     STATUS="$(awk "/$HOST/ {print \$1}" "$RESULTS" | grep -v 'LIMIT')"
