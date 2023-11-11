@@ -705,7 +705,7 @@ file_expired()
   [[ -z "$EXPIRE_CACHE" ]] && EXPIRE_CACHE=86400
 
   [[ -s "$FILE" ]] || rm -f "$FILE" 2>/dev/null
-  [[ -e "$FILE" ]] && MODIFIED="$(stat -c %Y "$FILE")"
+  [[ -e "$FILE" ]] && MODIFIED="$(stat -c %Y "$FILE" 2>/dev/null)"
 
   DIFF="$((NOW - MODIFIED))"
 
