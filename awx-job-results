@@ -79,9 +79,9 @@ function percentage()
 
 STDOUT="job_$JOB_ID.txt"
 LOG="$(mktemp)"
-HOSTS_SUCCESS="$JOB_ID-succes"
-HOSTS_FAILED="$JOB_ID-failed"
-HOSTS_UNREACHABLE="$JOB_ID-unreachable"
+HOSTS_SUCCESS="job_$JOB_ID.success"
+HOSTS_FAILED="job_$JOB_ID.failed"
+HOSTS_UNREACHABLE="job_$JOB_ID.unreachable"
 
 if [[ ! -e "$STDOUT" ]]
 then
