@@ -92,7 +92,14 @@ exit 0
 [[ -n "$COL_FINISHED"   ]] || COL_FINISHED=20
 [[ -n "$COL_ELAPSED"    ]] || COL_ELAPSED=7
 
-JOBS_SUMMARY="$(mktemp)"
+JOBS_SUMMARY="tpl_$JOB_TEMPLATE.jobs"
+
+if ! file_expired "$JOBS_SUMMARY" "$EXPIRE_JOB_TEMPLATE_LIST"
+then
+  cat "$JOBS_SUMMARY"
+  exit 0
+fi
+
 FIRST="$(mktemp)"
 
 printf "JOB TEMPLATE: %s\\n" "$JOB_TEMPLATE" 1>&2
