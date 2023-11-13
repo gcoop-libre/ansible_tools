@@ -1,0 +1,115 @@
+#!/bin/bash
+
+# This script comes with ABSOLUTELY NO WARRANTY, use at own risk
+# Copyright (C) 2023 Osiris Alejandro Gomez <osiux@osiux.com>
+# Copyright (C) 2023 Osiris Alejandro Gomez <osiris@gcoop.coop>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+
+# shellcheck disable=SC1091
+# shellcheck disable=SC2094
+# shellcheck disable=SC2034
+
+[[ -n "$BASH_DEBUG" ]] && set -x
+
+DIR_BIN="$(dirname "$0")" && source "$DIR_BIN/awx-common"
+
+function usage()
+{
+cat << EOF
+Usage:
+
+\`\`\`
+
+  $BIN JSON_LIST
+
+\`\`\`
+
+Show changes of list of _JSONs_ files of _activity stream_ of one or
+more _hosts_ or _groups_.
+
+Use \`delta\` when installed, otherwise use \`diff\` to show differences
+between the values stored in _AWX_ versus changes sended.
+
+Example:
+
+\`\`\`
+
+	cat activity-wst14-1689265367.json
+
+	activity-57685.json
+	activity-52994.json
+
+  $BIN activity-wst14-1689265367.json
+
+		## ACTIVITY ID=57685 OPERATION=update ACTOR=awx_inventory TIMESTAMP=2023-07-11T21:14:26 HOST=wst14dev DESCRIPTION=imported
+
+		### VARIABLES CHANGED
+
+		{                                                               {
+			"ansible_host": "10.12.153.109",                            |   "ansible_host": "10.12.153.93",
+			"primary_macaddress": "2e:7c:0f:25:de:30"                   |   "primary_macaddress": "06:a4:59:a8:e0:ea"
+		}                                                               }
+
+		## ACTIVITY ID=52994 OPERATION=update ACTOR=awx_inventory TIMESTAMP=2023-05-17T21:36:09 HOST=wst14dev DESCRIPTION=imported
+
+		### VARIABLES CHANGED
+
+		---                                                           | {
+		ansible_host: 10.12.153.109                                   |   "ansible_host": "10.12.153.109",
+																																	>   "primary_macaddress": "2e:7c:0f:25:de:30"
+																																	> }
+
+\`\`\`
+
+EOF
+exit 0
+}
+
+[[ "$1" =~ ^[-]+(h|help) ]] && usage
+
+[[ -n "$JSON_LIST" ]] || JSON_LIST="$1"
+[[ -z "$JSON_LIST" ]] && die "EMPTY FILE JSON_LIST"
+[[ -s "$JSON_LIST" ]] || die "EMPTY FILE $JSON_LIST"
+[[ -e "$JSON_LIST" ]] || die "NOT FOUND FILE $JSON_LIST"
+
+LIST_TOTAL="$(wc -l "$JSON_LIST")"
+LIST_TOTAL="${LIST_TOTAL%% *}"
+LIST_START="$(date +%s)"
+LIST_COUNT=0
+LIST_WIDTH="${#LIST_TOTAL}"
+
+while read -r JSON _
+do
+
+  LIST_COUNT="$((LIST_COUNT+1))"
+
+  JSON_TYPE="$(jq -r .type "$JSON" 2>/dev/null)"
+  [[ "$JSON_TYPE" != 'activity_stream' ]] && continue
+
+  JSON_HOST="$(jq -r '.summary_fields.host[] | .name' "$JSON" 2>/dev/null)"
+  [[ -z "$JSON_HOST" ]] && continue
+
+  JSON_ID="$(jq -r .id "$JSON" 2>/dev/null)"
+  LIST_MSG="$(printf "PROCESS ACTIVITY %s (%*s/%*s)" "$JSON_ID" "$LIST_WIDTH" "$LIST_COUNT" "$LIST_WIDTH" "$LIST_TOTAL")"
+  OUTPUT_DIFF="activity_$JSON_HOST.diff"
+
+  bareta "$LIST_COUNT" "$LIST_TOTAL" "$LIST_START" "$LIST_MSG"
+
+  if file_expired "$OUTPUT_DIFF"
+  then
+    awx-activity-stream-json-diff "$JSON" > "$OUTPUT_DIFF"
+  fi
+
+done < "$JSON_LIST"
