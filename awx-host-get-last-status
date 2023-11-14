@@ -327,11 +327,14 @@ do
 
     HOST_STATUS="host_$H.status"
 
+    if file_expired "$HOST_STATUS"
+    then
+
     printf "%s %s\\n" "$LAST_SUCCESS"     'SUCCESS'     > "$HOST_STATUS"
     printf "%s %s\\n" "$LAST_FAILED"      'FAILED'      >>"$HOST_STATUS"
     printf "%s %s\\n" "$LAST_UNREACHABLE" 'UNREACHABLE' >>"$HOST_STATUS"
 
-    file_expired "$HOST_STATUS" || continue
+    fi
 
     # last status based on date of execution
     LAST_STATUS="$(sort -r "$HOST_STATUS" | grep -v '^\-' | head -1 | awk '{print $3}')"
