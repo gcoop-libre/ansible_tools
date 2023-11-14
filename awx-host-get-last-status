@@ -279,7 +279,7 @@ do
   HOSTS_COUNT="$((HOSTS_COUNT+1))"
   HOSTS_MSG="PROCESS HOST $H"
   bareta "$HOSTS_COUNT" "$TOTAL_HOSTS" "$HOSTS_START" "$HOSTS_MSG"
-  printf "\n"
+  printf "\n" >&2
 
   CSV="$(grep -w "$H" "$HOSTS_CSV")"
 
@@ -295,7 +295,7 @@ do
   do
 
     recent_jobs "$H"
-    printf "\033]F"
+    printf "\033]F" >&2
 
     LAST_SUCCESS="$(last_success         "$H")"
     LAST_FAILED="$(last_failed           "$H")"
