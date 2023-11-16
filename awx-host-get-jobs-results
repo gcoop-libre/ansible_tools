@@ -1,0 +1,83 @@
+#!/bin/bash
+
+# This script comes with ABSOLUTELY NO WARRANTY, use at own risk
+# Copyright (C) 2023 Osiris Alejandro Gomez <osiux@osiux.com>
+# Copyright (C) 2023 Osiris Alejandro Gomez <osiris@gcoop.coop>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+
+# shellcheck disable=SC1090
+# shellcheck disable=SC1091
+# shellcheck source=/dev/null
+
+[[ -n "$BASH_DEBUG" ]]    && set -x
+DIR_BIN="$(dirname "$0")" && source "$DIR_BIN/awx-common"
+
+function usage()
+{
+cat << EOF
+Usage:
+
+\`\`\`bash
+
+  $BIN HOSTS_LIST
+
+\`\`\`
+
+Get the last jobs executed for each host in hosts list file ad get job
+results with summary for al jobs list of each host.
+
+Example
+
+\`\`\`bash
+
+  $BIN hosts
+
+\`\`\`
+EOF
+exit 0
+}
+
+[[ "$1" =~ ^[-]+(h|help) ]] && usage
+
+[[ -n "$HOSTS_LIST"         ]] || HOSTS_LIST="$1"
+[[ -e "$HOSTS_LIST"         ]] || die "NOT FOUND FILE $HOSTS_LIST"
+[[ -s "$HOSTS_LIST"         ]] || die "EMPTY FILE $HOSTS_LIST"
+[[ -n "$INVENTORY"          ]] || INVENTORY="$2"
+[[ -n "$JOB_ID_EXCLUDE"     ]] || JOB_ID_EXCLUDE="$3"
+[[ -z "$JOB_ID_EXCLUDE"     ]] && JOB_ID_EXCLUDE="JOB_ID_EXCLUDE"
+[[ -n "$STATUS_TPL_EXCLUDE" ]] || STATUS_TPL_EXCLUDE="^wst_wol.*"
+
+HOSTS_TOTAL="$(wc -l "$HOSTS_LIST")"
+
+HOSTS_TOTAL="${HOSTS_TOTAL%% *}"
+HOSTS_COUNT=0
+HOSTS_START="$(date +%s)"
+HOSTS_WIDTH="$(wc -L "$HOSTS_LIST")"
+HOSTS_WIDTH="${HOSTS_WIDTH%% *}"
+TOTAL_WIDTH="${#HOSTS_TOTAL}"
+[[ "$TOTAL_WIDTH" -lt 2 ]] && TOTAL_WIDTH=2
+
+while read -r HOST _
+do
+
+  HOSTS_COUNT="$((HOSTS_COUNT+1))"
+  HOSTS_MSG="$(printf "PROCESS HOST %*s (%*s/%*s)" "$HOSTS_WIDTH" "$HOST" "$TOTAL_WIDTH" "$HOSTS_COUNT" "$TOTAL_WIDTH" "$HOSTS_TOTAL")"
+  bareta "$HOSTS_COUNT" "$HOSTS_TOTAL" "$HOSTS_START" "$HOSTS_MSG"
+  printf "\n"
+  recent_jobs "$HOST" "$JOB_ID_EXCLUDE" "$HOSTS_WIDTH" "$TOTAL_WIDTH" || continue
+  printf "\033[F"
+
+done < "$HOSTS_LIST"
+printf "\n"
