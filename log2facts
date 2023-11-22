@@ -1,0 +1,198 @@
+#!/bin/bash
+
+# This script comes with ABSOLUTELY NO WARRANTY, use at own risk
+# Copyright (C) 2023 Osiris Alejandro Gomez <osiux@osiux.com>
+# Copyright (C) 2023 Osiris Alejandro Gomez <osiris@gcoop.coop>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+
+# shellcheck disable=SC1090
+# shellcheck disable=SC1091
+# shellcheck source=/dev/null
+
+DIR_BIN="$(dirname "$0")" && source "$DIR_BIN/awx-common"
+
+function usage()
+{
+cat << EOF
+Usage:
+
+\`\`\`bash
+
+  $BIN JOB_STDOUT
+
+\`\`\`
+
+Get key/value from a list of keys in a Job STDOUT log.
+
+By default search value from dirsrv@, httpd, krb5kdc and sssd keys in
+ansible_facts.services.
+
+Example:
+
+\`\`\`bash
+
+	$BIN job_33676.txt
+
+		| _task_                                 | _dirsrv@_ |   _httpd_ | _krb5kdc_ |    _sssd_ |
+		|----------------------------------------|-----------|-----------|-----------|-----------|
+		| populate service facts                 |   running |   running |   running |   running |
+		| populate service facts                 |   running |   running |   running |   running |
+		| populate service facts after start IPA |   running |   running |   running |   running |
+
+	$BIN job_33677.txt
+
+		| _task_                                 | _dirsrv@_ |   _httpd_ | _krb5kdc_ |    _sssd_ |
+		|----------------------------------------|-----------|-----------|-----------|-----------|
+		| populate service facts                 |   stopped |   unknown |   unknown |   running |
+		| populate service facts                 |   stopped |   unknown |   unknown |   stopped |
+		| populate service facts after start IPA |   running |   running |   running |   stopped |
+
+\`\`\`
+
+EOF
+exit 0
+}
+
+if [[ ! -t 0 ]]
+then
+
+  TMPI="$(mktemp)"
+
+  true > "$TMPI"
+
+  while IFS= read -r PIPED_INPUT
+  do
+    echo "$PIPED_INPUT" >> "$TMPI"
+  done
+
+  LOG="$TMPI"
+
+fi
+
+function get_task()
+{
+  echo "$1"                  \
+   | sed 's/^TASK \[//g'     \
+   | sed 's/\*\+$//g'        \
+   | sed 's/\ \+$//g'        \
+   | sed 's/\]$//g'          \
+   | sed 's/^([a-z_]\+) //g'
+}
+
+function get_tasks()
+{
+
+  grep -E '^TASK' "$TMP"     \
+   | sed 's/^TASK \[//g'     \
+   | sed 's/\*\+$//g'        \
+   | sed 's/\ \+$//g'        \
+   | sed 's/\]$//g'          \
+   | sed 's/^([a-z_]\+) //g'
+
+}
+
+function show_title()
+{
+
+printf "| %-*s |" "$TASK_MAX" '_task_'
+
+for KEY in "${AR_KEYS[@]}"
+do
+  printf " %*s |" "$KEYS_MAX" "_${KEY}_"
+done
+
+printf "\\n"
+
+}
+
+function show_div()
+{
+  show_title | sed 's/[^|]/-/g'
+}
+
+function line2json()
+{
+
+	echo "$1"                       \
+    | grep -v ^TASK               \
+		| grep "$FACTS_KEY"           \
+		| cut -d '{' -f2-             \
+		| sed "s/\"$FACTS_KEY\": //g" \
+		| rev                         \
+		| cut -d, -f2-                \
+		| rev                         \
+    | jq -r ".$JQ_GROUP"          2>/dev/null
+
+}
+
+[[ "$1" =~ ^[-]+(h|help) ]] && usage
+
+[[ -n "$LOG"        ]] || LOG="$1"
+[[ -z "$LOG"        ]] && die "EMPTY LOG"
+[[ -e "$LOG"        ]] || die "NOT FOUND FILE $LOG"
+[[ -s "$LOG"        ]] || die "EMPTY FILE $LOG"
+[[ -n "$IPA_DOMAIN" ]] || config_read;IPA_DOMAIN="$DEFAULT_IPA_DOMAIN"
+[[ -n "$REALM"      ]] || REALM="$(echo "${IPA_DOMAIN^^}" | tr '.' '-')"
+[[ -n "$DIR_SRV"    ]] || DIR_SRV="dirsrv@$REALM"
+[[ -n "$FACTS_KEY"  ]] || FACTS_KEY='ansible_facts'
+[[ -n "$JQ_KEYS"    ]] || JQ_KEYS="dirsrv@ httpd krb5kdc sssd"
+[[ -n "$AR_KEYS"    ]] || read -r -a AR_KEYS <<< "$JQ_KEYS"
+[[ -n "$JQ_GROUP"   ]] || JQ_GROUP='services'
+
+TMP="$(mktemp)"
+JSON="$(mktemp)"
+
+grep -B3 "{\"$FACTS_KEY\": {" "$LOG" | grep -E "(TASK|$FACTS_KEY)" > "$TMP"
+
+[[ -n "$TASK_MAX" ]] || TASK_MAX="$(get_tasks | wc -L)"
+[[ -n "$KEYS_MAX" ]] || KEYS_MAX="$(echo "$JQ_KEYS" | tr ' ' '\n' | wc -L)"
+KEYS_MAX=$((KEYS_MAX+2))
+
+show_title
+show_div
+
+while read -r LINE
+do
+
+  if [[ "$LINE" =~ ^TASK ]]
+  then
+    printf "| %-*s |" "$TASK_MAX" "$(get_task "$LINE")"
+    continue
+  fi
+
+  line2json "$LINE" > "$JSON"
+
+  [[ -s "$JSON" ]] || continue
+
+  for KEY in "${AR_KEYS[@]}"
+  do
+
+    JQ_KEY="${KEY//dirsrv@/$DIR_SRV}"
+    JQ=".[] | select(.name | test('$JQ_KEY.service')) | .state"
+
+    # shellcheck disable=SC2001
+    JQ="$(echo "$JQ" | sed "s/'/\\\"/g")"
+
+    VALUE="$(jq -r "$JQ" "$JSON" 2>/dev/null)"
+
+    printf " %*s |" "$KEYS_MAX" "$VALUE"
+
+  done
+
+  printf "\\n"
+
+done < "$TMP"
+
+rm -f "$JSON" "$TMP"
