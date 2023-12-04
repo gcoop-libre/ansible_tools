@@ -376,6 +376,67 @@ host_get_id()
     --format id
 }
 
+validate_limit()
+{
+  local A_LIMIT ERROR INVENTORY LIMIT LIMIT_ID MSG TOTAL_ERROR
+
+  INVENTORY="$1"
+  [[ -z "$INVENTORY" ]] && die "EMPTY INVENTORY"
+
+  [[ "$INVENTORY" =~ ^# ]] && die "IGNORE $INVENTORY $LIMIT"
+
+  [[ -z "$2" ]] && die "EMPTY LIMIT FOR INVENTORY $INVENTORY"
+
+# shellcheck disable=SC2001
+  LIMIT="$(echo "${2//,/:}" | sed 's/[^a-zA-Z0-9:]\+//g')"
+
+  readarray -d ':' -t A_LIMIT <<< "$LIMIT"
+
+  TOTAL_ERROR=0
+
+# shellcheck disable=SC2068
+	for L in ${A_LIMIT[@]}
+	do
+
+    ERROR=0
+    stderror "VALIDATE LIMIT $L FOR INVENTORY $INVENTORY"
+
+    if [[ "$L" != 'all' ]]
+    then
+
+      stderror "GET GROUP_ID FOR $L IN INVENTORY $INVENTORY"
+      LIMIT_ID="$(group_get_id "$INVENTORY" "$L" || true)"
+
+      if [[ -z "$LIMIT_ID" ]]
+      then
+
+        stderror "GET HOST_ID FOR $L IN INVENTORY $INVENTORY"
+        LIMIT_ID="$(host_get_id "$INVENTORY" "$L" || true)"
+
+        if [[ -z "$LIMIT_ID" ]]
+        then
+
+          ERROR="$((ERROR+1))"
+          MSG="INVALID LIMIT $L NOT FOUND AS GROUP"
+          MSG+=" OR HOST IN INVENTORY $INVENTORY"
+          logerror "$MSG"
+
+        fi
+      fi
+    fi
+
+    TOTAL_ERROR="$((TOTAL_ERROR+ERROR))"
+    [[ "$ERROR" -eq 0 ]] \
+      && logsuccess "LIMIT $L FOR INVENTORY $INVENTORY IS VALID"
+
+	done
+
+  [[ "$TOTAL_ERROR" -gt 0 ]] \
+    && logerror "FOUND $TOTAL_ERROR ERROR IN LIMIT $LIMIT"
+
+  return "$TOTAL_ERROR"
+}
+
 host_associate()
 {
   awx-cli host associate \
