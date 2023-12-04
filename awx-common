@@ -61,6 +61,16 @@ success ()
   printf "%s\\n" "${GREEN}[OK] $1 $NORMAL" && exit 0
 }
 
+logsuccess ()
+{
+  stderror "${GREEN}[OK] $1 $NORMAL"
+}
+
+logerror ()
+{
+  stderror "${RED}[ERROR] $1 $NORMAL"
+}
+
 stderror ()
 {
   echo >&2 "$1"
