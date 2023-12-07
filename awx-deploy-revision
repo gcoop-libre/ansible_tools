@@ -100,7 +100,6 @@ DEPLOY_TYPE='update'
 [[ -n "$CHECK_PROJECT_NAME"   ]] || CHECK_PROJECT_NAME=1
 [[ -n "$CHECK_BRANCH_VERSION" ]] || CHECK_BRANCH_VERSION=1
 [[ -n "$GIT_RESET_HARD_REVISION" ]] || GIT_RESET_HARD_REVISION=0
-[[ -e ".$BIN"                    ]] && echo "LOAD .$BIN";source ".$BIN"
 
 if [[ -n "$DOC_USER"     ]]
 then
@@ -141,6 +140,8 @@ MSK_URL="$(echo "$DOC_URL" | sed 's/[a-z\-]\+:[a-zA-Z0-9_\-]\+@//g')"
 [[ -d "$AWX_DIR"        ]] || die "NOT FOUND AWX DIR"
 [[ -z "$DEPLOY_DIR"     ]] && DEPLOY_DIR='deploy'
 DEPLOY_FILE="$DEPLOY_DIR/${DEPLOY_TYPE}.awx"
+
+bin_read
 
 cd "$AWX_DIR"              || die "FAILED TO CHANGE TO AWX DIR"
 [[ -d '.git'            ]] || die "NOT FOUND GIT REPOSITORY"
