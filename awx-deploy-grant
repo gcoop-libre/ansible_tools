@@ -86,6 +86,8 @@ CURRENT_BRANCH="$(git branch --no-color | grep '^\* ' | cut -d ' ' -f2)"
 [[ -n "$DONT_PULL"      ]] || DONT_PULL=0
 [[ -n "$DONT_FETCH"     ]] || DONT_FETCH=0
 
+bin_read
+
 if [[ "$DONT_FETCH" -eq 0 ]]
 then
   git fetch                  || die "FAILED TO FECTH"
