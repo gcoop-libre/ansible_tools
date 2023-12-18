@@ -168,10 +168,12 @@ show_div
 while read -r LINE
 do
 
-  if [[ "$LINE" =~ ^TASK ]]
+  if [[ "$LINE" =~ ^TASK.*populate ]]
   then
     printf "| %-*s |" "$TASK_MAX" "$(get_task "$LINE")"
     continue
+  else
+    [[ "$LINE" =~ ansible_facts.*services ]] || continue
   fi
 
   line2json "$LINE" > "$JSON"
