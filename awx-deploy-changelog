@@ -70,6 +70,8 @@ DEPLOY_TYPE='update'
 [[ -n "$DONT_PULL"     ]] || DONT_PULL=0
 [[ -n "$DONT_CHECKOUT" ]] || DONT_CHECKOUT=0
 
+bin_read
+
 DEPLOY_FILE="$DEPLOY_DIR/${DEPLOY_TYPE}.awx"
 [[ -n "$GROUPS_FILE"  ]] || GROUPS_FILE="$DEPLOY_DIR/groups.awx"
 [[ -n "$GROUPS_INDEX" ]] || GROUPS_INDEX="groups/index"
