@@ -56,4 +56,4 @@ JOB_NAME="$1"
 JOB_LIMIT="$2"
 [[ -z "$2" ]] && JOB_LIMIT="$DEFAULT_LIMIT"
 
-awx-cli job launch -J "$JOB_NAME" --monitor --limit "$JOB_LIMIT"
+awx-cli job launch -J "$JOB_NAME" --monitor --limit "$JOB_LIMIT" >&2
