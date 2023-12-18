@@ -61,8 +61,7 @@ INVENTORY="${PREFIX,,}"
 INVENTORY_ID="$(inventory_get_id "$INVENTORY")"
 
 [[ -z "$INVENTORY_ID" ]] && die "EMPTY INVENTORY_ID"
-
-YAML="host_vars/$INVENTORY_HOSTNAME.yml"
+[[ -n "$YAML"         ]] || YAML="host_vars/$INVENTORY_HOSTNAME.yml"
 
 if [[ -e "$YAML" ]]
 then
