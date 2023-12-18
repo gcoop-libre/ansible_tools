@@ -726,6 +726,11 @@ function get_json_workflows()
   echo "$DIR_WORKFLOW/$N.json"
 }
 
+function get_url_base()
+{
+  awx-cli setting get -f json TOWER_URL_BASE 2>/dev/null | jq -r .value
+}
+
 function get_url()
 {
   local P
