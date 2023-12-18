@@ -20,6 +20,7 @@
 # shellcheck disable=SC1090
 # shellcheck disable=SC1091
 # shellcheck source=/dev/null
+# shellcheck disable=SC2236
 
 [[ -n "$BASH_DEBUG" ]] && set -x
 
@@ -94,32 +95,21 @@ fi
 while read -r JSON _
 do
 
-  if [[ ! "$JSON" =~ .*/.*\.json ]]
+  NAME="$(basename "$JSON" .json)"
+
+  if [[ "$NAME" =~ ^[a-z]{3}_[a-z]{3}.*v[0-9]+\.[0-9]+\.[0-9] ]]
   then
-
-    NAME="$JSON"
-
-    if [[ "$NAME" =~ [a-z]{3}_[a-z]{3}.*v[0-9]+\.[0-9]+\.[0-9] ]]
-    then
-      FILE="job_template/$NAME.json"
-    else
-      FILE="project/$NAME.json"
-    fi
-
-    if [[ "$NAME" =~ inventory_v[0-9]+\.[0-9]+\.[0-9] ]]
-    then
-      FILE="inventory/$NAME.json"
-    fi
-
+    FILE="job_template/$NAME.json"
   else
+    FILE="project/$NAME.json"
+  fi
 
-    FILE="$JSON"
-    ASSET_TYPE="$(jq -r '.[].asset_type' "$FILE")"
-    NAME='-'
+  ASSET_TYPE="$(jq -r '.[].asset_type' "$FILE" || true)"
 
-    [[ "$ASSET_TYPE" = 'job_template' ]] \
-      && NAME="$(basename "$FILE" .json || true)"
-
+  if [[ ! -z "$ASSET_TYPE" ]]
+  then
+    NAME="$(basename "$FILE" .json || true)"
+    FILE="$ASSET_TYPE/$NAME.json"
   fi
 
   if [[ ! -e "$FILE" ]]
