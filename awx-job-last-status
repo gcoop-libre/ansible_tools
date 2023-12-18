@@ -105,6 +105,12 @@ do
 
   ACTIVITIES="activity-$JOB_ID-$STATUS.lst"
 
+  if [[ -s "$ACTIVITIES" ]]
+  then
+    printf "NOT FOUND ACTIVITIES FOR JOB %\\n" "$JOB_ID"
+    awx-activity-stream-get
+  fi
+
   while read -r LIST
   do
 
