@@ -1,0 +1,166 @@
+#!/bin/bash
+
+# This script comes with ABSOLUTELY NO WARRANTY, use at own risk
+# Copyright (C) 2023 Osiris Alejandro Gomez <osiux@osiux.com>
+# Copyright (C) 2023 Osiris Alejandro Gomez <osiris@gcoop.coop>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+
+# shellcheck disable=SC1091
+
+[[ -n "$BASH_DEBUG" ]] && set -x
+DIR_BIN="$(dirname "$0")" && source "$DIR_BIN/awx-common"
+
+function usage()
+{
+cat << EOF
+Usage:
+
+\`\`\`bash
+
+  $BIN TESTS_FILE
+
+\`\`\`
+
+Read file with tests to execute the validate_limit function to validate
+each inventory and limit combinatorics, report with _markdown_ table
+with _SUCCESS_ or _FAILURE_.
+
+Example:
+
+\`\`\`bash
+
+  $BIN prd sprd01
+
+  | _inventory_ |     _limit_ |  _result_ |
+  |-------------|-------------|-----------|
+  |       \`prd\` |    \`sprd01\` | _SUCCESS_ |
+
+  cat test-limit-file
+
+    bad  none:null:*:[]:():.
+    prd  prd:!sprd01:sprd02
+    prd  all:!prd
+    prd  sprd01
+    prd  all:!sprd01
+    prd  prd:!sprd02
+    prd  bad:limit
+    prd  all:null
+    bad  prd:dev
+
+  $BIN test-limit-file
+
+  | _inventory_ |                    _limit_ |  _result_ |
+  |-------------|----------------------------|-----------|
+  |       \`bad\` |      \`none:null:*:[]:():.\` |  _FAILED_ |
+  |       \`prd\` |       \`prd:!sprd01:sprd02\` | _SUCCESS_ |
+  |       \`prd\` |                 \`all:!prd\` | _SUCCESS_ |
+  |       \`prd\` |                   \`sprd01\` | _SUCCESS_ |
+  |       \`prd\` |              \`all:!sprd01\` | _SUCCESS_ |
+  |       \`prd\` |              \`prd:!sprd02\` | _SUCCESS_ |
+  |       \`prd\` |                \`bad:limit\` |  _FAILED_ |
+  |       \`prd\` |                 \`all:null\` |  _FAILED_ |
+  |       \`bad\` |                  \`prd:dev\` |  _FAILED_ |
+
+\`\`\`
+
+EOF
+exit 0
+}
+
+TMPI="$(mktemp)"
+TMPO="$(mktemp)"
+
+if [[ ! -t 0 ]]
+then
+
+  true > "$TMPI"
+
+  while IFS= read -r PIPED_INPUT
+  do
+    echo "$PIPED_INPUT" >> "$TMPI"
+  done
+
+fi
+
+function limit_title()
+{
+  printf "| %*s | %*s | %*s |\\n" \
+    "$MAX_I" "_${LBL_I}_"         \
+    "$MAX_L" "_${LBL_L}_"         \
+    "$MAX_R" "_${LBL_R}_"
+}
+
+function limit_div()
+{
+  limit_title | sed 's/[^|]/-/g'
+}
+
+function limit_row()
+{
+
+  TEST="$LBL_F"
+  [[ "$RESULT" -eq 0 ]] && TEST="$LBL_O"
+
+  printf "| %*s | %*s | %*s |\\n"    \
+         "$MAX_I" "\`${INVENTORY}\`" \
+         "$MAX_L" "\`${LIMIT}\`"     \
+         "$MAX_R" "_${TEST}_"
+
+}
+
+[[ "$1" =~ ^[-]+(h|help) ]] && usage
+
+[[ -z "$1"     ]] || echo "$1 $2" > "$TMPI"
+[[ -e "$1"     ]] && cat "$1"     > "$TMPI"
+[[ -s "$TMPI"  ]] || die "EMPTY FILE $TMPI"
+[[ -n "$LBL_I" ]] || LBL_I='inventory'
+[[ -n "$LBL_L" ]] || LBL_L='limit'
+[[ -n "$LBL_R" ]] || LBL_R='result'
+[[ -n "$LBL_O" ]] || LBL_O='SUCCESS'
+[[ -n "$LBL_F" ]] || LBL_F='FAILED'
+[[ -n "$MAX_I" ]] || MAX_I="$(awk '{print $1}' "$TMPI" | wc -L)"
+[[ -n "$MAX_L" ]] || MAX_L="$(awk '{print $2}' "$TMPI" | wc -L)"
+[[ -n "$MAX_R" ]] || MAX_R="${#LBL_R}"
+[[ -n "$MAX_O" ]] || MAX_O="${#LBL_O}"
+[[ -n "$MAX_F" ]] || MAX_F="${#LBL_F}"
+
+MAX_I="$((MAX_I+2))"
+MAX_L="$((MAX_L+2))"
+MAX_R="$((MAX_R+2))"
+MAX_O="$((MAX_O+2))"
+MAX_F="$((MAX_F+2))"
+
+[[ "$MAX_I" -lt "${#LBL_I}" ]] && MAX_I="${#LBL_I}";MAX_I="$((MAX_I+2))"
+[[ "$MAX_L" -lt "${#LBL_L}" ]] && MAX_L="${#LBL_L}";MAX_L="$((MAX_L+2))"
+[[ "$MAX_O" -gt "$MAX_R"    ]] && MAX_R="$MAX_O"
+[[ "$MAX_F" -gt "$MAX_R"    ]] && MAX_R="$MAX_F"
+
+limit_title >  "$TMPO"
+limit_div   >> "$TMPO"
+
+while read -r INVENTORY LIMIT
+do
+
+  stderror "$MSG"
+  validate_limit "$INVENTORY" "$LIMIT"
+  RESULT="$?"
+  limit_row >> "$TMPO"
+
+done < "$TMPI"
+
+printf "\\n"
+cat "$TMPO"
+
+rm -f "$TMPI" "$TMPO"
