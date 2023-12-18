@@ -486,6 +486,17 @@ group_get_description()
     --name "$2"      | jq -r .description
 }
 
+function default_inventory_credential()
+{
+  local INVENTORY
+
+  INVENTORY="$1"
+
+  [[ -n "$INVENTORY_CREDENTIAL" ]] && return
+  INVENTORY_CREDENTIAL="DEFAULT_SSH_CREDENTIAL_${INVENTORY^^}"
+  INVENTORY_CREDENTIAL="${INVENTORY_CREDENTIAL// /_}"
+}
+
 function group_index_get_description()
 {
   local GROUP="$1"
