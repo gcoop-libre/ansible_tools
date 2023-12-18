@@ -81,7 +81,7 @@ then
     | sed "s/^\s\+'//g"
 
 else
-  yq -r ".$VARIABLE" "$YAML"
+  yq -yr ".$VARIABLE" "$YAML"
 fi
 
 rm -f "$YAML"
