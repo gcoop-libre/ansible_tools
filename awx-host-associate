@@ -67,6 +67,7 @@ GROUP_ID="$(group_get_id "$INVENTORY" "$GROUP")"
 [[ -z "$GROUP_ID" ]] && die "NOT FOUND GROUP_ID FOR GROUP $GROUP"
 [[ -z "$HOST_ID"  ]] && die "NOT FOUND HOST_ID FOR HOST $HOST"
 
+printf "ASSOCIATE HOST %s WITH GROUP %s\\n" "$HOST" "$GROUP"
 awx-cli host associate      \
   --host "$HOST_ID"         \
   --group "$GROUP_ID"       \
