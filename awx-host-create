@@ -61,6 +61,8 @@ INVENTORY="${PREFIX,,}"
 INVENTORY_ID="$(inventory_get_id "$INVENTORY")"
 
 [[ -z "$INVENTORY_ID" ]] && die "EMPTY INVENTORY_ID"
+[[ -n "$DESCRIPTION"  ]] || DESCRIPTION='imported'
+[[ -z "$3"            ]] || DESCRIPTION="$3"
 [[ -n "$YAML"         ]] || YAML="host_vars/$INVENTORY_HOSTNAME.yml"
 
 if [[ -e "$YAML" ]]
@@ -70,6 +72,7 @@ then
     --name      "$INVENTORY_HOSTNAME" \
     --inventory "$INVENTORY_ID"       \
     --enabled   true                  \
+    --description "$DESCRIPTION"      \
     --variables "@$YAML"
 
 else
@@ -77,6 +80,7 @@ else
   awx-cli host create                 \
     --name      "$INVENTORY_HOSTNAME" \
     --inventory "$INVENTORY_ID"       \
+    --description "$DESCRIPTION"      \
     --enabled   true
 
 fi
