@@ -56,11 +56,11 @@ exit 0
 [[ -n "$MODULE_ARGS" ]] || MODULE_ARGS="$3"
 [[ -z "$MODULE_ARGS" ]] && die "EMPTY MODULE_ARGS"
 
-[[ -n "$BECOME"                 ]] || BECOME='true'
-[[ -n "$JOB_TYPE"               ]] || JOB_TYPE='run'
-[[ -n "$MODULE_NAME"            ]] || MODULE_NAME='shell'
-[[ -n "$VERBOSE"                ]] || VERBOSE='more_verbose'
-[[ -n "$INVENTORY_CREDENTIAL"     ]] || INVENTORY_CREDENTIAL="DEFAULT_SSH_CREDENTIAL_${INVENTORY^^}"
+[[ -n "$BECOME"                   ]] || BECOME='false'
+[[ -n "$JOB_TYPE"                 ]] || JOB_TYPE='run'
+[[ -n "$MODULE_NAME"              ]] || MODULE_NAME='shell'
+[[ -n "$VERBOSE"                  ]] || VERBOSE='more_verbose'
+[[ -n "$INVENTORY_CREDENTIAL"     ]] || default_inventory_credential "$INVENTORY"
 [[ -n "$INVENTORY_SSH_CREDENTIAL" ]] || INVENTORY_SSH_CREDENTIAL="${!INVENTORY_CREDENTIAL}"
 [[ -z "$INVENTORY_SSH_CREDENTIAL" ]] && INVENTORY_SSH_CREDENTIAL="$DEFAULT_SSH_CREDENTIAL"
 
