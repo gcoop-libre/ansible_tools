@@ -291,14 +291,15 @@ function generate_schedule()
 
 printf "\\n### %s\\n\\n" 'schedule'
 
-printf "| %-24s | %-25s | %-32s | %-100s |\n"   \
+printf "| %-24s | %-25s | %-12s | %-32s | %-100s |\n"   \
         'job_template' \
         'name'         \
+        'limit'        \
         'extra_data'   \
         'rrule'
 
-printf "| %-24s | %-25s | %-32s | %-100s |\n"   \
-        ' ' ' ' ' ' ' ' | sed 's/ /-/g'
+printf "| %-24s | %-25s | %-12s | %-32s | %-100s |\n"   \
+        ' ' ' ' ' ' ' ' ' ' | sed 's/ /-/g'
 
 sort "$SCHEDULE_FILE" | while read -r SCHEDULE_JOB SCHEDULE_LIMIT NAME
 do
@@ -316,8 +317,8 @@ do
     SCHEDULE_RRULE="$(cat "$EXTRA_RRULE")"
   fi
 
-  printf "| \`%-22s\` | _%-23s_ | \`%-30s\` | \`%-98s\` |\n" \
-         "$SCHEDULE_JOB" "$NAME" "${SCHEDULE_EXTRA//,/, }" "$SCHEDULE_RRULE"
+  printf "| \`%-22s\` | _%-23s_ | \`%-12s\` | \`%-30s\` | \`%-98s\` |\n" \
+         "$SCHEDULE_JOB" "$NAME" "$SCHEDULE_LIMIT" "${SCHEDULE_EXTRA//,/, }" "$SCHEDULE_RRULE"
 
 done
 
