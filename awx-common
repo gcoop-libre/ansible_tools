@@ -733,16 +733,22 @@ function get_url_base()
 
 function get_url()
 {
-  local P
+  local P U
 
-  [[ "$1" = 'playbook'     ]] && P='#/jobs/playbook/'
-  [[ "$1" = 'project'      ]] && P='#/projects/'
+  [[ "$1" = 'playbook'     ]] && P='#/jobs/playbook'
+  [[ "$1" = 'project'      ]] && P='#/projects'
   [[ "$1" = 'job_template' ]] && P='#/templates/job_template'
   [[ "$1" = 'workflow'     ]] && P='#/templates/workflow_job_template'
 
-  awx_cfg_read
+  U="$(get_url_base)"
 
-  printf "%s/%s/%s" "$AWX_CFG_HOST" "$P" "$2"
+  if [[ -z "$U" ]]
+  then
+    awx_cfg_read
+    U="${AWX_CFG_HOST}"
+  fi
+
+  printf "%s/%s/%s" "${U}" "$P" "$2"
 }
 
 project_get_id()
