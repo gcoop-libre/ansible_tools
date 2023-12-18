@@ -67,18 +67,20 @@ exit 0
 
 if [[ ! -t 0 ]]
 then
+  if [[ -z "$1" ]]
+  then
 
-  TMPI="$(mktemp)"
+    TMPI="$(mktemp)"
+    true > "$TMPI"
 
-  true > "$TMPI"
+    while IFS= read -r PIPED_INPUT
+    do
+      echo "$PIPED_INPUT" >> "$TMPI"
+    done
 
-  while IFS= read -r PIPED_INPUT
-  do
-    echo "$PIPED_INPUT" >> "$TMPI"
-  done
+    LOG="$TMPI"
 
-  LOG="$TMPI"
-
+  fi
 fi
 
 function get_task()
