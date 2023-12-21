@@ -163,6 +163,12 @@ do
   VARS_CHANGES="$(jq -r '.changes.variables | length' "$JSON")"
   ENABLED_CHANGES="$(jq -r '.changes.enabled | length' "$JSON")"
 
+  if [[ "$OPERATION" = 'create' ]]
+  then
+    [[ "$OBJECT1" = 'job' ]] \
+      && VARS_CHANGES="$(jq -r '.changes | length' "$JSON")"
+  fi
+
   DIFF_WIDTH='24'
 
   if [[ "$ENABLED_CHANGES" -gt 0 ]]
@@ -181,6 +187,13 @@ do
   then
     jq -r '.changes.variables[0]' "$JSON" > "$VARS_BEFORE"
     jq -r '.changes.variables[1]' "$JSON" > "$VARS_AFTER"
+
+    if [[ "$OPERATION" = 'create' ]]
+    then
+      [[ "$OBJECT1" = 'job' ]] \
+        && yq -yr '.changes' "$JSON" > "$VARS_AFTER"
+    fi
+
     DIFF_VARS_BEFORE="$(wc -L "$VARS_BEFORE")"
     DIFF_VARS_BEFORE="${DIFF_VARS_BEFORE%% *}"
     DIFF_VARS_AFTER="$(wc -L "$VARS_AFTER")"
