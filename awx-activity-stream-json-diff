@@ -187,7 +187,9 @@ do
     DIFF_VARS_AFTER="${DIFF_VARS_AFTER%% *}"
     [[ "$DIFF_VARS_BEFORE" -ge "$DIFF_VARS_AFTER" ]] && DIFF_WIDTH="$DIFF_VARS_BEFORE"
     [[ "$DIFF_VARS_AFTER" -ge "$DIFF_VARS_BEFORE" ]] && DIFF_WIDTH="$DIFF_VARS_AFTER"
-    DIFF_WIDTH="$((DIFF_WIDTH*3))"
+    [[ -n "$DIFF_FACTOR" ]] || DIFF_FACTOR=3
+    [[ "$DIFF_VARS_BEFORE" -lt 72 ]] && DIFF_FACTOR=2
+    DIFF_WIDTH="$((DIFF_WIDTH*DIFF_FACTOR))"
     [[ "$DIFF_WIDTH" -lt 72 ]] && DIFF_WIDTH=72
     printf "### VARIABLES CHANGED\\n\\n"
     printf "\`\`\`\\n"
