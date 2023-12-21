@@ -121,6 +121,9 @@ do
   HOST_DESCRIPTION="$(jq -r '.summary_fields.host[].description' "$JSON" 2>/dev/null)"
   GROUP_NAME="$(jq -r '.summary_fields.group[].name' "$JSON" 2>/dev/null)"
   GROUP_DESCRIPTION="$(jq -r '.summary_fields.group[].description' "$JSON" 2>/dev/null)"
+  JOB_NAME="$(jq -r '.summary_fields.job[].name' "$JSON" 2>/dev/null)"
+  JOB_DESCRIPTION="$(jq -r '.summary_fields.job[].description' "$JSON" 2>/dev/null)"
+  JOB_STATUS="$(jq -r '.summary_fields.job[].status' "$JSON" 2>/dev/null)"
   INVENTORY_NAME="$(jq -r '.summary_fields.inventory[].name' "$JSON" 2>/dev/null)"
   INVENTORY_DESCRIPTION="$(jq -r '.summary_fields.inventory[].description' "$JSON" 2>/dev/null)"
   USER_NAME="$(jq -r '.summary_fields.user[].username' "$JSON" 2>/dev/null)"
@@ -141,6 +144,14 @@ do
     then
       OBJ1_DESC="$OBJECT2 $OBJ2_NAME"
     fi
+  fi
+
+  if [[ "$OPERATION" = 'create' ]]
+  then
+
+    [[ -z "$JOB_STATUS" ]] \
+      || OBJ1_DESC="$OBJ1_DESC JOB_STATUS: $JOB_STATUS"
+
   fi
 
   TIMESTAMP="$(jq -r '.timestamp' "$JSON")"
