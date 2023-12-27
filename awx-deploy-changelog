@@ -36,14 +36,14 @@ Usage:
 
 \`\`\`
 
-Checkout awx specific revision as tag, branch or commit.
-Generate markdown output details of the specific revision.
+Checkout _AWX_ specific revision as _tag_, _branch_ or _commit.
+Generate _Markdown_ output details of the specific revision.
 
 | variable  | default value     |
 |-----------|-------------------|
 | AWX_DIR   | current directory |
 | REVISION  | last tag          |
-| CHANGELOG | \`awx-v0.1.0.md\` |
+| CHANGELOG | \`awx-v0.1.0.md\`   |
 
 Example:
 
@@ -51,14 +51,74 @@ Example:
 
   $BIN awx v0.1.0 update
 
+---
+title: awx v0.1.0
+date: 2023-12-18
+author: CC-BY-SA Osiris Gomez osiux@osiux.com
+fontsize: 10pt
+classoption: landscape
+---
+
+## [\`awx\`](https://git.example.com/awx) [\`v0.1.0\`](https://git.example.com/awx/-/tags/v0.1.0)
+
+ - revision: https://git.example.com/awx/-/tags/v0.1.0
+ - commit: a238e8b0bfbecd2356a60a215accd8b5c66bf40e
+
+tag v0.1.0
+Tagger: OSiRiS <osiux@osiux.com>
+Date:   Fri Dec 15 22:09:30 2023 -0300
+
+add wst_hpt_pci_v0.2.5 and wst_hpt_pci_v0.2.5 with support for multiple versions of HP Linux Tools (currently versions 3.21 and 3.22), improve network interface and PCI device ID detection and better validations, and include test results from HP G5 and G6
+
+commit 32d8c1ba4232d9b00e720a45b3f98d61e4074ac2
+Merge: 2993908 951de36
+Author: OSiRiS <osiux@osiux.com>
+Date:   Fri Dec 15 22:09:23 2023 -0300
+
+    Merge branch 'hotfix/hplt-v322-sp143035' into support/0.55.x
+
+### resources
+
+| resource_type        | resource_name                            | description                                                       |
+|----------------------|------------------------------------------|-------------------------------------------------------------------|
+| _project_            | \`ansible_role_hp_linux_tools_v0.2.5    \` | WoL host, wait for Online, install HP Linux Tools, set/reset Admin Password and verify lspci output |
+| _project_            | \`inventory_v0.28.2                     \` |                                                                   |
+| _job_template_       | \`wst_hpt_bio_v0.2.5                    \` | WoL host, wait for Online and Install and configure HP Linux Tools with BIOS options update and set/reset Admin Password |
+| _job_template_       | \`wst_hpt_pci_v0.2.5                    \` | WoL host, wait for Online and verify lspci output                 |
+
+### grant permissions
+
+| resource_type        | resource_name                            | type       | team                 |
+|----------------------|------------------------------------------|------------|----------------------|
+| _project_            | \`ansible_role_hp_linux_tools_v0.2.5    \` | _use_      | _awx-test_           |
+| _project_            | \`inventory_v0.28.2                     \` | _use_      | _awx-test_           |
+| _project_            | \`ansible_role_hp_linux_tools_v0.2.5    \` | _use_      | _devops_             |
+| _project_            | \`ansible_role_hp_linux_tools_v0.2.5    \` | _read_     | _devops_             |
+| _project_            | \`inventory_v0.28.2                     \` | _use_      | _devops_             |
+| _project_            | \`inventory_v0.28.2                     \` | _read_     | _devops_             |
+| _job_template_       | \`wst_hpt_bio_v0.2.5                    \` | _execute_  | _awx-test_           |
+| _job_template_       | \`wst_hpt_pci_v0.2.5                    \` | _execute_  | _awx-test_           |
+| _job_template_       | \`wst_hpt_bio_v0.2.5                    \` | _execute_  | _devops_              |
+| _job_template_       | \`wst_hpt_bio_v0.2.5                    \` | _read_     | _devops_              |
+| _job_template_       | \`wst_hpt_pci_v0.2.5                    \` | _execute_  | _devops_              |
+| _job_template_       | \`wst_hpt_pci_v0.2.5                    \` | _read_     | _devops_              |
+
+### revoke permissions
+
+| resource_type        | resource_name                            | type       | team                 |
+|----------------------|------------------------------------------|------------|----------------------|
+| _job_template_       | \`wst_hpt_bio_v0.2.4                    \` | _execute_  | _awx-test_           |
+| _job_template_       | \`wst_hpt_bio_v0.2.4                    \` | _execute_  | _devops_              |
+
 \`\`\`
 
 EOF
 exit 0
 }
 
-DEPLOY_TYPE='update'
+[[ "$1" =~ ^[-]+(h|help) ]] && usage
 
+[[ -n "$DEPLOY_TYPE" ]] || DEPLOY_TYPE='update'
 [[ -e "$AWX_CFG"    ]] || die "NOT FOUND .tower_cli.cfg TRY awx-config"
 [[ -n "$AWX_DIR"    ]] || AWX_DIR='.'
 [[ -n "$DEPLOY_DIR" ]] || DEPLOY_DIR='deploy'
