@@ -1,0 +1,4 @@
+alias xdc='awx-deploy-clean'
+alias xdg='awx-deploy-grant'
+alias xdl='awx-deploy-changelog'
+alias xds='awx-deploy-sort'
