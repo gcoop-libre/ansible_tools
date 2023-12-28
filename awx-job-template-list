@@ -51,5 +51,18 @@ exit 0
 
 [[ "$1" =~ ^[-]+(h|help) ]] && usage
 
-JQ='.results[].name'
+FIRST="$(mktemp)"
+
+awx-cli job_template list \
+  --format json           \
+  --page 1                \
+  --page-size 1           > "$FIRST"
+
+TOTAL_TPLS="$(jq -r .count "$FIRST")"
+printf "TOTAL JOB_TEMPLATES: %s\\n" "$TOTAL_TPLS" 1>&2
+
+[[ -n "$JQ" ]] || JQ='.results[].name'
+
 awx-cli job_template list -a -f json | jq -r "$JQ" | sort
+
+rm -f "$FIRST"
