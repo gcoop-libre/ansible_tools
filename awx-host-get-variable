@@ -69,11 +69,12 @@ exit 0
 
 [[ -z "$1" ]] && die "EMPTY HOST"
 
-HOST="$1"
-KEY="$2"
+[[ -n "$HOST"      ]] || HOST="$1"
+[[ -z "$HOST"      ]] && die "EMPTY HOST"
+[[ -n "$KEY"       ]] || KEY='all'
+[[ -z "$2"         ]] || KEY="$2"
+[[ -n "$INVENTORY" ]] || INVENTORY="$3"
 PREFIX="${HOST//-*/}"
-[[ -z "$2"         ]] && KEY='all'
-[[ -z "$3"         ]] || INVENTORY="$3"
 [[ -z "$INVENTORY" ]] && INVENTORY="${PREFIX,,}"
 
 JSON="$(mktemp --suffix .json)"
@@ -84,8 +85,9 @@ awx-cli host get            \
   --name "$HOST"            > "$JSON" 2>/dev/null
 
 YAML="$(mktemp --suffix .yml)"
+MSG="EMPTY JSON WHEN GET $KEY FROM HOST $HOST IN INVENTORY $INVENTORY"
 
-[[ -s "$JSON" ]] || die "EMPTY JSON"
+[[ -s "$JSON" ]] || die "$MSG"
 
 jq -r .variables "$JSON" > "$YAML" 2>/dev/null
 
@@ -96,7 +98,7 @@ then
   yq -y --sort-keys -r . "$YAML"
 
 else
-  VALUE="$(yq -r ".$KEY" "$YAML" | grep -vi null)"
+  VALUE="$(yq -yr ".$KEY" "$YAML" | grep -vi null)"
   echo "$VALUE"
 fi
 
