@@ -68,6 +68,17 @@ EOF
 exit 0
 }
 
+eof_el_verify()
+{
+  local E FILE
+
+  FILE="$1"
+  [[ -s "$1" ]] || return
+
+  E="$(tail -1 "$FILE" | sed 's/^$/EMPTY_LINE/g')"
+  [[ "$E" = 'EMPTY_LINE' ]] && die "EMPTY LINE AT THE END OF FILE $FILE"
+}
+
 eof_nl_verify()
 {
   local FILE
@@ -202,6 +213,7 @@ fi
 [[ -z "$ORGANIZATION"   ]] && ORGANIZATION="$DEFAULT_ORGANIZATION"
 
 eof_nl_verify "$DEPLOY_FILE"
+eof_el_verify "$DEPLOY_FILE"
 
 # EXIT IMMEDIATELY IF A COMMAND EXITS WITH A NON-ZERO STATUS
 set -e
