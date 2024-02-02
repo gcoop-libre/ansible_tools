@@ -429,6 +429,10 @@ then
     fi
 
   done < "$SCHEDULE_FILE"
+
+  echo "LIST SCHEDULE"
+  awx-schedule-list
+
 fi
 
 TEAM_ASSOCIATE="$DEPLOY_DIR/team-associate.awx"
