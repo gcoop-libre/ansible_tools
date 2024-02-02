@@ -404,7 +404,7 @@ done
 fi
 
 SCHEDULE_FILE="$DEPLOY_DIR/schedule.awx"
-if [[ -e "$SCHEDULE_FILE" ]]
+if [[ -s "$SCHEDULE_FILE" ]]
 then
   while read -r SCHEDULE_JOB_TEMPLATE SCHEDULE_LIMIT SCHEDULE_NAME
   do
