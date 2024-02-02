@@ -93,6 +93,23 @@ bin_read ()
   source "$CFG"
 }
 
+bin_read_env ()
+{
+  local ENV
+  ENV=".$BIN.$1"
+
+  [[ -z "$1"   ]] && return
+  [[ -s "$ENV" ]] || return
+
+  while read -r LINE
+  do
+     printf "READ %s SET %s\\n" "$ENV" "$LINE" \
+       | sed -r 's/(PASS|PASSWORD)=.*$/PASS=********/g'
+  done < "$ENV"
+
+  source "$ENV"
+}
+
 markdown()
 {
 cat << EOF
