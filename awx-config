@@ -173,6 +173,8 @@ config_example()
 [[ -z "$AWX_ENV" ]] && AWX_ENV="${1^^}"
 [[ -z "$AWX_ENV" ]] && die "EMPTY ENVIROMENT"
 
+bin_read_env "$AWX_ENV"
+
 # use value from environment
 export PASSWORD_STORE_DIR="$AWX_ENV_PASS"
 
