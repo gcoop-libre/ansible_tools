@@ -209,6 +209,20 @@ GIT_TAG="$GIT_URL/-/tags/$REVISION"
 COMMIT="$(git show-ref -s "$REVISION")"
 TITLE="$DIR_NAME $REVISION"
 
+function generate_overview()
+{
+
+[[ -e "$DEPLOY_FILE" ]] || return
+[[ -s "$DEPLOY_FILE" ]] || return
+
+printf "### %s\n\n" 'overview'
+
+awx-json2table-dependencies < "$DEPLOY_FILE"
+
+printf "\n"
+
+}
+
 function generate_resources()
 {
 
@@ -500,6 +514,7 @@ EOF
 TMP="$(mktemp)"
 
 generate_revision
+generate_overview
 generate_resources
 generate_groups
 generate_schedule
