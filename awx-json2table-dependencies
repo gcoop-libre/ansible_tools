@@ -175,7 +175,7 @@ do
          "$LIMIT"                  \
          "$SOURCE_PATH"
 
-done < "$LIST" | sort -u > "$TMPO"
+done < "$LIST" | sort -uk2 > "$TMPO"
 
 [[ -n "$TIT_A" ]] || TIT_A='_job_template_'
 [[ -n "$TIT_B" ]] || TIT_B='_project_'
@@ -240,7 +240,7 @@ printf "| \`%*s\` | \`%*s\` | \`%*s\` | \`%*s\` | \`%*s\` | \`%*s\` | \`%*s\` |\
        "$COL_F" "$F"                                                                \
        "$COL_G" "$G"
 
-done < "$TMPO" | sort
+done < "$TMPO"
 
 rm -f "$TMPI"
 rm -f "$TMPO"
