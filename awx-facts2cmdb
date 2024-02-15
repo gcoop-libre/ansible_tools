@@ -1,0 +1,400 @@
+#!/bin/bash
+
+# This script comes with ABSOLUTELY NO WARRANTY, use at own risk
+# Copyright (C) 2024 Osiris Alejandro Gomez <osiux@osiux.com>
+# Copyright (C) 2024 Osiris Alejandro Gomez <osiris@gcoop.coop>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+
+function usage()
+{
+cat << EOF
+Usage:
+
+\`\`\`bash
+
+  $BIN INVENTORY
+
+\`\`\`
+
+Generate CMDB (Configuration Management Database) with \`ansible-cmdb\`
+for all hosts in an inventory by getting _ansible facts_ from an _AWX_
+instance using \`awx-cli\`.
+
+Example:
+
+\`\`\`bash
+
+  $BIN wst dev
+
+  FOUND    1 GROUPS IN INVENTORY wst MATCH WITH REGEX .*
+  FOUND    6 HOSTS IN INVENTORY wst MATCH WITH GROUP dev
+  FOUND   88 FACTS FOR HOST wst-8CC0125Y5S IN INVENTORY wst GROUP dev
+  FOUND   88 FACTS FOR HOST wst-8CC0125YCV IN INVENTORY wst GROUP dev
+  FOUND    0 FACTS FOR HOST wst-8CC0125YG0 IN INVENTORY wst GROUP dev
+  FOUND   88 FACTS FOR HOST wst-8CC0125YSV IN INVENTORY wst GROUP dev
+  FOUND   88 FACTS FOR HOST wst-8CC0125YW4 IN INVENTORY wst GROUP dev
+  FOUND   88 FACTS FOR HOST wst-8CC0131NKL IN INVENTORY wst GROUP dev
+  FOUND    6 HTML HOSTS IN /var/www/html/wst/dev
+
+\`\`\`
+
+EOF
+exit 0
+}
+
+function die()
+{
+  echo >&2 "$1"
+  exit 1
+}
+
+function columns()
+{
+
+COLS="$(cat << EOF
+1 name
+1 groups
+0 cust
+0 dtap
+0 comment
+0 ext_id
+1 fqdn
+1 main_ip
+0 all_ipv4
+0 all_ipv6
+1 os
+1 kernel
+1 arch
+0 virt
+1 cpu_type
+1 vcpus
+1 ram
+1 mem_usage
+1 swap_usage
+1 disk_usage
+0 physdisk_size
+1 nr_of_ifaces
+1 timestamp
+1 prodname
+0 prodserial
+EOF
+)"
+
+echo "$COLS"
+}
+
+function cols_exclude()
+{
+  grep -E '^0' "$COLS_CONFIG" \
+    | cut -d' ' -f2 \
+    | tr '\n' ',' \
+    | sed 's/,$//g'
+}
+
+function group_list_all()
+{
+
+awx-cli group list -i "$INVENTORY" -a \
+  | awk '/^[0-9]+/ {print $2}'        \
+  | grep -Eo "$REGEX_GROUP"           \
+  | sort -u
+
+}
+
+function group_get_id()
+{
+
+  [[ -z "$1" ]] && return
+  [[ -z "$2" ]] && return
+
+  awx-cli group get -i "$1" -n "$2" -f id
+}
+
+function hosts_by_group()
+{
+
+  [[ -z "$1" ]] && return
+  [[ -z "$2" ]] && return
+
+  awx-cli host list -i "$1" --group "$2" -f human -a \
+    | awk '/^[0-9]+/ {print $2}'                     \
+    | grep -E "$REGEX_HOST"                          \
+    | sort
+
+}
+
+function host_get_facts()
+{
+
+  [[ -z "$1" ]] && return
+  [[ -z "$2" ]] && return
+
+  awx-cli host list_facts -i "$1" -n "$2" -f json > "$TMP" \
+    && jq --argjson ansible_facts "$(<"$TMP")" '.+= {$ansible_facts}' <<< '{}'
+}
+
+function facts_get_total()
+{
+  local TOTAL_FACTS
+
+  [[ -z "$1" ]] && return
+
+  TOTAL_FACTS="$(jq -r '.ansible_facts | length' "$1" 2>/dev/null | head -1)"
+  TOTAL_FACTS="${TOTAL_FACTS%% *}"
+
+  echo "$TOTAL_FACTS"
+}
+
+function group_get_description()
+{
+
+  [[ -z "$1" ]] && return
+  [[ -z "$2" ]] && return
+
+  awx-cli group get -i "$1" -n "$2" -f json | jq -r .description
+}
+
+function facts2list()
+{
+
+while read -r GROUP _
+do
+
+  facts2group "$INVENTORY" "$GROUP"
+
+done < "$INVENTORY_GROUPS"
+
+}
+
+function facts2head()
+{
+  local INVENTORY GROUP DESCRIPTION
+
+HTML_HEAD="$(cat << EOF
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>CMDB</title>
+</head>
+<body>
+<div id="host_overview">
+  <div id="host_overview_tbl_wrapper">
+    <table id="host_overview_tbl" class="demo display dataTable compact">
+    <thead>
+      <tr>
+          <th>Group</th>
+          <th>Description</th>
+      </tr>
+    </thead>
+EOF
+)"
+
+echo "$HTML_HEAD"
+
+}
+
+function facts2foot()
+{
+
+HTML_FOOT="$(cat << EOF
+    </table>
+  </div>
+</div>
+</body>
+
+</html>
+EOF
+)"
+
+echo "$HTML_FOOT"
+
+}
+
+function facts2group()
+{
+  local INVENTORY GROUP DESCRIPTION
+
+  INVENTORY="$1"
+  GROUP="$2"
+  DESCRIPTION="$(group_get_description "$INVENTORY" "$GROUP")"
+
+  printf "<tr>\\n"
+  printf "<td><a href=\"%s/%s/index.html\">%s</a></td>\\n" \
+         "$INVENTORY"                                      \
+         "$GROUP"                                          \
+         "$GROUP"
+  printf "<td><a href=\"%s/%s/index.html\">%s</a></td>\\n" \
+         "$INVENTORY"                                      \
+         "$GROUP"                                          \
+         "$DESCRIPTION"
+  printf "</tr>\\n"
+
+}
+
+function facts2cmdb()
+{
+  local INVENTORY GROUP TOTAL HOSTS FACTS
+
+  [[ -z "$1" ]] && return
+  [[ -z "$2" ]] && return
+
+  INVENTORY="$1"
+  GROUP="$2"
+  HOSTS="$DIR/hosts/$INVENTORY/hosts-$GROUP"
+  FACTS="$DIR/facts/$INVENTORY/$GROUP"
+  DEST="$DIR/$INVENTORY/$GROUP"
+
+  mkdir -p "$FACTS"
+  mkdir -p "$DEST"
+
+  ansible-cmdb                     \
+    --exclude-cols "$COLS_EXCLUDE" \
+    -t html_fancy_split            \
+    -p local_js=1,collapsed=1      \
+    -i "$HOSTS" "$FACTS"           \
+    && mv -f cmdb/* "$DEST/"
+
+  TOTAL="$(find "$DEST" -type f -iname '*.html' | grep -cv index)"
+  printf "FOUND %4d HTML HOSTS IN %s\\n" "$TOTAL" "$DEST"
+}
+
+group_get_all()
+{
+
+group_list_all > "$INVENTORY_GROUPS"
+
+TOTAL_GROUPS="$(wc -l "$INVENTORY_GROUPS")"
+TOTAL_GROUPS="${TOTAL_GROUPS%% *}"
+
+[[ "$TOTAL_GROUPS" -eq 0 ]] \
+  && die "NOT FOUND GROUPS IN INVENTORY $INVENTORY"
+
+printf "FOUND %4d GROUPS IN INVENTORY %s MATCH WITH REGEX %s\\n" \
+  "$TOTAL_GROUPS"                                                \
+  "$INVENTORY"                                                   \
+  "$REGEX_GROUP"
+}
+
+function host_group_facts()
+{
+
+  INVENTORY="$1"
+  HOST="$2"
+  FACTS="$DIR/facts/$INVENTORY/$GROUP/$HOST"
+
+  mkdir -p "$DIR/facts/$INVENTORY/$GROUP"
+
+  host_get_facts "$INVENTORY" "$HOST" > "$FACTS"
+  TOTAL_FACTS="$(facts_get_total "$FACTS")"
+  printf "FOUND %4d FACTS FOR HOST %s IN INVENTORY %s GROUP %s\\n" \
+    "$TOTAL_FACTS"                                                 \
+    "$HOST"                                                        \
+    "$INVENTORY"                                                   \
+    "$GROUP"
+
+  [[ "$TOTAL_FACTS" -eq 0 ]] && rm -f "$FACTS"
+}
+
+function facts2index()
+{
+
+  [[ "$INDEX_UPDATE" -eq 0 ]] && return
+
+  echo "GENERATE INDEX ..."
+
+  facts2head "$INVENTORY" >  "$INDEX"
+  facts2list "$INVENTORY" >> "$INDEX"
+  facts2foot "$INVENTORY" >> "$INDEX"
+
+}
+
+function clean()
+{
+  rm -f "$INVENTORY_GROUPS" "$TMP"
+}
+
+function dependencies()
+{
+
+for DEP in ansible-cmdb jq
+do
+
+  if ! command -v "$DEP" >/dev/null 2>/dev/null
+  then
+    die "NOT FOUND $DEP TRY pip install $DEP"
+  fi
+
+done
+
+}
+
+[[ "$1" =~ ^[-]+(h|help) ]] && usage
+
+dependencies
+
+[[ -n "$DIR"                  ]] || DIR='/var/www/html'
+[[ -d "$DIR"                  ]] || die "NOT FOUND DIRECTORY $DIR"
+[[ -n "$INVENTORY"            ]] || INVENTORY="$1"
+[[ -z "$INVENTORY"            ]] && die "EMPTY INVENTORY"
+[[ -n "$REGEX_GROUP"          ]] || REGEX_GROUP='.*'
+[[ -z "$2"                    ]] || REGEX_GROUP="$2"
+[[ -n "$REGEX_HOST"           ]] || REGEX_HOST='.*'
+[[ -z "$3"                    ]] || REGEX_HOST="$3"
+[[ -n "$COLS_CONFIG"          ]] || COLS_CONFIG="$DIR/columns"
+[[ -e "$COLS_CONFIG"          ]] || columns > "$COLS_CONFIG"
+[[ -n "$COLS_EXCLUDE"         ]] || COLS_EXCLUDE="$(cols_exclude)"
+[[ -d "$DIR/hosts/$INVENTORY" ]] || mkdir -p "$DIR/hosts/$INVENTORY"
+[[ -d "$DIR/facts/$INVENTORY" ]] || mkdir -p "$DIR/facts/$INVENTORY"
+[[ -d "$DIR/$INVENTORY"       ]] || mkdir -p "$DIR/$INVENTORY"
+[[ -n "$INDEX"                ]] || INDEX="$DIR/$INVENTORY/index.html"
+[[ -n "$INDEX_UPDATE"         ]] || INDEX_UPDATE=1
+
+TMP="$(mktemp)"
+INVENTORY_GROUPS="$(mktemp)"
+
+group_get_all
+facts2index
+
+while read -r GROUP _
+do
+
+  GROUP_ID="$(group_get_id "$INVENTORY" "$GROUP")"
+  [[ -z "$GROUP_ID" ]] && continue
+
+  HOSTS="$DIR/hosts/$INVENTORY/hosts-$GROUP"
+  hosts_by_group "$INVENTORY" "$GROUP_ID" > "$HOSTS"
+
+  TOTAL_HOSTS="$(wc -l "$HOSTS")"
+  TOTAL_HOSTS="${TOTAL_HOSTS%% *}"
+  printf "FOUND %4d HOSTS IN INVENTORY %s MATCH WITH GROUP %s\\n" \
+    "$TOTAL_HOSTS"                                                \
+    "$INVENTORY"                                                  \
+    "$GROUP"
+
+  while read -r HOST _
+  do
+
+    host_group_facts "$INVENTORY" "$HOST" "$FACTS"
+
+  done < "$HOSTS"
+
+  # INSERT [GROUP] IN HOSTS
+  sed -i "1 i [$GROUP]" "$HOSTS"
+
+  facts2cmdb "$INVENTORY" "$GROUP"
+
+done < "$INVENTORY_GROUPS"
+
+clean
