@@ -361,6 +361,7 @@ dependencies
 [[ -n "$INDEX"                ]] || INDEX="$DIR/$INVENTORY/index.html"
 [[ -n "$INDEX_UPDATE"         ]] || INDEX_UPDATE=1
 [[ -n "$INDEX_ONLY"           ]] || INDEX_ONLY=0
+[[ -n "$CMDB_TITLE"           ]] || CMDB_TITLE='CMDB'
 
 TMP="$(mktemp)"
 INVENTORY_GROUPS="$(mktemp)"
