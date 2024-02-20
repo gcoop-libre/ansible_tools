@@ -231,11 +231,11 @@ function facts2group()
   DESCRIPTION="$(group_get_description "$INVENTORY" "$GROUP")"
 
   printf "<tr>\\n"
-  printf "<td><a href=\"%s/%s/index.html\">%s</a></td>\\n" \
+  printf "<td><a href=\"../%s/%s/index.html\">%s</a></td>\\n" \
          "$INVENTORY"                                      \
          "$GROUP"                                          \
          "$GROUP"
-  printf "<td><a href=\"%s/%s/index.html\">%s</a></td>\\n" \
+  printf "<td><a href=\"../%s/%s/index.html\">%s</a></td>\\n" \
          "$INVENTORY"                                      \
          "$GROUP"                                          \
          "$DESCRIPTION"
