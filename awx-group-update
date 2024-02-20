@@ -56,6 +56,7 @@ exit 0
 [[ -n "$VARIABLES"   ]] || VARIABLES=''
 [[ -n "$DIFF_WIDTH"  ]] || DIFF_WIDTH='160'
 [[ -n "$MID_WIDTH"   ]] || MID_WIDTH="$((DIFF_WIDTH/2))"
+[[ -n "$DONT_UPDATE" ]] || DONT_UPDATE=0
 
 if [[ -n "$FILE" ]]
 then
@@ -143,11 +144,23 @@ else
     repeat_string "$DIFF_WIDTH" '-'
   fi
 
-  awx-cli group modify           \
-    --format id                  \
-    --inventory "$INVENTORY"     \
-    --name "$GROUP"              \
-    --description "$DESCRIPTION" $VARIABLES
+  if [[ "$OLD_DESCRIPTION" = "$DESCRIPTION" ]]
+  then
+    [[ -z "$VARIABLES" ]] && DONT_UPDATE=1
+  fi
+
+  if [[ "$DONT_UPDATE" -eq 1 ]]
+  then
+    echo "NOTHING TO DO, SKIP UNNECESARY UPDATE FOR GROUP $GROUP"
+  else
+
+    awx-cli group modify           \
+      --format id                  \
+      --inventory "$INVENTORY"     \
+      --name "$GROUP"              \
+      --description "$DESCRIPTION" $VARIABLES
+
+  fi
 
 fi
 
