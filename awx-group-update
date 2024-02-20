@@ -59,9 +59,7 @@ exit 0
 
 if [[ -n "$FILE" ]]
 then
-  [[ -e "$FILE"  ]] || die "NOT FOUND FILE $FILE"
-  [[ -s "$FILE"  ]] || die "EMPTY FILE $FILE"
-  VARIABLES="--variables @$FILE"
+  [[ -s "$FILE"  ]] && VARIABLES="--variables @$FILE"
 fi
 
 INVENTORY_ID="$(inventory_get_id "$INVENTORY")"
@@ -73,7 +71,7 @@ GROUP_ID="$(awx-cli group get    \
         --name "$GROUP"          \
         --format id 2>/dev/null  || true )"
 
-if [[ -n "$FILE" ]]
+if [[ -s "$FILE" ]]
 then
   NEW_VARIABLES="$(mktemp --suffix .yml)"
   if [[ "$YQ_SORT_KEYS" -eq 1 ]]
@@ -123,7 +121,7 @@ else
   echo "MODIFY GROUP $GROUP IN INVENTORY $INVENTORY"
   echo "REPLACE RESCRIPTION '$OLD_DESCRIPTION' WITH '$DESCRIPTION'"
 
-  if [[ -n "$FILE" ]]
+  if [[ -s "$FILE" ]]
   then
     echo "UPDATE VARIABLES FROM $FILE"
 
