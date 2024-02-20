@@ -98,10 +98,14 @@ then
   echo "NOT FOUND GROUP $GROUP EMPTY GROUP_ID"
   echo "CREATE GROUP $GROUP IN INVENTORY $INVENTORY"
   echo "ADD DESCRIPTION $DESCRIPTION"
-  echo "ADD VARIABLES FROM $FILE"
-  repeat_string "$MID_WIDTH" '-'
-  cat "$NEW_VARIABLES"
-  repeat_string "$MID_WIDTH" '-'
+
+  if [[ -s "$NEW_VARIABLES" ]]
+  then
+    echo "ADD VARIABLES FROM $FILE"
+    repeat_string "$MID_WIDTH" '-'
+    cat "$NEW_VARIABLES"
+    repeat_string "$MID_WIDTH" '-'
+  fi
 
   awx-cli group create           \
     --format id                  \
