@@ -360,12 +360,15 @@ dependencies
 [[ -d "$DIR/$INVENTORY"       ]] || mkdir -p "$DIR/$INVENTORY"
 [[ -n "$INDEX"                ]] || INDEX="$DIR/$INVENTORY/index.html"
 [[ -n "$INDEX_UPDATE"         ]] || INDEX_UPDATE=1
+[[ -n "$INDEX_ONLY"           ]] || INDEX_ONLY=0
 
 TMP="$(mktemp)"
 INVENTORY_GROUPS="$(mktemp)"
 
 group_get_all
 facts2index
+
+[[ "$INDEX_ONLY" -eq 1 ]] && exit 0
 
 while read -r GROUP _
 do
