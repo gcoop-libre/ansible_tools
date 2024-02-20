@@ -363,6 +363,7 @@ dependencies
 [[ -n "$INDEX_ONLY"           ]] || INDEX_ONLY=0
 [[ -n "$CMDB_TITLE"           ]] || CMDB_TITLE='CMDB'
 [[ -n "$CMDB_GROUP_LABEL"     ]] || CMDB_GROUP_LABEL='group'
+[[ -n "$CMDB_GROUP_DESC"      ]] || CMDB_GROUP_DESC='description'
 
 TMP="$(mktemp)"
 INVENTORY_GROUPS="$(mktemp)"
