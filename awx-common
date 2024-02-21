@@ -1001,6 +1001,7 @@ config_read()
 
   # use proxy
   [[ -z "$HTTP_PROXY" ]] || stderror "Using HTTP_PROXY=$HTTP_PROXY"
+  [[ -n "$CACHE_DIR"  ]] || CACHE_DIR="$HOME/.cache/ansible_tools"
 
 }
 
