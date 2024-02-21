@@ -221,6 +221,16 @@ eof_el_verify "$DEPLOY_USERS"
 # EXIT IMMEDIATELY IF A COMMAND EXITS WITH A NON-ZERO STATUS
 set -e
 
+if [[ -e "$DEPLOY_USERS" ]]
+then
+  while read -r USER_NAME EMAIL LAST_NAME FIRST_NAME _
+  do
+
+    awx-user-create "$USER_NAME" "$EMAIL" "$LAST_NAME" "$FIRST_NAME"
+
+  done < "$DEPLOY_USERS"
+fi
+
 if [[ -e "$DEPLOY_FILE" ]]
 then
 
