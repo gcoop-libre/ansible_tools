@@ -363,9 +363,12 @@ function facts2cmdb()
   HOSTS="$DIR/hosts/$INVENTORY/hosts-$GROUP"
   FACTS="$DIR/facts/$INVENTORY/$GROUP"
   DEST="$DIR/$INVENTORY/$GROUP"
-
+  LINK_TARGET="../static"
+  LINK_DIR="$DIR/$INVENTORY/static"
   mkdir -p "$FACTS"
   mkdir -p "$DEST"
+
+  [[ -L "$LINK" ]] || ln -s "$LINK_TARGET" "$LINK_DIR"
 
   ansible-cmdb                     \
     --exclude-cols "$COLS_EXCLUDE" \
