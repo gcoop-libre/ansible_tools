@@ -211,6 +211,7 @@ fi
 [[ -d "$DEPLOY_DIR"     ]] || die "NOT FOUND DIR $DEPLOY_DIR"
 [[ -e "$DEPLOY_FILE"    ]] || echo "NOT FOUND FILE $DEPLOY_FILE"
 [[ -z "$ORGANIZATION"   ]] && ORGANIZATION="$DEFAULT_ORGANIZATION"
+[[ -n "$DEPLOY_USERS"   ]] || DEPLOY_USERS="$DEPLOY_DIR/users.awx"
 
 eof_nl_verify "$DEPLOY_FILE"
 eof_el_verify "$DEPLOY_FILE"
