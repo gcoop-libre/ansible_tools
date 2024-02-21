@@ -216,6 +216,7 @@ fi
 eof_nl_verify "$DEPLOY_FILE"
 eof_el_verify "$DEPLOY_FILE"
 eof_nl_verify "$DEPLOY_USERS"
+eof_el_verify "$DEPLOY_USERS"
 
 # EXIT IMMEDIATELY IF A COMMAND EXITS WITH A NON-ZERO STATUS
 set -e
