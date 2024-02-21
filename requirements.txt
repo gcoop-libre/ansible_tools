@@ -1,3 +1,11 @@
-ansible-tower-cli == 3.3.9
-jq == 1.2.1
-yq == 2.12.2
+ansible==2.9.15
+ansible-cmdb==1.31
+ansible-lint==4.2.0
+ansible-tower-cli==3.3.9
+backports.functools-lru-cache==1.5
+configparser==4.0.2
+Jinja2==3.0.3
+jq==1.2.1
+pre-commit==2.21.0
+pylint==1.9.4
+yq==2.12.2
