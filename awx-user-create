@@ -26,9 +26,22 @@ function usage()
 {
 cat << EOF
 Usage:
-  $BIN
 
-Description
+\`\`\`bash
+
+  $BIN USER_NAME [EMAIL] [LAST_NAME] [FIRST_NAME]
+
+\`\`\`
+
+Create user in _AWX_.
+
+Example:
+
+\`\`\`bash
+
+  $BIN cmdbro cmdb@example.org CMDB ReadOnly
+
+\`\`\`
 
 EOF
 exit 0
@@ -39,12 +52,19 @@ exit 0
 
 [[ -z "$1" ]] && die "EMPTY USERNAME"
 
-FIRST_NAME="$(echo "$1" | cut -c -1)"
-LAST_NAME="$(echo "$1" | cut -c 2-)"
-EMAIL="$1@$DEFAULT_EMAIL_DOMAIN"
+[[ -n "$USER_NAME"  ]] || USER_NAME="$1"
+[[ -n "$FIRST_NAME" ]] || FIRST_NAME="$(echo "$USER_NAME" | cut -c -1)"
+[[ -n "$LAST_NAME"  ]] || LAST_NAME="$(echo "$USER_NAME" | cut -c 2-)"
+[[ -n "$EMAIL"      ]] || EMAIL="$USER_NAME@$DEFAULT_EMAIL_DOMAIN"
+[[ -z "$2"          ]] || EMAIL="$2"
+[[ -z "$3"          ]] || LAST_NAME="$3"
+[[ -z "$4"          ]] || FIRST_NAME="$4"
+
+printf "ADD USER: %s EMAIL: %s LAST_NAME: %s FIRST_NAME: %s\\n" \
+       "$USER_NAME" "$EMAIL" "$LAST_NAME"  "$FIRST_NAME"
 
 awx-cli user create          \
-  --username "$1"            \
+  --username "$USER_NAME"    \
   --email "$EMAIL"           \
   --password "$1"            \
   --is-superuser False       \
