@@ -167,7 +167,8 @@ fi
 if [[ "$CURRENT_BRANCH" != "$REVISION" ]]
 then
   printf "GIT CHECKOUT REVISION %s\\n" "$REVISION"
-  git checkout "$REVISION" || die "FAILED TO CHECKOUT $REVISION"
+  git checkout "$REVISION" \
+    || die "FAILED TO CHECKOUT $REVISION TRY GIT_STRATEGY: clone"
 fi
 
 if [[ "$GIT_RESET_HARD_REVISION" -eq 1 ]]
