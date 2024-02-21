@@ -85,6 +85,7 @@ CURRENT_BRANCH="$(git branch --no-color | grep '^\* ' | cut -d ' ' -f2)"
 [[ -n "$VALID_TYPE"     ]] || VALID_TYPE='(admin|read|member|execute|adhoc|update|use|auditor|project_admin|inventory_admin|credential_admin|workflow_admin|notification_admin|job_template_admin)'
 [[ -n "$DONT_PULL"      ]] || DONT_PULL=0
 [[ -n "$DONT_FETCH"     ]] || DONT_FETCH=0
+[[ -n "$DONT_TEAM"      ]] || DONT_TEAM=0
 
 bin_read
 
