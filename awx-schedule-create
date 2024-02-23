@@ -75,6 +75,7 @@ fi
 [[ -n "$SCHEDULE_LIMIT" ]] && LIMIT="$SCHEDULE_LIMIT"
 [[ -n "$LIMIT" ]] && LIMIT="--limit $LIMIT"
 [[ "$LIMIT" = 'all' ]] && unset LIMIT
+CLEAN_LIMIT="$(echo "${LIMIT##* }" | tr '!:' '-' | tr -d ' ')"
 
 if [[ -n "$EXTRA_JSON" ]]
 then
@@ -110,7 +111,6 @@ EOF
     RRULE="$(cat "$EXTRA_RRULE")"
   fi
 
-  CLEAN_LIMIT="$(echo "${LIMIT##* }" | tr '!:' '-' | tr -d ' ')"
   EXTRA_RRULE="schedule/$JOB_TEMPLATE-${CLEAN_LIMIT}.rrule"
 
   if [[ -e "$EXTRA_RRULE" ]]
