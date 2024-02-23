@@ -370,7 +370,7 @@ function facts2cmdb()
   mkdir -p "$FACTS"
   mkdir -p "$DEST"
 
-  [[ -L "$LINK" ]] || ln -s "$LINK_TARGET" "$LINK_DIR"
+  [[ -L "$LINK_TARGET" ]] || ln -s "$LINK_TARGET" "$LINK_DIR"
 
   ansible-cmdb                     \
     --exclude-cols "$COLS_EXCLUDE" \
