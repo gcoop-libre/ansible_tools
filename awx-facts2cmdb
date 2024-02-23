@@ -398,6 +398,9 @@ printf "FOUND %4d GROUPS IN INVENTORY %s MATCH WITH REGEX %s\\n" \
   "$TOTAL_GROUPS"                                                \
   "$INVENTORY"                                                   \
   "$REGEX_GROUP"
+
+[[ "$SHOW_GROUP_ALL" -eq 1 ]] && cat "$INVENTORY_GROUPS"
+
 }
 
 function host_group_facts()
