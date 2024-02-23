@@ -83,6 +83,10 @@ then
   EXTRA_DATA="--extra-data '@$EXTRA_JSON'"
 else
   EXTRA_JSON="schedule/$JOB_TEMPLATE.json"
+
+  [[ -e "$EXTRA_JSON" ]] \
+    || EXTRA_JSON="schedule/$JOB_TEMPLATE-${CLEAN_LIMIT}.json"
+
   if [[ -e "$EXTRA_JSON" ]]
   then
     echo "USING EXTRA_DATA FROM $EXTRA_JSON"
