@@ -434,6 +434,8 @@ function facts2index()
   facts2list "$INVENTORY" >> "$INDEX"
   facts2foot "$INVENTORY" >> "$INDEX"
 
+  wc -l "$INDEX"
+
 }
 
 function clean()
