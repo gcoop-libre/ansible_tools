@@ -50,10 +50,30 @@ exit 0
 
 [[ "$1" =~ ^[-]+(h|help) ]] && usage
 
-JOB_NAME="$1"
-[[ -z "$1" ]] && die "EMPTY JOB_NAME"
+[[ -n "$JOB_NAME"   ]] || JOB_NAME="$1"
+[[ -z "$JOB_NAME"   ]] && die "EMPTY JOB_NAME"
+[[ -n "$JOB_LIMIT"  ]] || JOB_LIMIT="$2"
+[[ -z "$JOB_LIMIT"  ]] && JOB_LIMIT="$DEFAULT_LIMIT"
+[[ -z "$JOB_LIMIT"  ]] && die "EMPTY JOB_LIMIT"
+[[ -n "$EXTRA_VARS" ]] || EXTRA_VARS="$3"
 
-JOB_LIMIT="$2"
-[[ -z "$2" ]] && JOB_LIMIT="$DEFAULT_LIMIT"
+if [[ -z "$EXTRA_VARS" ]]
+then
 
-awx-cli job launch -J "$JOB_NAME" --monitor --limit "$JOB_LIMIT" >&2
+  awx-cli job launch -J "$JOB_NAME" --monitor --limit "$JOB_LIMIT" >&2
+
+else
+
+  [[ -f "$EXTRA_VARS" ]] || die "NOT FOUND FILE $EXTRA_VARS"
+  [[ -s "$EXTRA_VARS" ]] || die "EMPTY FILE $EXTRA_VARS"
+
+  stderror "FOUND EXTRA VARS IN $EXTRA_VARS FOR $JOB_NAME"
+  yq -yr '.' "$EXTRA_VARS"
+
+  awx-cli job launch            \
+    --job-template "$JOB_NAME"  \
+    --monitor                   \
+    --extra-vars "@$EXTRA_VARS" \
+    --limit "$JOB_LIMIT" >&2
+
+fi
